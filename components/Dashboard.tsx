@@ -37,11 +37,7 @@ import {
   Layers,
   Tag,
   Boxes,
-  Home,
-  ClipboardList,
-  ShoppingBag,
-  Truck,
-  BarChart3
+  Home
 } from 'lucide-react';
 
 const SidebarItem: React.FC<{ 
@@ -191,10 +187,10 @@ const Dashboard: React.FC = () => {
             onClick={() => toggleMenu('purchase')}
           >
             <div className="space-y-1 mt-1">
-              <SubmenuItem icon={<ClipboardList size={16} />} label="Requisition" active={activeTab === 'requisition'} onClick={() => setActiveTab('requisition')} />
-              <SubmenuItem icon={<ShoppingBag size={16} />} label="Order" active={activeTab === 'purchase-order'} onClick={() => setActiveTab('purchase-order')} />
-              <SubmenuItem icon={<Truck size={16} />} label="Supplier" active={activeTab === 'supplier'} onClick={() => setActiveTab('supplier')} />
-              <SubmenuItem icon={<BarChart3 size={16} />} label="Report" active={activeTab === 'purchase-report'} onClick={() => setActiveTab('purchase-report')} />
+              <SubmenuItem icon={<FileText size={16} />} label="Requisition" active={activeTab === 'requisition'} onClick={() => setActiveTab('requisition')} />
+              <SubmenuItem icon={<FileText size={16} />} label="Order" active={activeTab === 'purchase-order'} onClick={() => setActiveTab('purchase-order')} />
+              <SubmenuItem icon={<FileText size={16} />} label="Supplier" active={activeTab === 'supplier'} onClick={() => setActiveTab('supplier')} />
+              <SubmenuItem icon={<FileText size={16} />} label="Report" active={activeTab === 'purchase-report'} onClick={() => setActiveTab('purchase-report')} />
             </div>
           </SidebarItem>
 
