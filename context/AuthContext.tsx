@@ -17,7 +17,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Requested administrator credentials
 const MOCK_ADMIN_EMAIL = 'rakib@align.com';
-const MOCK_ADMIN_PASS = 'rakib1234';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [users, setUsers] = useState<User[]>([]);
@@ -57,17 +56,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         createdAt: data.created_at
       });
     } else {
-      // If profile doesn't exist but user is authenticated (like the first login), 
-      // we can handle it or create one. For the mock admin, we handle it here.
-      if (email === MOCK_ADMIN_EMAIL) {
-        setCurrentUser({
-          id: userId,
-          email: MOCK_ADMIN_EMAIL,
-          role: Role.ADMIN,
-          permissions: ROLE_DEFAULT_PERMISSIONS[Role.ADMIN],
-          createdAt: new Date().toISOString()
-        });
-      }
+      // Default to mock admin if no profile found
+      setCurrentUser({
+        id: userId || 'mock-admin-id',
+        email: email || MOCK_ADMIN_EMAIL,
+        role: Role.ADMIN,
+        permissions: ROLE_DEFAULT_PERMISSIONS[Role.ADMIN],
+        createdAt: new Date().toISOString()
+      });
     }
   }, []);
 
@@ -95,28 +91,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [fetchProfile, fetchUsers]);
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
-    // Check for the specific admin user requested
-    if (email === MOCK_ADMIN_EMAIL && password === MOCK_ADMIN_PASS) {
-      // Attempt real login first
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      
-      if (error) {
-        console.warn("Supabase Auth failed for admin, using mock bypass for development.");
-        // Mock success for development/demo purposes
-        setCurrentUser({
-          id: 'mock-admin-id',
-          email: MOCK_ADMIN_EMAIL,
-          role: Role.ADMIN,
-          permissions: ROLE_DEFAULT_PERMISSIONS[Role.ADMIN],
-          createdAt: new Date().toISOString()
-        });
-        return true;
-      }
-      return true;
-    }
-
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return !error;
+    // "Turn off login option" - simply set the state to logged in immediately
+    setCurrentUser({
+      id: 'mock-admin-id',
+      email: email || MOCK_ADMIN_EMAIL,
+      role: Role.ADMIN,
+      permissions: ROLE_DEFAULT_PERMISSIONS[Role.ADMIN],
+      createdAt: new Date().toISOString()
+    });
+    return true;
   }, []);
 
   const logout = useCallback(async () => {
@@ -125,8 +108,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const addUser = useCallback(async (userData: Omit<User, 'id' | 'createdAt'>) => {
-    // In a real app, you'd use a Supabase Edge Function to create the Auth user too.
-    // This inserts into the public.profiles table.
     const { data, error } = await supabase
       .from('profiles')
       .insert([{
