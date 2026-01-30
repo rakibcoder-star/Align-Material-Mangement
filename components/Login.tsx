@@ -1,7 +1,5 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { THEME_COLORS } from '../constants';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -30,13 +28,13 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-[#f1f3f4]">
       <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-10 flex flex-col items-center">
         <h1 className="text-4xl font-bold mb-8 tracking-wide text-gray-800">ALLOT</h1>
         
         <form onSubmit={handleSubmit} className="w-full space-y-4">
           {error && (
-            <div className="bg-red-50 text-red-600 text-sm p-3 rounded border border-red-100 mb-4">
+            <div className="bg-red-50 text-red-600 text-sm p-3 rounded border border-red-100 mb-4 text-center">
               {error}
             </div>
           )}
@@ -98,8 +96,8 @@ const Login: React.FC = () => {
           </button>
         </form>
         
-        <div className="mt-8 text-xs text-gray-400 uppercase tracking-widest">
-          Test: admin@allot.com / password
+        <div className="mt-8 text-xs text-gray-400 uppercase tracking-widest text-center">
+          Admin: rakib@align.com<br/>Pass: rakib1234
         </div>
       </div>
     </div>

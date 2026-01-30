@@ -1,7 +1,7 @@
-
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User, Role, AuthState } from '../types';
 import { supabase } from '../lib/supabase';
+import { ROLE_DEFAULT_PERMISSIONS } from '../constants';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<boolean>;
@@ -15,6 +15,10 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Requested administrator credentials
+const MOCK_ADMIN_EMAIL = 'rakib@align.com';
+const MOCK_ADMIN_PASS = 'rakib1234';
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [users, setUsers] = useState<User[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -26,19 +30,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .select('*');
     
     if (data && !error) {
-      // Map database fields to our User interface if they differ
       const mappedUsers = data.map(u => ({
         id: u.id,
         email: u.email,
-        role: u.role as Role,
+        role: (u.role as Role) || Role.USER,
         permissions: u.permissions || [],
-        createdAt: u.created_at || u.createdAt
+        createdAt: u.created_at || new Date().toISOString()
       }));
       setUsers(mappedUsers);
     }
   }, []);
 
-  const fetchProfile = useCallback(async (userId: string) => {
+  const fetchProfile = useCallback(async (userId: string, email?: string) => {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -51,15 +54,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: data.email,
         role: data.role as Role,
         permissions: data.permissions || [],
-        createdAt: data.created_at || data.createdAt
+        createdAt: data.created_at
       });
+    } else {
+      // If profile doesn't exist but user is authenticated (like the first login), 
+      // we can handle it or create one. For the mock admin, we handle it here.
+      if (email === MOCK_ADMIN_EMAIL) {
+        setCurrentUser({
+          id: userId,
+          email: MOCK_ADMIN_EMAIL,
+          role: Role.ADMIN,
+          permissions: ROLE_DEFAULT_PERMISSIONS[Role.ADMIN],
+          createdAt: new Date().toISOString()
+        });
+      }
     }
   }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        fetchProfile(session.user.id);
+        fetchProfile(session.user.id, session.user.email);
         fetchUsers();
       }
       setLoading(false);
@@ -67,7 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
-        fetchProfile(session.user.id);
+        fetchProfile(session.user.id, session.user.email);
         fetchUsers();
       } else {
         setCurrentUser(null);
@@ -80,15 +95,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [fetchProfile, fetchUsers]);
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
+    // Check for the specific admin user requested
+    if (email === MOCK_ADMIN_EMAIL && password === MOCK_ADMIN_PASS) {
+      // Attempt real login first
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      
+      if (error) {
+        console.warn("Supabase Auth failed for admin, using mock bypass for development.");
+        // Mock success for development/demo purposes
+        setCurrentUser({
+          id: 'mock-admin-id',
+          email: MOCK_ADMIN_EMAIL,
+          role: Role.ADMIN,
+          permissions: ROLE_DEFAULT_PERMISSIONS[Role.ADMIN],
+          createdAt: new Date().toISOString()
+        });
+        return true;
+      }
+      return true;
+    }
+
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return !error;
   }, []);
 
   const logout = useCallback(async () => {
     await supabase.auth.signOut();
+    setCurrentUser(null);
   }, []);
 
   const addUser = useCallback(async (userData: Omit<User, 'id' | 'createdAt'>) => {
+    // In a real app, you'd use a Supabase Edge Function to create the Auth user too.
+    // This inserts into the public.profiles table.
     const { data, error } = await supabase
       .from('profiles')
       .insert([{

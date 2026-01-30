@@ -1,5 +1,5 @@
 {
-  "name": "ALLOT User Management System",
+  "name": "ALLOT Data Management System",
   "description": "Dynamic multi-user platform integrated with Supabase Auth & Database, optimized for private GitHub deployment and Render.com hosting.",
   "requestFramePermissions": [],
   "deployment": {
