@@ -1,5 +1,10 @@
 {
   "name": "ALLOT User Management System",
-  "description": "A secure multi-user platform with granular permission control, featuring a faithful recreation of the ALLOT login interface and comprehensive user administration tools.",
-  "requestFramePermissions": []
+  "description": "Dynamic multi-user platform integrated with Supabase Auth & Database, optimized for private GitHub deployment and Render.com hosting.",
+  "requestFramePermissions": [],
+  "deployment": {
+    "platform": "render.com",
+    "type": "static-site",
+    "database": "supabase"
+  }
 }

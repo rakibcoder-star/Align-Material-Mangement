@@ -1,0 +1,12 @@
+
+services:
+  - type: web
+    name: allot-system-frontend
+    runtime: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: SUPABASE_URL
+        value: https://rwzzmixgxvazvxpvkygv.supabase.co
+      - key: SUPABASE_KEY
+        value: sb_publishable_pAf8uLK2cT-Vg9sEHgKJ_Q_EnPZVdqu
