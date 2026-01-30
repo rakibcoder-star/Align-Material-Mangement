@@ -1,9 +1,16 @@
-
 import { createClient } from '@supabase/supabase-js';
 
 // Safe access to environment variables to prevent "Cannot read properties of undefined" errors.
-// In Vite, these are injected at build/dev time. If missing, we fall back to defaults.
-const env = (import.meta as any).env || {};
+// In a standard Vite build, these are injected. If the bundler is bypassed, we use defaults.
+const getEnv = () => {
+  try {
+    return (import.meta as any).env || {};
+  } catch {
+    return {};
+  }
+};
+
+const env = getEnv();
 
 const supabaseUrl = env.VITE_SUPABASE_URL 
   || 'https://rwzzmixgxvazvxpvkygv.supabase.co';
