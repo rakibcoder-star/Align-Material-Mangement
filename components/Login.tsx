@@ -29,8 +29,8 @@ const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-[#f1f3f4]">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-10 flex flex-col items-center">
-        <h1 className="text-4xl font-bold mb-8 tracking-wide text-gray-800">ALLOT</h1>
+      <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-10 flex flex-col items-center border border-gray-100">
+        <h1 className="text-4xl font-bold mb-8 tracking-wide text-gray-800">ALIGN</h1>
         
         <form onSubmit={handleSubmit} className="w-full space-y-4">
           {error && (
@@ -90,13 +90,13 @@ const Login: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 bg-[#2d808e] text-white font-medium hover:bg-[#256b78] transition-colors disabled:opacity-50 mt-6"
+            className="w-full py-2.5 bg-[#2d808e] text-white font-medium hover:bg-[#256b78] transition-colors disabled:opacity-50 mt-6 rounded"
           >
             {loading ? 'Logging in...' : 'Log in'}
           </button>
         </form>
         
-        <div className="mt-8 text-xs text-gray-400 uppercase tracking-widest text-center">
+        <div className="mt-8 text-[10px] text-gray-400 uppercase tracking-[0.2em] text-center border-t border-gray-100 pt-6 w-full">
           Admin: rakib@align.com<br/>Pass: rakib1234
         </div>
       </div>

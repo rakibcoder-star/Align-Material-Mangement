@@ -1,13 +1,14 @@
-
 import { Role, Permission } from './types';
 
 export const THEME_COLORS = {
-  primary: '#2d808e', // The teal/blue-green color from the image
+  primary: '#2d808e', 
+  secondary: '#17a2b8',
   background: '#f1f3f4',
   card: '#ffffff',
-  text: '#111827',
-  muted: '#6b7280',
-  border: '#e5e7eb'
+  text: '#333333',
+  muted: '#6c757d',
+  border: '#dee2e6',
+  danger: '#dc3545'
 };
 
 export const PERMISSIONS: Permission[] = [
