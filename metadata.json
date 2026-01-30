@@ -1,0 +1,5 @@
+{
+  "name": "ALLOT User Management System",
+  "description": "A secure multi-user platform with granular permission control, featuring a faithful recreation of the ALLOT login interface and comprehensive user administration tools.",
+  "requestFramePermissions": []
+}
