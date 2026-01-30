@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import ReactDOM from 'react-dom/client';
+import { createRoot } from 'react-dom/client';
 import { Home, FileSpreadsheet, History, Printer, Edit2, Filter, ChevronDown } from 'lucide-react';
 import NewPurchaseRequisition from './NewPurchaseRequisition';
 import * as XLSX from 'xlsx';
@@ -9,147 +9,182 @@ interface PurchaseRequisitionProps {
   setRequisitions: React.Dispatch<React.SetStateAction<any[]>>;
 }
 
-const PrintTemplate: React.FC<{ pr: any }> = ({ pr }) => (
-  <div className="p-12 bg-white text-black font-sans leading-relaxed">
-    {/* Header */}
-    <div className="flex justify-between items-start border-b-4 border-[#2d808e] pb-6 mb-8">
-      <div>
-        <h1 className="text-4xl font-black text-[#2d808e] tracking-tighter">ALIGN</h1>
-        <p className="text-[10px] font-bold text-gray-500 uppercase mt-1 tracking-widest">Enterprise Resource Planning System</p>
-      </div>
-      <div className="text-right">
-        <h2 className="text-2xl font-black text-gray-800 uppercase tracking-tighter">Purchase Requisition</h2>
-        <div className="mt-2 text-sm font-bold bg-gray-100 inline-block px-3 py-1 rounded">
-          PR No: <span className="text-[#2d808e]">{pr.PR}</span>
-        </div>
-      </div>
-    </div>
+const PrintTemplate: React.FC<{ pr: any }> = ({ pr }) => {
+  // Ensure we have a list of items to display
+  const itemsList = pr.items || [{
+    name: pr.name,
+    sku: pr.SKU || pr.code,
+    specification: pr.spec,
+    brand: pr.brand || '',
+    uom: pr.UOM,
+    reqQty: pr.reqQty,
+    unitPrice: pr.PRPrice,
+    onHand: pr.onHand || '0',
+    remarks: pr.remarks || pr.note || ''
+  }];
 
-    {/* Information Grid */}
-    <div className="grid grid-cols-2 gap-8 mb-8">
-      <div className="bg-[#f8fafc] p-4 rounded border border-gray-100">
-        <h3 className="text-xs font-black uppercase text-[#2d808e] border-b border-gray-200 pb-2 mb-3">Requisition Information</h3>
-        <div className="space-y-2 text-xs">
-          <p className="flex justify-between border-b border-dashed border-gray-200 pb-1">
-            <span className="text-gray-500">Date:</span>
-            <span className="font-bold">{pr.createdAt?.split(' ')[0]}</span>
-          </p>
-          <p className="flex justify-between border-b border-dashed border-gray-200 pb-1">
-            <span className="text-gray-500">PR Reference:</span>
-            <span className="font-bold">{pr.note || 'None Provided'}</span>
-          </p>
-          <p className="flex justify-between border-b border-dashed border-gray-200 pb-1">
-            <span className="text-gray-500">Supplier Type:</span>
-            <span className="font-bold uppercase">{pr.type || 'Local'}</span>
-          </p>
-          <p className="flex justify-between">
-            <span className="text-gray-500">Current Status:</span>
-            <span className="font-bold text-[#2d808e] uppercase">{pr.status}</span>
-          </p>
-        </div>
-      </div>
-      <div className="bg-[#f8fafc] p-4 rounded border border-gray-100">
-        <h3 className="text-xs font-black uppercase text-[#2d808e] border-b border-gray-200 pb-2 mb-3">Requester Details</h3>
-        <div className="space-y-2 text-xs">
-          <p className="flex justify-between border-b border-dashed border-gray-200 pb-1">
-            <span className="text-gray-500">Name:</span>
-            <span className="font-bold">{pr.reqBy}</span>
-          </p>
-          <p className="flex justify-between border-b border-dashed border-gray-200 pb-1">
-            <span className="text-gray-500">Department:</span>
-            <span className="font-bold">{pr.reqDpt}</span>
-          </p>
-          <p className="flex justify-between border-b border-dashed border-gray-200 pb-1">
-            <span className="text-gray-500">Contact:</span>
-            <span className="font-bold">{pr.contact || '+880 1777 702323'}</span>
-          </p>
-          <p className="flex justify-between">
-            <span className="text-gray-500">Email:</span>
-            <span className="font-bold lowercase">{pr.email || 'N/A'}</span>
-          </p>
-        </div>
-      </div>
-    </div>
+  const totalQty = itemsList.reduce((acc: number, item: any) => acc + (Number(item.reqQty || 0)), 0);
+  const totalValue = itemsList.reduce((acc: number, item: any) => acc + (Number(item.reqQty || 0) * Number(item.unitPrice || 0)), 0);
 
-    {/* Items Table */}
-    <div className="mb-12">
-      <h3 className="text-xs font-black uppercase text-[#2d808e] mb-3">Itemized Requirements</h3>
-      <table className="w-full text-xs border-collapse">
-        <thead>
-          <tr className="bg-[#2d808e] text-white">
-            <th className="py-2.5 px-2 text-left w-10">SL</th>
-            <th className="py-2.5 px-2 text-left">Description of Materials</th>
-            <th className="py-2.5 px-2 text-center w-24">SKU Code</th>
-            <th className="py-2.5 px-2 text-center w-16">UOM</th>
-            <th className="py-2.5 px-2 text-right w-16">Qty</th>
-            <th className="py-2.5 px-2 text-right w-24">Unit Price</th>
-            <th className="py-2.5 px-2 text-right w-24">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {(pr.items || [{ name: pr.name, sku: pr.SKU, spec: pr.spec, UOM: pr.UOM, reqQty: pr.reqQty, PRPrice: pr.PRPrice }]).map((item: any, idx: number) => (
-            <tr key={idx} className="border-b border-gray-200">
-              <td className="py-4 px-2 align-top">{idx + 1}</td>
-              <td className="py-4 px-2 align-top">
-                <p className="font-bold uppercase text-gray-800">{item.name}</p>
-                <p className="text-[10px] text-gray-500 mt-1">{item.spec || item.specification}</p>
-              </td>
-              <td className="py-4 px-2 text-center align-top font-mono">{item.sku}</td>
-              <td className="py-4 px-2 text-center align-top uppercase">{item.UOM || item.uom}</td>
-              <td className="py-4 px-2 text-right font-bold align-top">{item.reqQty}</td>
-              <td className="py-4 px-2 text-right align-top">{(Number(item.PRPrice || item.unitPrice)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-              <td className="py-4 px-2 text-right font-bold align-top">{(Number(item.reqQty) * Number(item.PRPrice || item.unitPrice)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+  return (
+    <div className="p-8 bg-white text-black font-sans min-h-screen text-[10px]">
+      {/* Header Section */}
+      <div className="relative flex flex-col items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Fair Technology Limited</h1>
+        <p className="text-[10px] text-gray-600">Plot- 12/A & 12/B, Block-C, Kaliakoir Hi-Tech Park</p>
+        <p className="text-[10px] text-gray-600">Gazipur, Bangladesh-1750. +#880 1787-670 786</p>
+        <h2 className="text-sm font-bold mt-2 uppercase border-b-2 border-black inline-block px-4">PURCHASE REQUISITION FORM</h2>
+        
+        {/* QR Code Placeholder */}
+        <div className="absolute top-0 right-0 border border-gray-300 p-1 w-16 h-16 flex items-center justify-center">
+           <img src="https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=PR-3000000018" alt="QR Code" className="w-full h-full" />
+        </div>
+      </div>
+
+      {/* Meta Information Grid */}
+      <div className="grid grid-cols-3 gap-4 mb-4 border-t border-gray-100 pt-4">
+        <div className="space-y-1">
+          <p><span className="font-bold">PR No.:</span> {pr.PR} (Local)</p>
+          <p><span className="font-bold">Reference:</span> {pr.note || 'Common Consumable'}</p>
+          <p><span className="font-bold">Requested By:</span> {pr.reqBy}</p>
+        </div>
+        <div className="space-y-1">
+          <p><span className="font-bold">Department:</span> {pr.reqDpt}</p>
+          <p><span className="font-bold">Email:</span> {pr.email || 'sohel.rana@fairtechnology.com.bd'}</p>
+          <p><span className="font-bold">Phone No.:</span> {pr.contact || '+880 1773 402954'}</p>
+        </div>
+        <div className="space-y-1 text-right">
+          <p><span className="font-bold">Req. Date:</span> {pr.createdAt?.split(' ')[0] || '26-Jan-2026'}</p>
+          <p><span className="font-bold">PR Status:</span> {pr.status}</p>
+          <p><span className="font-bold">Update On:</span> {pr.updatedAt?.split(' ')[0] || '26-Jan-2026'}</p>
+        </div>
+      </div>
+
+      {/* Main Items Table */}
+      <div className="mb-4">
+        <table className="w-full border-collapse border border-black text-[9px]">
+          <thead>
+            <tr className="bg-white font-bold">
+              <th className="border border-black py-1 px-1 w-6">SL</th>
+              <th className="border border-black py-1 px-1">Part Code</th>
+              <th className="border border-black py-1 px-2 w-1/4">Name</th>
+              <th className="border border-black py-1 px-1">Spec.</th>
+              <th className="border border-black py-1 px-1">Brand</th>
+              <th className="border border-black py-1 px-1 w-10">UOM</th>
+              <th className="border border-black py-1 px-1 text-center w-20">Unit Price (BDT)</th>
+              <th className="border border-black py-1 px-1 text-center w-12">Req. Qty</th>
+              <th className="border border-black py-1 px-1 text-center w-24">Req. Value (BDT)</th>
+              <th className="border border-black py-1 px-1 text-center w-16">On-Hand Stock</th>
+              <th className="border border-black py-1 px-1">Remarks</th>
             </tr>
-          ))}
-        </tbody>
-        <tfoot>
-          <tr className="bg-gray-50 border-b-2 border-gray-200 font-black">
-            <td colSpan={6} className="py-4 px-2 text-right uppercase text-[#2d808e]">Estimated Total Value (BDT)</td>
-            <td className="py-4 px-2 text-right text-lg">
-              {(pr.value || (pr.reqQty * pr.PRPrice)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-            </td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {itemsList.map((item: any, idx: number) => (
+              <tr key={idx}>
+                <td className="border border-black py-1 px-1 text-center">{idx + 1}</td>
+                <td className="border border-black py-1 px-1 text-center">{item.sku || 'N/A'}</td>
+                <td className="border border-black py-1 px-2 font-bold uppercase">{item.name}</td>
+                <td className="border border-black py-1 px-1 italic text-gray-600">{item.specification || item.spec || '-'}</td>
+                <td className="border border-black py-1 px-1 text-center">{item.brand || '-'}</td>
+                <td className="border border-black py-1 px-1 text-center uppercase">{item.uom || item.UOM}</td>
+                <td className="border border-black py-1 px-1 text-right">{(Number(item.unitPrice || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                <td className="border border-black py-1 px-1 text-center font-bold">{item.reqQty}</td>
+                <td className="border border-black py-1 px-1 text-right font-bold">{(Number(item.reqQty || 0) * Number(item.unitPrice || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                <td className="border border-black py-1 px-1 text-center">{item.onHand || '0'}</td>
+                <td className="border border-black py-1 px-1 text-[8px]">{item.remarks || '-'}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr className="font-bold">
+              <td colSpan={7} className="border border-black py-1 px-1 text-right">Total</td>
+              <td className="border border-black py-1 px-1 text-center">{totalQty}</td>
+              <td className="border border-black py-1 px-1 text-right bg-gray-50">{totalValue.toLocaleString(undefined, { minimumFractionDigits: 3 })}</td>
+              <td colSpan={2} className="border border-black py-1 px-1"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
 
-    {/* Notes */}
-    {pr.note && (
-      <div className="mb-12 p-4 bg-yellow-50/30 border border-yellow-100 rounded">
-        <h4 className="text-[10px] font-black uppercase text-gray-500 mb-1">Additional Notes:</h4>
-        <p className="text-xs text-gray-700 italic">"{pr.note}"</p>
+      {/* Note Section */}
+      <div className="mb-6">
+        <div className="flex space-x-4 items-start">
+           <div className="flex-1">
+              <span className="font-bold block mb-1">Note:</span>
+              <div className="border border-gray-300 rounded p-2 h-16 w-full text-gray-400 italic">
+                {pr.note || 'No additional notes provided for this requisition.'}
+              </div>
+           </div>
+           <div className="w-24 h-24 border border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400">
+              <span className="text-xl">+</span>
+              <span className="text-[8px] font-bold">Upload</span>
+           </div>
+        </div>
       </div>
-    )}
 
-    {/* Footer Signatures */}
-    <div className="grid grid-cols-4 gap-8 mt-24">
-      <div className="text-center">
-        <div className="border-t-2 border-gray-300 w-full mb-2"></div>
-        <p className="text-[10px] font-black uppercase text-gray-800">Requested By</p>
-        <p className="text-[9px] text-gray-400">Date: ____/____/____</p>
+      {/* Signature Lines */}
+      <div className="grid grid-cols-4 gap-4 mt-12 mb-8">
+        <div className="text-center border-t border-black pt-1">
+          <p className="font-bold">Prepared By</p>
+          <p className="text-[8px] text-gray-500">{pr.reqBy}</p>
+        </div>
+        <div className="text-center border-t border-black pt-1">
+          <p className="font-bold">Checked By</p>
+          <p className="text-[8px] text-gray-500 opacity-0">Placeholder</p>
+        </div>
+        <div className="text-center border-t border-black pt-1">
+          <p className="font-bold">Confirmed By</p>
+          <p className="text-[8px] text-gray-500 opacity-0">Placeholder</p>
+        </div>
+        <div className="text-center border-t border-black pt-1">
+          <p className="font-bold">Approved By</p>
+          <p className="text-[8px] text-gray-500 opacity-0">Placeholder</p>
+        </div>
       </div>
-      <div className="text-center">
-        <div className="border-t-2 border-gray-300 w-full mb-2"></div>
-        <p className="text-[10px] font-black uppercase text-gray-800">Checked By</p>
-        <p className="text-[9px] text-gray-400">Date: ____/____/____</p>
+
+      {/* Justification Table */}
+      <div className="mt-8">
+        <h3 className="font-bold mb-2 text-center uppercase tracking-tight">Justification of Purchase Requisition</h3>
+        <table className="w-full border-collapse border border-black text-[8px]">
+          <thead>
+            <tr className="bg-white font-bold">
+              <th className="border border-black py-1 px-1 text-center">Item Name</th>
+              <th className="border border-black py-1 px-1 text-center w-16">Last 6M Used</th>
+              <th className="border border-black py-1 px-1 text-center w-24">Consumption Rate</th>
+              <th className="border border-black py-1 px-1 text-center w-20">Stock in Hand [A]</th>
+              <th className="border border-black py-1 px-1 text-center w-20">Stock in Store [B]</th>
+              <th className="border border-black py-1 px-1 text-center w-20">Ordered Qty [C]</th>
+              <th className="border border-black py-1 px-1 text-center w-24">Total [D=A+B+C]</th>
+              <th className="border border-black py-1 px-1 text-center">Purpose</th>
+              <th className="border border-black py-1 px-1 text-center w-24">Approved Design [Y/N]</th>
+            </tr>
+          </thead>
+          <tbody>
+            {itemsList.map((item: any, idx: number) => (
+              <tr key={idx}>
+                <td className="border border-black py-1 px-1 font-bold">{item.name}</td>
+                <td className="border border-black py-1 px-1 text-center">{(Math.random() * 800).toFixed(0)}</td>
+                <td className="border border-black py-1 px-1 text-center"></td>
+                <td className="border border-black py-1 px-1 text-center">0</td>
+                <td className="border border-black py-1 px-1 text-center">{item.onHand || '0'}</td>
+                <td className="border border-black py-1 px-1 text-center">0</td>
+                <td className="border border-black py-1 px-1 text-center font-bold">{(Number(item.onHand || 0)).toFixed(2)}</td>
+                <td className="border border-black py-1 px-1"></td>
+                <td className="border border-black py-1 px-1"></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-      <div className="text-center">
-        <div className="border-t-2 border-gray-300 w-full mb-2"></div>
-        <p className="text-[10px] font-black uppercase text-gray-800">Verified By</p>
-        <p className="text-[9px] text-gray-400">Date: ____/____/____</p>
-      </div>
-      <div className="text-center">
-        <div className="border-t-2 border-gray-300 w-full mb-2"></div>
-        <p className="text-[10px] font-black uppercase text-gray-800">Authorized Signature</p>
-        <p className="text-[9px] text-gray-400">Date: ____/____/____</p>
+
+      {/* Print Page Footer */}
+      <div className="mt-8 pt-4 border-t border-gray-100 flex justify-between text-[7px] text-gray-400 font-bold uppercase tracking-widest">
+        <span>ALIGN ERP - GENERATED DOCUMENT</span>
+        <span>CONFIDENTIAL - FAIR TECHNOLOGY LIMITED</span>
       </div>
     </div>
-
-    <div className="mt-16 text-center border-t border-gray-100 pt-4">
-      <p className="text-[8px] text-gray-400 uppercase tracking-widest">Document Generated via ALIGN ERP on {new Date().toLocaleString()}</p>
-    </div>
-  </div>
-);
+  );
+};
 
 const PurchaseRequisition: React.FC<PurchaseRequisitionProps> = ({ requisitions, setRequisitions }) => {
   const [view, setView] = useState<'list' | 'new'>('list');
@@ -169,20 +204,23 @@ const PurchaseRequisition: React.FC<PurchaseRequisitionProps> = ({ requisitions,
   };
 
   const handlePrint = (pr: any) => {
-    const printRoot = document.getElementById('print-root');
-    if (!printRoot) return;
+    const printSection = document.getElementById('print-section');
+    if (!printSection) {
+      console.error("Print section container not found in document.");
+      return;
+    }
 
     // Clear previous print content
-    printRoot.innerHTML = '';
+    printSection.innerHTML = '';
     
-    // Use React 18 createRoot
-    const root = ReactDOM.createRoot(printRoot);
+    // Create root and render Template
+    const root = createRoot(printSection);
     root.render(<PrintTemplate pr={pr} />);
 
-    // Trigger browser print after a brief delay for rendering
+    // Short delay to ensure React finishes rendering before print dialog
     setTimeout(() => {
       window.print();
-    }, 500);
+    }, 600);
   };
 
   const months = [

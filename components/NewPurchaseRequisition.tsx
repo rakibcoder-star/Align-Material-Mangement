@@ -70,7 +70,11 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
 
   const removeItem = (id: string) => {
     if (items.length > 1) {
-      setItems(items.filter((item) => item.id !== id));
+      if (window.confirm('Are you sure you want to remove this item from the requisition?')) {
+        setItems(items.filter((item) => item.id !== id));
+      }
+    } else {
+      alert('A requisition must have at least one item.');
     }
   };
 
@@ -79,6 +83,17 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
   };
 
   const handleFormSubmit = () => {
+    if (!supplierType) {
+      alert('Please select a Supplier Type.');
+      return;
+    }
+
+    const hasIncompleteItems = items.some(item => !item.name || !item.uom || !item.reqQty);
+    if (hasIncompleteItems) {
+      alert('Please fill in all required item fields (Name, UOM, and Req. Qty).');
+      return;
+    }
+
     // Generate new PR object
     const totalQty = items.reduce((sum, item) => sum + (Number(item.reqQty) || 0), 0);
     const totalValue = items.reduce((sum, item) => sum + (Number(item.reqQty) * Number(item.unitPrice) || 0), 0);

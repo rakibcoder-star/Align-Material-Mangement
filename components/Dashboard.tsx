@@ -4,6 +4,8 @@ import UserManagement from './UserManagement';
 import MoveOrderModal from './MoveOrderModal';
 import StockStatusModal from './StockStatusModal';
 import PurchaseRequisition from './PurchaseRequisition';
+import PurchaseOrder from './PurchaseOrder';
+import Supplier from './Supplier'; // Added import
 import { 
   Gauge, 
   ShoppingCart, 
@@ -97,7 +99,7 @@ const Dashboard: React.FC = () => {
     itemMaster: true
   });
 
-  // Requisition State lifted up for sharing
+  // Requisition State
   const [requisitions, setRequisitions] = useState([
     { 
       PR: '3000000018', code: '1000000280', SKU: '3100000117', name: 'ARM GUARD', spec: 'JA Brand, Black', UOM: 'PAIR', 
@@ -107,13 +109,21 @@ const Dashboard: React.FC = () => {
     { 
       PR: '3000000017', code: 'NA', SKU: 'non-storage', name: 'Servicing Charge', spec: 'SVSD & Serial No.', UOM: 'JOB', 
       PRPrice: 18500, reqQty: 1, POQty: 0, recQty: 0, reqDpt: 'Maintenance', reqBy: 'Md. Jahangir Alam', 
-      createdAt: '2026-01-24 16:21', updateBy: 'Sohel Rana', updatedAt: '2026-01-25 05:14', status: 'Checked', value: 18500
+      createdAt: '2026-01-24 16:21', updateBy: 'Sohel Rana', updatedAt: '2026-01-24 16:21', status: 'Checked', value: 18500
     },
     { 
       PR: '3000000016', code: '1000001573', SKU: '3300000035', name: 'A4 PAPER', spec: 'Double A', UOM: 'REAM', 
       PRPrice: 499.5, reqQty: 10, POQty: 10, recQty: 10, reqDpt: 'Admin', reqBy: 'Mr. Nahidul Hassan', 
       createdAt: '2026-01-22 10:01', updateBy: 'Sohel Rana', updatedAt: '2026-01-22 10:17', status: 'Approved', value: 4995
     }
+  ]);
+
+  // Purchase Order State
+  const [purchaseOrders] = useState([
+    { poNo: '4000000004', prNo: '3000000016', sku: '3300000035', name: 'A4 PAPER', price: '499.5', qty: 10, value: 4995.00, grnQty: 10, reqBy: 'Sohel Rana', supplier: 'NSR COMPUTER & STATIONERY' },
+    { poNo: '4000000003', prNo: '3000000011', sku: '3100000198', name: 'COOLANT PREMIXED, RED, 4 LTR', price: '383', qty: 252, value: 96516.00, grnQty: 252, reqBy: 'Sohel Rana', supplier: 'M/S SHIFA ENTERPRISE' },
+    { poNo: '4000000002', prNo: '3000000010', sku: '3100000121', name: 'AC GAS, R134A', price: '18900', qty: 2, value: 37800.00, grnQty: 2, reqBy: 'Sohel Rana', supplier: 'M/S SHIFA ENTERPRISE' },
+    { poNo: '4000000001', prNo: '3000000009', sku: '3100001447', name: 'PTFE DIAPHRAGM REPAIR KIT SET (245065)', price: '12837.5', qty: 8, value: 102700.00, grnQty: 8, reqBy: 'Sohel Rana', supplier: 'TALUS MACHINANERY CO. LIMITED' }
   ]);
 
   const toggleMenu = (menu: string) => {
@@ -261,6 +271,14 @@ const Dashboard: React.FC = () => {
                 requisitions={requisitions} 
                 setRequisitions={setRequisitions} 
               />
+            </div>
+          ) : activeTab === 'purchase-order' ? (
+            <div className="max-w-[1600px] mx-auto">
+              <PurchaseOrder orders={purchaseOrders} />
+            </div>
+          ) : activeTab === 'supplier' ? (
+            <div className="max-w-[1600px] mx-auto">
+              <Supplier />
             </div>
           ) : activeTab === 'overview' ? (
             <div className="max-w-[1600px] mx-auto space-y-6">

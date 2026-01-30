@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Role } from '../types';
@@ -31,8 +30,8 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
+  const handleDelete = async (id: string, email: string) => {
+    if (window.confirm(`Are you absolutely sure you want to delete the user "${email}"? This action cannot be undone and will immediately revoke their access.`)) {
       await deleteUser(id);
     }
   };
@@ -168,7 +167,7 @@ const UserManagement: React.FC = () => {
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button 
                     disabled={u.id === currentUser?.id}
-                    onClick={() => handleDelete(u.id)}
+                    onClick={() => handleDelete(u.id, u.email)}
                     className="text-red-600 hover:text-red-900 disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     Delete
