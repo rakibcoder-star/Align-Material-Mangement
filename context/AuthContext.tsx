@@ -2,7 +2,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User, Role, AuthState } from '../types';
 import { supabase } from '../lib/supabase';
-import { ROLE_DEFAULT_PERMISSIONS } from '../constants';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<boolean>;
@@ -27,7 +26,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .select('*');
     
     if (data && !error) {
-      setUsers(data as User[]);
+      // Map database fields to our User interface if they differ
+      const mappedUsers = data.map(u => ({
+        id: u.id,
+        email: u.email,
+        role: u.role as Role,
+        permissions: u.permissions || [],
+        createdAt: u.created_at || u.createdAt
+      }));
+      setUsers(mappedUsers);
     }
   }, []);
 
@@ -39,12 +46,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .single();
     
     if (data && !error) {
-      setCurrentUser(data as User);
+      setCurrentUser({
+        id: data.id,
+        email: data.email,
+        role: data.role as Role,
+        permissions: data.permissions || [],
+        createdAt: data.created_at || data.createdAt
+      });
     }
   }, []);
 
   useEffect(() => {
-    // Check active session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         fetchProfile(session.user.id);
@@ -53,7 +65,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     });
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
         fetchProfile(session.user.id);
@@ -78,9 +89,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const addUser = useCallback(async (userData: Omit<User, 'id' | 'createdAt'>) => {
-    // Note: To create an actual auth user, you usually need the Supabase Admin API.
-    // For this demonstration, we'll insert into the profiles table.
-    // In a real app, you'd use a Supabase Edge Function to create auth.users.
     const { data, error } = await supabase
       .from('profiles')
       .insert([{
@@ -92,7 +100,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .select();
 
     if (!error && data) {
-      setUsers(prev => [...prev, data[0] as User]);
+      const newUser = {
+        id: data[0].id,
+        email: data[0].email,
+        role: data[0].role as Role,
+        permissions: data[0].permissions || [],
+        createdAt: data[0].created_at
+      };
+      setUsers(prev => [...prev, newUser]);
+    } else if (error) {
+      console.error("Error adding user profile:", error.message);
+      throw error;
     }
   }, []);
 
@@ -103,7 +121,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .eq('id', userId);
 
     if (!error) {
-      setUsers(prev => prev.filter(u => u.id !== userId));
+      setUsers(prev => prev.filter((u: User) => u.id !== userId));
     }
   }, []);
 
