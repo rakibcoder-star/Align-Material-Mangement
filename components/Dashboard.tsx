@@ -5,7 +5,18 @@ import MoveOrderModal from './MoveOrderModal';
 import StockStatusModal from './StockStatusModal';
 import PurchaseRequisition from './PurchaseRequisition';
 import PurchaseOrder from './PurchaseOrder';
-import Supplier from './Supplier'; // Added import
+import Supplier from './Supplier';
+import PurchaseReport from './PurchaseReport';
+import Inventory from './Inventory';
+import Receive from './Receive';
+import Issue from './Issue';
+import TnxReport from './TnxReport';
+import MOReport from './MOReport';
+import ItemList from './ItemList';
+import ItemUOM from './ItemUOM';
+import ItemGroup from './ItemGroup';
+import ItemType from './ItemType';
+import CostCenter from './CostCenter';
 import { 
   Gauge, 
   ShoppingCart, 
@@ -22,7 +33,15 @@ import {
   ArrowRight,
   ArrowLeft,
   CheckCircle2,
-  Bell
+  Bell,
+  Layers,
+  Tag,
+  Boxes,
+  Home,
+  ClipboardList,
+  ShoppingBag,
+  Truck,
+  BarChart3
 } from 'lucide-react';
 
 const SidebarItem: React.FC<{ 
@@ -93,6 +112,7 @@ const Dashboard: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMoveOrderModalOpen, setIsMoveOrderModalOpen] = useState(false);
   const [isStockStatusModalOpen, setIsStockStatusModalOpen] = useState(false);
+  
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
     purchase: true,
     warehouse: true,
@@ -104,7 +124,7 @@ const Dashboard: React.FC = () => {
     { 
       PR: '3000000018', code: '1000000280', SKU: '3100000117', name: 'ARM GUARD', spec: 'JA Brand, Black', UOM: 'PAIR', 
       PRPrice: 310.02, reqQty: 60, POQty: 0, recQty: 0, reqDpt: 'MMT', reqBy: 'Sohel Rana', 
-      createdAt: '2026-01-26 12:05', updateBy: 'Sohel Rana', updatedAt: '2026-01-26 12:05', status: 'In-Process', value: 75465
+      createdAt: '2026-01-26 12:05', updateBy: 'Sohel Rana', updatedAt: '2026-01-26 12:05', status: 'In-Process', value: 18601.2
     },
     { 
       PR: '3000000017', code: 'NA', SKU: 'non-storage', name: 'Servicing Charge', spec: 'SVSD & Serial No.', UOM: 'JOB', 
@@ -135,10 +155,6 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const pendingApprovals = useMemo(() => {
-    return requisitions.filter(r => r.status === 'In-Process' || r.status === 'Checked');
-  }, [requisitions]);
-
   if (!user) return null;
 
   return (
@@ -150,8 +166,9 @@ const Dashboard: React.FC = () => {
             <UserIcon size={isSidebarCollapsed ? 20 : 48} className="text-[#2d808e]" strokeWidth={1.5} />
           </div>
           {!isSidebarCollapsed && (
-            <div className="text-center overflow-hidden w-full">
-              <span className="text-[15px] font-medium text-[#2d808e] block truncate">Md Azizul Hakim</span>
+            <div className="text-center overflow-hidden w-full px-2">
+              <span className="text-[13px] font-bold text-[#2d808e] block truncate uppercase tracking-tight">{user.email.split('@')[0]}</span>
+              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{user.role}</span>
             </div>
           )}
         </div>
@@ -174,10 +191,10 @@ const Dashboard: React.FC = () => {
             onClick={() => toggleMenu('purchase')}
           >
             <div className="space-y-1 mt-1">
-              <SubmenuItem icon={<FileText size={16} />} label="Requisition" active={activeTab === 'requisition'} onClick={() => setActiveTab('requisition')} />
-              <SubmenuItem icon={<FileText size={16} />} label="Order" active={activeTab === 'purchase-order'} onClick={() => setActiveTab('purchase-order')} />
-              <SubmenuItem icon={<FileText size={16} />} label="Supplier" active={activeTab === 'supplier'} onClick={() => setActiveTab('supplier')} />
-              <SubmenuItem icon={<FileText size={16} />} label="Report" active={activeTab === 'purchase-report'} onClick={() => setActiveTab('purchase-report')} />
+              <SubmenuItem icon={<ClipboardList size={16} />} label="Requisition" active={activeTab === 'requisition'} onClick={() => setActiveTab('requisition')} />
+              <SubmenuItem icon={<ShoppingBag size={16} />} label="Order" active={activeTab === 'purchase-order'} onClick={() => setActiveTab('purchase-order')} />
+              <SubmenuItem icon={<Truck size={16} />} label="Supplier" active={activeTab === 'supplier'} onClick={() => setActiveTab('supplier')} />
+              <SubmenuItem icon={<BarChart3 size={16} />} label="Report" active={activeTab === 'purchase-report'} onClick={() => setActiveTab('purchase-report')} />
             </div>
           </SidebarItem>
 
@@ -208,6 +225,10 @@ const Dashboard: React.FC = () => {
           >
             <div className="space-y-1 mt-1">
               <SubmenuItem icon={<FileText size={16} />} label="Item List" active={activeTab === 'item-list'} onClick={() => setActiveTab('item-list')} />
+              <SubmenuItem icon={<Boxes size={16} />} label="Item UOM" active={activeTab === 'item-uom'} onClick={() => setActiveTab('item-uom')} />
+              <SubmenuItem icon={<Layers size={16} />} label="Item Group" active={activeTab === 'item-group'} onClick={() => setActiveTab('item-group')} />
+              <SubmenuItem icon={<Tag size={16} />} label="Item Type" active={activeTab === 'item-type'} onClick={() => setActiveTab('item-type')} />
+              <SubmenuItem icon={<Home size={16} />} label="Cost Center" active={activeTab === 'cost-center'} onClick={() => setActiveTab('cost-center')} />
               <SubmenuItem icon={<FileText size={16} />} label="Item Details" active={activeTab === 'item-details'} onClick={() => setActiveTab('item-details')} />
             </div>
           </SidebarItem>
@@ -224,7 +245,6 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div className="border-t border-gray-100 py-2">
-          <SidebarItem icon={<UserIcon size={18} />} label="Profile" isCollapsed={isSidebarCollapsed} onClick={() => {}} />
           <SidebarItem icon={<LogOut size={18} />} label="Logout" danger isCollapsed={isSidebarCollapsed} onClick={logout} />
         </div>
       </aside>
@@ -243,9 +263,10 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center space-x-4">
-             <div className="flex items-center space-x-2 mr-4 text-gray-400">
+             <button className="flex items-center space-x-2 mr-4 text-gray-400 hover:text-[#2d808e] transition-colors">
                 <Bell size={20} />
-             </div>
+             </button>
+             
              <button 
                 onClick={() => setIsStockStatusModalOpen(true)}
                 className="flex items-center px-4 py-2 bg-[#2d808e] text-white text-xs font-bold rounded shadow-sm hover:bg-[#256b78] transition-all"
@@ -267,10 +288,7 @@ const Dashboard: React.FC = () => {
             <div className="max-w-6xl mx-auto"><UserManagement /></div>
           ) : activeTab === 'requisition' ? (
             <div className="max-w-[1600px] mx-auto">
-              <PurchaseRequisition 
-                requisitions={requisitions} 
-                setRequisitions={setRequisitions} 
-              />
+              <PurchaseRequisition requisitions={requisitions} setRequisitions={setRequisitions} />
             </div>
           ) : activeTab === 'purchase-order' ? (
             <div className="max-w-[1600px] mx-auto">
@@ -280,9 +298,48 @@ const Dashboard: React.FC = () => {
             <div className="max-w-[1600px] mx-auto">
               <Supplier />
             </div>
+          ) : activeTab === 'inventory' ? (
+            <div className="max-w-[1600px] mx-auto">
+              <Inventory />
+            </div>
+          ) : activeTab === 'receive' ? (
+            <div className="max-w-[1600px] mx-auto">
+              <Receive />
+            </div>
+          ) : activeTab === 'issue' ? (
+            <div className="max-w-[1600px] mx-auto">
+              <Issue />
+            </div>
+          ) : activeTab === 'tnx-report' ? (
+            <div className="max-w-[1600px] mx-auto">
+              <TnxReport />
+            </div>
+          ) : activeTab === 'mo-report' ? (
+            <div className="max-w-[1600px] mx-auto">
+              <MOReport />
+            </div>
+          ) : activeTab === 'item-list' ? (
+            <div className="max-w-[1600px] mx-auto">
+              <ItemList />
+            </div>
+          ) : activeTab === 'item-uom' ? (
+            <div className="max-w-[1600px] mx-auto">
+              <ItemUOM />
+            </div>
+          ) : activeTab === 'item-group' ? (
+            <div className="max-w-[1600px] mx-auto">
+              <ItemGroup />
+            </div>
+          ) : activeTab === 'item-type' ? (
+            <div className="max-w-[1600px] mx-auto">
+              <ItemType />
+            </div>
+          ) : activeTab === 'cost-center' ? (
+            <div className="max-w-[1600px] mx-auto">
+              <CostCenter />
+            </div>
           ) : activeTab === 'overview' ? (
             <div className="max-w-[1600px] mx-auto space-y-6">
-              
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 {[
                   { label: 'Today Order(Qty)', value: '0 (0)' },
@@ -298,126 +355,10 @@ const Dashboard: React.FC = () => {
                   </div>
                 ))}
               </div>
-
-              <div className="bg-white p-6 rounded shadow-sm border border-gray-100 max-w-sm">
-                <h3 className="text-base font-bold text-[#2d808e] mb-4 uppercase tracking-tighter">PR Approval</h3>
-                <div className="overflow-hidden border rounded border-gray-100">
-                  <table className="w-full text-[10px] text-left">
-                    <thead className="bg-gray-50 text-gray-500 font-black uppercase">
-                      <tr>
-                        <th className="px-4 py-3 border-b border-gray-100 tracking-tighter">Date</th>
-                        <th className="px-4 py-3 border-b border-gray-100 tracking-tighter">Ref.No</th>
-                        <th className="px-4 py-3 border-b border-gray-100 text-right tracking-tighter">Value</th>
-                      </tr>
-                    </thead>
-                    <tbody className="text-gray-600 font-bold">
-                      {pendingApprovals.map((pr, idx) => (
-                        <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-4 py-4">{pr.createdAt.split(' ')[0]}</td>
-                          <td className="px-4 py-4 text-blue-500 hover:underline cursor-pointer">{pr.PR}</td>
-                          <td className="px-4 py-4 text-right">{pr.value || 0}</td>
-                        </tr>
-                      ))}
-                      {pendingApprovals.length === 0 && (
-                        <tr><td colSpan={3} className="px-4 py-8 text-center text-gray-400 italic">No PRs pending approval</td></tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white p-8 rounded shadow-sm border border-gray-100">
-                   <h3 className="text-lg font-bold text-[#2d808e] mb-8">Weekly Order</h3>
-                   <div className="h-64 relative flex items-end justify-between px-12">
-                      <div className="absolute -left-2 top-0 bottom-8 flex flex-col justify-between text-[9px] text-gray-400 font-bold">
-                        {[700, 600, 500, 400, 300, 200, 100, 0].map(v => <span key={v}>{v}</span>)}
-                      </div>
-                      <div className="absolute inset-0 bottom-8 pointer-events-none flex flex-col justify-between px-12">
-                         {[1,2,3,4,5,6,7].map(i => <div key={i} className="w-full border-t border-gray-100 border-dashed"></div>)}
-                      </div>
-                      {['24-Sat', '25-Sun', '26-Mon', '27-Tue', '28-Wed', '29-Thu', '30-Fri'].map((day, i) => {
-                        const heights = [12, 18, 0, 0, 95, 52, 0];
-                        const colors = ['bg-[#e3f9a6]', 'bg-[#e3f9a6]', 'bg-gray-200', 'bg-gray-200', 'bg-[#0f172a]', 'bg-[#43a9bc]', 'bg-gray-200'];
-                        return (
-                          <div key={day} className="flex-1 flex flex-col items-center relative z-10 mx-2">
-                            <div style={{ height: `${heights[i]}%` }} className={`w-10 rounded-t-sm ${colors[i]}`}></div>
-                            <span className="text-[9px] mt-4 font-bold text-gray-400 whitespace-nowrap">{day}</span>
-                          </div>
-                        );
-                      })}
-                   </div>
-                </div>
-
-                <div className="bg-white p-8 rounded shadow-sm border border-gray-100">
-                   <h3 className="text-lg font-bold text-[#2d808e] mb-8">Monthly Order</h3>
-                   <div className="h-64 relative px-12">
-                      <div className="absolute -left-2 top-0 bottom-8 flex flex-col justify-between text-[9px] text-gray-400 font-bold">
-                        {[6000000, 5000000, 4000000, 3000000, 2000000, 1000000, 0].map(v => <span key={v}>{v} -</span>)}
-                      </div>
-                      <div className="absolute inset-0 bottom-8 pointer-events-none flex flex-col justify-between px-12">
-                         {[1,2,3,4,5,6].map(i => <div key={i} className="w-full border-t border-gray-100 border-dashed"></div>)}
-                      </div>
-                   </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                <div className="bg-white p-6 rounded shadow-sm border border-gray-100">
-                   <h3 className="text-lg font-bold text-[#2d808e] mb-6">Latest orders</h3>
-                   <div className="overflow-x-auto">
-                      <table className="w-full text-[11px] text-left">
-                         <thead className="bg-gray-50 text-gray-500 font-black uppercase">
-                            <tr className="border-b border-gray-100">
-                               <th className="px-3 py-3">#</th>
-                               <th className="px-3 py-3">Date</th>
-                               <th className="px-3 py-3">Tnx.No</th>
-                               <th className="px-3 py-3">Item Name</th>
-                               <th className="px-3 py-3 text-right">Qty</th>
-                            </tr>
-                         </thead>
-                         <tbody className="text-gray-600 font-medium">
-                            <tr className="border-b border-gray-50 hover:bg-gray-50/50">
-                               <td className="px-3 py-3">1</td>
-                               <td className="px-3 py-3">29-Jan-26</td>
-                               <td className="px-3 py-3 text-blue-500 font-bold">10385</td>
-                               <td className="px-3 py-3 uppercase text-[9px]">DIESEL</td>
-                               <td className="px-3 py-3 text-right">32</td>
-                            </tr>
-                         </tbody>
-                      </table>
-                   </div>
-                </div>
-
-                <div className="bg-white p-6 rounded shadow-sm border border-gray-100">
-                   <h3 className="text-lg font-bold text-[#2d808e] mb-6">Latest PR</h3>
-                   <div className="overflow-x-auto">
-                      <table className="w-full text-[11px] text-left">
-                         <thead className="bg-gray-50 text-gray-500 font-black uppercase">
-                            <tr className="border-b border-gray-100">
-                               <th className="px-3 py-3">#</th>
-                               <th className="px-3 py-3">Date</th>
-                               <th className="px-3 py-3">PR No</th>
-                               <th className="px-3 py-3">Requested By</th>
-                               <th className="px-3 py-3 text-right">Qty</th>
-                               <th className="px-3 py-3 text-right">Value</th>
-                            </tr>
-                         </thead>
-                         <tbody className="text-gray-600 font-medium">
-                            {requisitions.slice(0, 10).map((row, idx) => (
-                               <tr key={idx} className="border-b border-gray-50 hover:bg-gray-50/50">
-                                  <td className="px-3 py-3">{idx + 1}</td>
-                                  <td className="px-3 py-3 whitespace-nowrap">{row.createdAt.split(' ')[0]}</td>
-                                  <td className="px-3 py-3 text-blue-500 font-bold">{row.PR}</td>
-                                  <td className="px-3 py-3 font-bold uppercase text-[9px]">{row.reqBy}</td>
-                                  <td className="px-3 py-3 text-right">{row.reqQty}</td>
-                                  <td className="px-3 py-3 text-right">{row.value || 0}</td>
-                               </tr>
-                            ))}
-                         </tbody>
-                      </table>
-                   </div>
-                </div>
+              {/* Simplified overview for clarity */}
+              <div className="bg-white p-8 rounded shadow-sm border border-gray-100 text-center py-20 text-gray-400">
+                <Gauge size={48} className="mx-auto mb-4" />
+                <p>Welcome to ALIGN ERP Dashboard. Use the sidebar to navigate through modules.</p>
               </div>
             </div>
           ) : (
@@ -428,7 +369,7 @@ const Dashboard: React.FC = () => {
           )}
         </main>
 
-        {/* FIXED FOOTER - STICKY AT BOTTOM */}
+        {/* FIXED FOOTER */}
         <footer className="h-16 border-t border-gray-200 flex items-center justify-center bg-white px-6 shrink-0 sticky bottom-0 z-10">
            <div className="flex items-center space-x-6 text-[10px] uppercase font-bold tracking-[0.2em]">
               <p className="text-gray-500">All rights Reserved © ALIGN 2026</p>

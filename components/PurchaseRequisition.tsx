@@ -1,8 +1,18 @@
 import React, { useState, useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Home, FileSpreadsheet, History, Printer, Edit2, Filter, ChevronDown } from 'lucide-react';
+import { 
+  Home, 
+  FileSpreadsheet, 
+  History, 
+  Printer, 
+  Edit2, 
+  Filter, 
+  ChevronDown
+} from 'lucide-react';
 import NewPurchaseRequisition from './NewPurchaseRequisition';
 import * as XLSX from 'xlsx';
+import { useAuth } from '../context/AuthContext';
+import { Role } from '../types';
 
 interface PurchaseRequisitionProps {
   requisitions: any[];
@@ -10,7 +20,6 @@ interface PurchaseRequisitionProps {
 }
 
 const PrintTemplate: React.FC<{ pr: any }> = ({ pr }) => {
-  // Ensure we have a list of items to display
   const itemsList = pr.items || [{
     name: pr.name,
     sku: pr.SKU || pr.code,
@@ -28,20 +37,16 @@ const PrintTemplate: React.FC<{ pr: any }> = ({ pr }) => {
 
   return (
     <div className="p-8 bg-white text-black font-sans min-h-screen text-[10px]">
-      {/* Header Section */}
       <div className="relative flex flex-col items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Fair Technology Limited</h1>
         <p className="text-[10px] text-gray-600">Plot- 12/A & 12/B, Block-C, Kaliakoir Hi-Tech Park</p>
         <p className="text-[10px] text-gray-600">Gazipur, Bangladesh-1750. +#880 1787-670 786</p>
         <h2 className="text-sm font-bold mt-2 uppercase border-b-2 border-black inline-block px-4">PURCHASE REQUISITION FORM</h2>
-        
-        {/* QR Code Placeholder */}
         <div className="absolute top-0 right-0 border border-gray-300 p-1 w-16 h-16 flex items-center justify-center">
-           <img src="https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=PR-3000000018" alt="QR Code" className="w-full h-full" />
+           <img src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=PR-${pr.PR}`} alt="QR Code" className="w-full h-full" />
         </div>
       </div>
 
-      {/* Meta Information Grid */}
       <div className="grid grid-cols-3 gap-4 mb-4 border-t border-gray-100 pt-4">
         <div className="space-y-1">
           <p><span className="font-bold">PR No.:</span> {pr.PR} (Local)</p>
@@ -60,7 +65,6 @@ const PrintTemplate: React.FC<{ pr: any }> = ({ pr }) => {
         </div>
       </div>
 
-      {/* Main Items Table */}
       <div className="mb-4">
         <table className="w-full border-collapse border border-black text-[9px]">
           <thead>
@@ -73,7 +77,7 @@ const PrintTemplate: React.FC<{ pr: any }> = ({ pr }) => {
               <th className="border border-black py-1 px-1 w-10">UOM</th>
               <th className="border border-black py-1 px-1 text-center w-20">Unit Price (BDT)</th>
               <th className="border border-black py-1 px-1 text-center w-12">Req. Qty</th>
-              <th className="border border-black py-1 px-1 text-center w-24">Req. Value (BDT)</th>
+              <th className="border border-black py-1 px-1 text-right w-24">Req. Value (BDT)</th>
               <th className="border border-black py-1 px-1 text-center w-16">On-Hand Stock</th>
               <th className="border border-black py-1 px-1">Remarks</th>
             </tr>
@@ -106,23 +110,6 @@ const PrintTemplate: React.FC<{ pr: any }> = ({ pr }) => {
         </table>
       </div>
 
-      {/* Note Section */}
-      <div className="mb-6">
-        <div className="flex space-x-4 items-start">
-           <div className="flex-1">
-              <span className="font-bold block mb-1">Note:</span>
-              <div className="border border-gray-300 rounded p-2 h-16 w-full text-gray-400 italic">
-                {pr.note || 'No additional notes provided for this requisition.'}
-              </div>
-           </div>
-           <div className="w-24 h-24 border border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400">
-              <span className="text-xl">+</span>
-              <span className="text-[8px] font-bold">Upload</span>
-           </div>
-        </div>
-      </div>
-
-      {/* Signature Lines */}
       <div className="grid grid-cols-4 gap-4 mt-12 mb-8">
         <div className="text-center border-t border-black pt-1">
           <p className="font-bold">Prepared By</p>
@@ -130,57 +117,13 @@ const PrintTemplate: React.FC<{ pr: any }> = ({ pr }) => {
         </div>
         <div className="text-center border-t border-black pt-1">
           <p className="font-bold">Checked By</p>
-          <p className="text-[8px] text-gray-500 opacity-0">Placeholder</p>
         </div>
         <div className="text-center border-t border-black pt-1">
           <p className="font-bold">Confirmed By</p>
-          <p className="text-[8px] text-gray-500 opacity-0">Placeholder</p>
         </div>
         <div className="text-center border-t border-black pt-1">
           <p className="font-bold">Approved By</p>
-          <p className="text-[8px] text-gray-500 opacity-0">Placeholder</p>
         </div>
-      </div>
-
-      {/* Justification Table */}
-      <div className="mt-8">
-        <h3 className="font-bold mb-2 text-center uppercase tracking-tight">Justification of Purchase Requisition</h3>
-        <table className="w-full border-collapse border border-black text-[8px]">
-          <thead>
-            <tr className="bg-white font-bold">
-              <th className="border border-black py-1 px-1 text-center">Item Name</th>
-              <th className="border border-black py-1 px-1 text-center w-16">Last 6M Used</th>
-              <th className="border border-black py-1 px-1 text-center w-24">Consumption Rate</th>
-              <th className="border border-black py-1 px-1 text-center w-20">Stock in Hand [A]</th>
-              <th className="border border-black py-1 px-1 text-center w-20">Stock in Store [B]</th>
-              <th className="border border-black py-1 px-1 text-center w-20">Ordered Qty [C]</th>
-              <th className="border border-black py-1 px-1 text-center w-24">Total [D=A+B+C]</th>
-              <th className="border border-black py-1 px-1 text-center">Purpose</th>
-              <th className="border border-black py-1 px-1 text-center w-24">Approved Design [Y/N]</th>
-            </tr>
-          </thead>
-          <tbody>
-            {itemsList.map((item: any, idx: number) => (
-              <tr key={idx}>
-                <td className="border border-black py-1 px-1 font-bold">{item.name}</td>
-                <td className="border border-black py-1 px-1 text-center">{(Math.random() * 800).toFixed(0)}</td>
-                <td className="border border-black py-1 px-1 text-center"></td>
-                <td className="border border-black py-1 px-1 text-center">0</td>
-                <td className="border border-black py-1 px-1 text-center">{item.onHand || '0'}</td>
-                <td className="border border-black py-1 px-1 text-center">0</td>
-                <td className="border border-black py-1 px-1 text-center font-bold">{(Number(item.onHand || 0)).toFixed(2)}</td>
-                <td className="border border-black py-1 px-1"></td>
-                <td className="border border-black py-1 px-1"></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Print Page Footer */}
-      <div className="mt-8 pt-4 border-t border-gray-100 flex justify-between text-[7px] text-gray-400 font-bold uppercase tracking-widest">
-        <span>ALIGN ERP - GENERATED DOCUMENT</span>
-        <span>CONFIDENTIAL - FAIR TECHNOLOGY LIMITED</span>
       </div>
     </div>
   );
@@ -205,19 +148,10 @@ const PurchaseRequisition: React.FC<PurchaseRequisitionProps> = ({ requisitions,
 
   const handlePrint = (pr: any) => {
     const printSection = document.getElementById('print-section');
-    if (!printSection) {
-      console.error("Print section container not found in document.");
-      return;
-    }
-
-    // Clear previous print content
+    if (!printSection) return;
     printSection.innerHTML = '';
-    
-    // Create root and render Template
     const root = createRoot(printSection);
     root.render(<PrintTemplate pr={pr} />);
-
-    // Short delay to ensure React finishes rendering before print dialog
     setTimeout(() => {
       window.print();
     }, 600);
@@ -293,45 +227,45 @@ const PurchaseRequisition: React.FC<PurchaseRequisitionProps> = ({ requisitions,
         <div className="flex space-x-2">
           <button 
             onClick={handleExportExcel}
-            className="flex items-center space-x-1.5 border border-gray-300 bg-white px-3 py-1 rounded text-[12px] font-bold text-gray-700 hover:bg-gray-50 transition-all"
+            className="flex items-center space-x-1.5 border border-gray-300 bg-white px-4 py-1.5 rounded text-[12px] font-bold text-gray-700 hover:bg-gray-50 transition-all shadow-sm"
           >
             <FileSpreadsheet size={14} className="text-green-600" />
             <span>Excel</span>
           </button>
-          <button className="flex items-center space-x-1.5 border border-gray-300 bg-white px-3 py-1 rounded text-[12px] font-bold text-gray-700 hover:bg-gray-50 transition-all">
+          <button className="flex items-center space-x-1.5 border border-gray-300 bg-white px-4 py-1.5 rounded text-[12px] font-bold text-gray-700 hover:bg-gray-50 transition-all shadow-sm">
             <History size={14} className="text-gray-500" />
             <span>Logs</span>
           </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse min-w-[1200px]">
             <thead className="bg-[#fafbfc]">
-              <tr className="text-[11px] font-bold text-gray-700 uppercase tracking-tighter">
-                <th className="px-4 py-4 border-b border-gray-100 text-center w-12">SL</th>
-                <th className="px-4 py-4 border-b border-gray-100 text-center relative min-w-[120px]">
+              <tr className="text-[11px] font-bold text-gray-700 uppercase tracking-tighter border-b border-gray-100">
+                <th className="px-4 py-4 text-center w-12">SL</th>
+                <th className="px-4 py-4 text-center relative min-w-[120px]">
                   PR No
-                  <Filter size={10} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300" />
+                  <Filter size={10} className="inline-block ml-1 text-gray-300" />
                 </th>
-                <th className="px-4 py-4 border-b border-gray-100 text-center relative min-w-[120px]">
+                <th className="px-4 py-4 text-center relative min-w-[120px]">
                   SKU
-                  <Filter size={10} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300" />
+                  <Filter size={10} className="inline-block ml-1 text-gray-300" />
                 </th>
-                <th className="px-4 py-4 border-b border-gray-100 text-center min-w-[180px]">Name</th>
-                <th className="px-4 py-4 border-b border-gray-100 text-center w-20">Req. Qty</th>
-                <th className="px-4 py-4 border-b border-gray-100 text-center w-20">PO Qty</th>
-                <th className="px-4 py-4 border-b border-gray-100 text-center w-20">Rec. Qty</th>
-                <th className="px-4 py-4 border-b border-gray-100 text-center">Req. By</th>
-                <th className="px-4 py-4 border-b border-gray-100 text-center">Dept.</th>
-                <th className="px-4 py-4 border-b border-gray-100 text-center">Status</th>
-                <th className="px-4 py-4 border-b border-gray-100 text-center w-24">Action</th>
+                <th className="px-4 py-4 text-center min-w-[180px]">Name</th>
+                <th className="px-4 py-4 text-center w-20">Req. Qty</th>
+                <th className="px-4 py-4 text-center w-20">PO Qty</th>
+                <th className="px-4 py-4 text-center w-20">Rec. Qty</th>
+                <th className="px-4 py-4 text-center">Req. By</th>
+                <th className="px-4 py-4 text-center">Dept.</th>
+                <th className="px-4 py-4 text-center">Status</th>
+                <th className="px-4 py-4 text-center w-24">Action</th>
               </tr>
             </thead>
             <tbody className="text-[11px] text-gray-600 font-medium">
-              {filteredData.length > 0 ? filteredData.map((item, index) => (
-                <tr key={index} className="hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0">
+              {filteredData.map((item, index) => (
+                <tr key={index} className="hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 group">
                   <td className="px-4 py-3.5 text-center">{index + 1}</td>
                   <td className="px-4 py-3.5 text-center text-blue-500 font-bold">{item.PR}</td>
                   <td className="px-4 py-3.5 text-center">{item.SKU}</td>
@@ -343,30 +277,34 @@ const PurchaseRequisition: React.FC<PurchaseRequisitionProps> = ({ requisitions,
                   <td className="px-4 py-3.5 text-center">{item.reqDpt}</td>
                   <td className="px-4 py-3.5 text-center">
                     <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
-                      item.status === 'Approved' ? 'bg-green-100 text-green-700' : 
-                      item.status === 'Checked' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
+                      item.status === 'Approved' ? 'bg-green-100 text-green-700 border border-green-200' : 
+                      item.status === 'Checked' ? 'bg-blue-100 text-blue-700 border border-blue-200' : 
+                      'bg-orange-100 text-orange-700 border border-orange-200'
                     }`}>
-                      {item.status.replace('-', ' ')}
+                      {item.status}
                     </span>
                   </td>
                   <td className="px-4 py-3.5 text-center">
-                    <div className="flex items-center justify-center space-x-2">
+                    <div className="flex items-center justify-center space-x-1.5">
                       <button 
                         onClick={() => handlePrint(item)}
-                        className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 border border-gray-200 rounded transition-all"
+                        className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 border border-gray-100 rounded transition-all"
+                        title="Print"
                       >
                         <Printer size={12} />
                       </button>
                       <button 
                         onClick={() => handleEdit(item)}
-                        className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 border border-gray-200 rounded transition-all"
+                        className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 border border-gray-100 rounded transition-all"
+                        title="Edit"
                       >
                         <Edit2 size={12} />
                       </button>
                     </div>
                   </td>
                 </tr>
-              )) : (
+              ))}
+              {filteredData.length === 0 && (
                 <tr>
                   <td colSpan={11} className="py-20 text-center text-gray-400 italic">No requisition found for the selected month.</td>
                 </tr>
