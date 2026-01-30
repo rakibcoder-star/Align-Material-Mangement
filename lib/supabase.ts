@@ -1,11 +1,14 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-// In Vite, environment variables must be prefixed with VITE_ to be accessible
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL 
+// Safe access to environment variables to prevent "Cannot read properties of undefined" errors.
+// In Vite, these are injected at build/dev time. If missing, we fall back to defaults.
+const env = (import.meta as any).env || {};
+
+const supabaseUrl = env.VITE_SUPABASE_URL 
   || 'https://rwzzmixgxvazvxpvkygv.supabase.co';
 
-const supabaseKey = import.meta.env.VITE_SUPABASE_KEY 
+const supabaseKey = env.VITE_SUPABASE_KEY 
   || 'sb_publishable_pAf8uLK2cT-Vg9sEHgKJ_Q_EnPZVdqu';
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
