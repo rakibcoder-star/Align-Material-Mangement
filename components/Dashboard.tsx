@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -18,6 +19,10 @@ import ItemUOM from './ItemUOM';
 import ItemGroup from './ItemGroup';
 import ItemType from './ItemType';
 import CostCenter from './CostCenter';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+  PieChart, Pie, Cell, AreaChart, Area, Legend
+} from 'recharts';
 import { 
   Gauge, 
   ShoppingCart, 
@@ -43,7 +48,13 @@ import {
   ShoppingBag,
   Truck,
   BarChart3,
-  X
+  X,
+  TrendingUp,
+  AlertTriangle,
+  Package,
+  Activity,
+  Plus,
+  History
 } from 'lucide-react';
 
 const SidebarItem: React.FC<{ 
@@ -108,30 +119,203 @@ const SubmenuItem: React.FC<{
   </button>
 );
 
-const DashboardOverview: React.FC = () => (
-  <div className="space-y-4 md:space-y-6">
-    <div className="grid grid-cols-2 lg:grid-cols-6 gap-2 md:gap-4">
-      {[
-        { label: 'Today Order', value: '0' },
-        { label: 'Lastday Order', value: '338K' },
-        { label: 'Weekly Order', value: '1.2M' },
-        { label: 'Monthly Order', value: '5.7M' },
-        { label: 'Weekly PR', value: '94K' },
-        { label: 'Monthly PR', value: '578K' },
-      ].map((stat, i) => (
-        <div key={i} className="bg-white p-3 md:p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col justify-center transition-all hover:shadow-md">
-          <span className="text-[8px] md:text-[9px] text-gray-400 font-bold uppercase mb-1">{stat.label}</span>
-          <span className="text-sm md:text-xl font-bold text-red-500 tracking-tight">{stat.value}</span>
-        </div>
-      ))}
+const KPICard: React.FC<{ label: string; value: string; icon: React.ReactNode; trend?: string; trendUp?: boolean; color: string }> = ({ label, value, icon, trend, trendUp, color }) => (
+  <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between hover:shadow-md transition-all">
+    <div className="flex justify-between items-start mb-2">
+      <div className={`p-2 rounded-lg ${color} bg-opacity-10 text-${color.split('-')[1]}-600`}>
+        {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { size: 20 }) : icon}
+      </div>
+      {trend && (
+        <span className={`text-[10px] font-bold flex items-center ${trendUp ? 'text-green-500' : 'text-red-500'}`}>
+          {trendUp ? <TrendingUp size={10} className="mr-0.5" /> : null}
+          {trend}
+        </span>
+      )}
     </div>
-    <div className="bg-white p-8 md:p-24 rounded-lg shadow-sm border border-gray-100 text-center text-gray-400 flex flex-col items-center">
-      <Gauge size={40} className="mb-4 text-[#2d808e]/20" />
-      <h3 className="text-sm md:text-lg font-bold text-gray-800 mb-2">System Dashboard Overview</h3>
-      <p className="text-[10px] md:text-sm max-w-sm">Navigate through the left menu to manage Purchase Requisitions, Orders, Inventory, and view analytical reports.</p>
+    <div>
+      <h3 className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{label}</h3>
+      <p className="text-xl font-black text-gray-800 tracking-tight">{value}</p>
     </div>
   </div>
 );
+
+const DashboardOverview: React.FC = () => {
+  // Mock data for visualizations
+  const purchaseData = [
+    { month: 'Jan', value: 450000 },
+    { month: 'Feb', value: 380000 },
+    { month: 'Mar', value: 520000 },
+    { month: 'Apr', value: 480000 },
+    { month: 'May', value: 610000 },
+    { month: 'Jun', value: 750000 },
+  ];
+
+  const categoryData = [
+    { name: 'Spare Parts', value: 400 },
+    { name: 'Consumables', value: 300 },
+    { name: 'Admin Supplies', value: 150 },
+    { name: 'Tools', value: 100 },
+  ];
+
+  const flowData = [
+    { day: '01', pr: 12, po: 8 },
+    { day: '05', pr: 18, po: 14 },
+    { day: '10', pr: 15, po: 15 },
+    { day: '15', pr: 22, po: 18 },
+    { day: '20', pr: 30, po: 25 },
+    { day: '25', pr: 25, po: 22 },
+    { day: '30', pr: 28, po: 26 },
+  ];
+
+  const PIE_COLORS = ['#2d808e', '#17a2b8', '#6c757d', '#dc3545'];
+
+  return (
+    <div className="space-y-6">
+      {/* Top Row KPIs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <KPICard label="Open Requisitions" value="42" icon={<ClipboardList />} trend="+12%" trendUp color="bg-blue-500" />
+        <KPICard label="PO Value (MTD)" value="৳750,000" icon={<ShoppingBag />} trend="+8.5%" trendUp color="bg-emerald-500" />
+        <KPICard label="Low Stock Alerts" value="15" icon={<AlertTriangle />} trend="-3" trendUp={false} color="bg-red-500" />
+        <KPICard label="Active Suppliers" value="128" icon={<Truck />} color="bg-indigo-500" />
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Bar Chart */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-sm font-bold text-gray-700 flex items-center">
+              <BarChart3 size={16} className="mr-2 text-[#2d808e]" />
+              Monthly Procurement Spend (BDT)
+            </h3>
+            <select className="text-[10px] font-bold border rounded p-1 outline-none text-gray-400">
+              <option>Last 6 Months</option>
+              <option>Full Year</option>
+            </select>
+          </div>
+          <div className="h-[250px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={purchaseData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f5f5f5" />
+                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 600 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 600 }} tickFormatter={(val) => `${val/1000}k`} />
+                <Tooltip 
+                  cursor={{ fill: '#f8fafc' }}
+                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                />
+                <Bar dataKey="value" fill="#2d808e" radius={[4, 4, 0, 0]} barSize={40} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Pie Chart */}
+        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+          <h3 className="text-sm font-bold text-gray-700 mb-6 flex items-center">
+            <Layers size={16} className="mr-2 text-[#2d808e]" />
+            Item Composition
+          </h3>
+          <div className="h-[200px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={categoryData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {categoryData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="mt-4 space-y-2">
+            {categoryData.map((item, i) => (
+              <div key={i} className="flex justify-between items-center text-[10px]">
+                <div className="flex items-center">
+                  <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: PIE_COLORS[i] }}></div>
+                  <span className="text-gray-500 font-medium">{item.name}</span>
+                </div>
+                <span className="font-bold text-gray-800">{item.value} units</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-6">
+        {/* Fulfillment Flow Chart */}
+        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+          <h3 className="text-sm font-bold text-gray-700 mb-6 flex items-center">
+            <Activity size={16} className="mr-2 text-[#2d808e]" />
+            PR vs. PO Fulfillment Trend
+          </h3>
+          <div className="h-[200px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={flowData}>
+                <defs>
+                  <linearGradient id="colorPr" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#2d808e" stopOpacity={0.1}/>
+                    <stop offset="95%" stopColor="#2d808e" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
+                <Tooltip />
+                <Area type="monotone" dataKey="pr" stroke="#2d808e" fillOpacity={1} fill="url(#colorPr)" strokeWidth={3} />
+                <Area type="monotone" dataKey="po" stroke="#17a2b8" fillOpacity={0} strokeWidth={2} strokeDasharray="5 5" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex justify-center space-x-6 mt-4">
+            <div className="flex items-center text-[10px] font-bold text-gray-500">
+              <div className="w-3 h-0.5 bg-[#2d808e] mr-2"></div>
+              Requisitions Created
+            </div>
+            <div className="flex items-center text-[10px] font-bold text-gray-500">
+              <div className="w-3 h-0.5 bg-[#17a2b8] border-dashed border-t mr-2"></div>
+              Orders Fulfilled
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Activities */}
+        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+          <h3 className="text-sm font-bold text-gray-700 mb-4 flex items-center">
+            <History size={16} className="mr-2 text-[#2d808e]" />
+            Recent Platform Activity
+          </h3>
+          <div className="flex-1 space-y-4 overflow-y-auto pr-2 scrollbar-thin">
+            {[
+              { user: 'Rakib H', action: 'Approved PO-400012', time: '12 mins ago', icon: <CheckCircle2 className="text-green-500" /> },
+              { user: 'Azizul H', action: 'Received Stock for SKU-310', time: '45 mins ago', icon: <Package className="text-blue-500" /> },
+              { user: 'Sohel Rana', action: 'Created PR-300055', time: '2 hours ago', icon: <Plus className="text-[#2d808e]" /> },
+              { user: 'System', action: 'Low stock alert for A4 Paper', time: '5 hours ago', icon: <AlertTriangle className="text-red-500" /> },
+              { user: 'Rakib H', action: 'New Supplier Added: NSR Ltd', time: '1 day ago', icon: <Truck className="text-indigo-500" /> },
+            ].map((activity, i) => (
+              <div key={i} className="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors border-l-4 border-transparent hover:border-[#2d808e]">
+                <div className="mr-4 bg-white p-2 rounded-full shadow-sm border border-gray-50">
+                  {React.isValidElement(activity.icon) ? React.cloneElement(activity.icon as React.ReactElement, { size: 14 }) : activity.icon}
+                </div>
+                <div className="flex-1">
+                  <p className="text-[11px] font-bold text-gray-800">{activity.action}</p>
+                  <p className="text-[9px] text-gray-400 uppercase tracking-tighter">{activity.user} • {activity.time}</p>
+                </div>
+                <ChevronRight size={14} className="text-gray-200" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Dashboard: React.FC = () => {
   const { user, logout, hasPermission } = useAuth();
@@ -289,7 +473,7 @@ const Dashboard: React.FC = () => {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-3 md:p-6 bg-[#f1f3f4] pb-24">
+        <main className="flex-1 overflow-y-auto p-3 md:p-6 bg-[#f1f3f4] pb-10">
           <div className="max-w-[1600px] mx-auto w-full">
             <Routes>
               <Route path="/overview" element={<DashboardOverview />} />
