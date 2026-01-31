@@ -62,23 +62,23 @@ const SidebarItem: React.FC<{
       <button
         onClick={onClick}
         title={isCollapsed ? label : ''}
-        className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} px-2.5 py-2 text-sm transition-all duration-200 ${
+        className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} px-2 py-2 text-sm transition-all duration-200 ${
           active 
             ? 'text-[#2d808e] bg-[#d1e0e2] font-semibold border border-[#2d808e] rounded-lg' 
             : danger 
               ? 'text-red-500 hover:bg-red-50' 
               : 'text-gray-600 hover:bg-gray-50'
-        } ${active ? 'mx-1.5 w-[calc(100%-12px)]' : ''}`}
+        } ${active ? 'mx-1 w-[calc(100%-8px)]' : ''}`}
       >
         <div className="flex items-center space-x-2">
           <div className={`${active ? 'text-[#2d808e]' : danger ? 'text-red-400' : 'text-gray-500'} shrink-0`}>
-            {React.cloneElement(icon as React.ReactElement, { size: 16 })}
+            {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { size: 15 }) : icon}
           </div>
-          {!isCollapsed && <span className="text-[11.5px] leading-tight tracking-tight whitespace-nowrap overflow-hidden">{label}</span>}
+          {!isCollapsed && <span className="text-[11px] leading-tight tracking-tight whitespace-nowrap overflow-hidden">{label}</span>}
         </div>
         {!isCollapsed && hasSubmenu && (
           <div className="text-gray-400 shrink-0 ml-1">
-            {isOpen ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
+            {isOpen ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
           </div>
         )}
       </button>
@@ -95,14 +95,14 @@ const SubmenuItem: React.FC<{
 }> = ({ icon, label, active, onClick }) => (
   <button
     onClick={onClick}
-    className={`w-full flex items-center space-x-2 pl-7 pr-2 py-1.5 text-[11.5px] transition-all duration-200 ${
+    className={`w-full flex items-center space-x-2 pl-6 pr-1.5 py-1.5 text-[11px] transition-all duration-200 ${
       active 
-        ? 'text-[#2d808e] bg-[#d1e0e2] font-semibold border border-[#2d808e] rounded-lg mx-1.5 w-[calc(100%-12px)]' 
+        ? 'text-[#2d808e] bg-[#d1e0e2] font-semibold border border-[#2d808e] rounded-lg mx-1 w-[calc(100%-8px)]' 
         : 'text-gray-600 hover:bg-gray-50'
     }`}
   >
     <div className={`${active ? 'text-[#2d808e]' : 'text-gray-400'} shrink-0`}>
-      {React.cloneElement(icon as React.ReactElement, { size: 13 })}
+      {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { size: 12 }) : icon}
     </div>
     <span className="truncate tracking-tight">{label}</span>
   </button>
@@ -160,11 +160,11 @@ const Dashboard: React.FC = () => {
         />
       )}
 
-      {/* SIDEBAR - Width reduced further to md:w-44 from md:w-52 */}
+      {/* SIDEBAR - Width further reduced to md:w-40 (160px) */}
       <aside className={`
         fixed inset-y-0 left-0 z-50 transform md:relative md:translate-x-0 transition-all duration-300 ease-in-out
-        ${isMobileMenuOpen ? 'translate-x-0 w-[200px]' : '-translate-x-full md:translate-x-0'}
-        ${isSidebarCollapsed && !isMobileMenuOpen ? 'md:w-16' : 'md:w-44'}
+        ${isMobileMenuOpen ? 'translate-x-0 w-[190px]' : '-translate-x-full md:translate-x-0'}
+        ${isSidebarCollapsed && !isMobileMenuOpen ? 'md:w-16' : 'md:w-40'}
         bg-white border-r border-gray-200 flex flex-col h-full shadow-sm shrink-0
       `}>
         <div className="flex justify-between items-center p-3 md:hidden border-b border-gray-100 mb-2">
@@ -175,18 +175,18 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div className={`pt-4 pb-3 px-2 flex flex-col items-center space-y-2 ${isSidebarCollapsed && !isMobileMenuOpen ? 'md:px-0' : ''}`}>
-          <div className={`${isSidebarCollapsed && !isMobileMenuOpen ? 'w-9 h-9' : 'w-14 h-14'} rounded-full bg-[#e2eff1] flex items-center justify-center transition-all duration-300 shadow-inner shrink-0`}>
-            <UserIcon size={isSidebarCollapsed && !isMobileMenuOpen ? 16 : 28} className="text-[#2d808e]" strokeWidth={1.5} />
+          <div className={`${isSidebarCollapsed && !isMobileMenuOpen ? 'w-9 h-9' : 'w-12 h-12'} rounded-full bg-[#e2eff1] flex items-center justify-center transition-all duration-300 shadow-inner shrink-0`}>
+            <UserIcon size={isSidebarCollapsed && !isMobileMenuOpen ? 16 : 24} className="text-[#2d808e]" strokeWidth={1.5} />
           </div>
           {(!isSidebarCollapsed || isMobileMenuOpen) && (
             <div className="text-center overflow-hidden w-full px-1">
-              <span className="text-[11px] font-bold text-[#2d808e] block truncate uppercase tracking-tight">{user.email.split('@')[0]}</span>
-              <span className="text-[8px] text-gray-400 font-bold uppercase tracking-widest">{user.role}</span>
+              <span className="text-[10px] font-bold text-[#2d808e] block truncate uppercase tracking-tight">{user.email.split('@')[0]}</span>
+              <span className="text-[7px] text-gray-400 font-bold uppercase tracking-widest">{user.role}</span>
             </div>
           )}
         </div>
 
-        <div className="flex-1 py-2 overflow-y-auto overflow-x-hidden space-y-0.5 scrollbar-thin">
+        <div className="flex-1 py-1.5 overflow-y-auto overflow-x-hidden space-y-0.5 scrollbar-thin">
           <SidebarItem icon={<Gauge />} label="Dashboard" active={activeTab === 'overview'} isCollapsed={isSidebarCollapsed && !isMobileMenuOpen} onClick={() => handleTabChange('overview')} />
 
           <SidebarItem icon={<ShoppingCart />} label="Purchase" hasSubmenu isCollapsed={isSidebarCollapsed && !isMobileMenuOpen} isOpen={openMenus.purchase} onClick={() => toggleMenu('purchase')}>
