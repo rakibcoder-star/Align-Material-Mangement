@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -318,7 +317,7 @@ const Dashboard: React.FC = () => {
            <div className="flex flex-col md:flex-row items-center md:space-x-4 text-[8px] md:text-[9px] font-bold uppercase tracking-widest text-center">
               <p className="text-gray-500">All rights Reserved © ALIGN 2026</p>
               <div className="hidden md:block w-1 h-1 bg-[#2d808e]/20 rounded-full"></div>
-              <p className="text-gray-400">Developed by <span className="text-[#2d808e] font-black">Al Amin ET</span></p>
+              <p className="text-gray-400">Developed by <a href="https://github.com/rakibcoder-star" target="_blank" rel="noopener noreferrer" className="text-[#2d808e] font-black hover:underline">RAKIB H SHUVO</a></p>
            </div>
         </footer>
       </div>
