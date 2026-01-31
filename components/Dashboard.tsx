@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import UserManagement from './UserManagement';
 import MoveOrderModal from './MoveOrderModal';
@@ -108,18 +109,46 @@ const SubmenuItem: React.FC<{
   </button>
 );
 
+const DashboardOverview: React.FC = () => (
+  <div className="space-y-4 md:space-y-6">
+    <div className="grid grid-cols-2 lg:grid-cols-6 gap-2 md:gap-4">
+      {[
+        { label: 'Today Order', value: '0' },
+        { label: 'Lastday Order', value: '338K' },
+        { label: 'Weekly Order', value: '1.2M' },
+        { label: 'Monthly Order', value: '5.7M' },
+        { label: 'Weekly PR', value: '94K' },
+        { label: 'Monthly PR', value: '578K' },
+      ].map((stat, i) => (
+        <div key={i} className="bg-white p-3 md:p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col justify-center transition-all hover:shadow-md">
+          <span className="text-[8px] md:text-[9px] text-gray-400 font-bold uppercase mb-1">{stat.label}</span>
+          <span className="text-sm md:text-xl font-bold text-red-500 tracking-tight">{stat.value}</span>
+        </div>
+      ))}
+    </div>
+    <div className="bg-white p-8 md:p-24 rounded-lg shadow-sm border border-gray-100 text-center text-gray-400 flex flex-col items-center">
+      <Gauge size={40} className="mb-4 text-[#2d808e]/20" />
+      <h3 className="text-sm md:text-lg font-bold text-gray-800 mb-2">System Dashboard Overview</h3>
+      <p className="text-[10px] md:text-sm max-w-sm">Navigate through the left menu to manage Purchase Requisitions, Orders, Inventory, and view analytical reports.</p>
+    </div>
+  </div>
+);
+
 const Dashboard: React.FC = () => {
   const { user, logout, hasPermission } = useAuth();
-  const [activeTab, setActiveTab] = useState<string>('overview');
+  const navigate = useNavigate();
+  const location = useLocation();
+  const activeTab = location.pathname.substring(1) || 'overview';
+
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMoveOrderModalOpen, setIsMoveOrderModalOpen] = useState(false);
   const [isStockStatusModalOpen, setIsStockStatusModalOpen] = useState(false);
   
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
-    purchase: false,
-    warehouse: false,
-    itemMaster: false
+    purchase: location.pathname.includes('requisition') || location.pathname.includes('purchase-order') || location.pathname.includes('supplier') || location.pathname.includes('purchase-report'),
+    warehouse: location.pathname.includes('inventory') || location.pathname.includes('receive') || location.pathname.includes('issue') || location.pathname.includes('tnx-report') || location.pathname.includes('mo-report'),
+    itemMaster: location.pathname.includes('item-list') || location.pathname.includes('item-uom') || location.pathname.includes('item-group') || location.pathname.includes('item-type') || location.pathname.includes('cost-center')
   });
 
   useEffect(() => {
@@ -141,8 +170,8 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
+  const handleNav = (path: string) => {
+    navigate(path);
     if (window.innerWidth < 768) {
       setIsMobileMenuOpen(false);
     }
@@ -160,7 +189,7 @@ const Dashboard: React.FC = () => {
         />
       )}
 
-      {/* SIDEBAR - Width further reduced to md:w-40 (160px) */}
+      {/* SIDEBAR */}
       <aside className={`
         fixed inset-y-0 left-0 z-50 transform md:relative md:translate-x-0 transition-all duration-300 ease-in-out
         ${isMobileMenuOpen ? 'translate-x-0 w-[190px]' : '-translate-x-full md:translate-x-0'}
@@ -168,7 +197,7 @@ const Dashboard: React.FC = () => {
         bg-white border-r border-gray-200 flex flex-col h-full shadow-sm shrink-0
       `}>
         <div className="flex justify-between items-center p-3 md:hidden border-b border-gray-100 mb-2">
-          <button onClick={() => handleTabChange('overview')} className="text-lg font-black text-[#2d808e] tracking-tighter">ALIGN</button>
+          <button onClick={() => handleNav('/overview')} className="text-lg font-black text-[#2d808e] tracking-tighter">ALIGN</button>
           <button onClick={() => setIsMobileMenuOpen(false)} className="p-1.5 text-gray-400 hover:text-gray-600 focus:outline-none">
             <X size={18} />
           </button>
@@ -187,39 +216,39 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div className="flex-1 py-1.5 overflow-y-auto overflow-x-hidden space-y-0.5 scrollbar-thin">
-          <SidebarItem icon={<Gauge />} label="Dashboard" active={activeTab === 'overview'} isCollapsed={isSidebarCollapsed && !isMobileMenuOpen} onClick={() => handleTabChange('overview')} />
+          <SidebarItem icon={<Gauge />} label="Dashboard" active={activeTab === 'overview'} isCollapsed={isSidebarCollapsed && !isMobileMenuOpen} onClick={() => handleNav('/overview')} />
 
           <SidebarItem icon={<ShoppingCart />} label="Purchase" hasSubmenu isCollapsed={isSidebarCollapsed && !isMobileMenuOpen} isOpen={openMenus.purchase} onClick={() => toggleMenu('purchase')}>
             <div className="space-y-0.5">
-              <SubmenuItem icon={<ClipboardList />} label="Requisition" active={activeTab === 'requisition'} onClick={() => handleTabChange('requisition')} />
-              <SubmenuItem icon={<ShoppingBag />} label="Order" active={activeTab === 'purchase-order'} onClick={() => handleTabChange('purchase-order')} />
-              <SubmenuItem icon={<Truck />} label="Supplier" active={activeTab === 'supplier'} onClick={() => handleTabChange('supplier')} />
-              <SubmenuItem icon={<BarChart3 />} label="Report" active={activeTab === 'purchase-report'} onClick={() => handleTabChange('purchase-report')} />
+              <SubmenuItem icon={<ClipboardList />} label="Requisition" active={activeTab === 'requisition'} onClick={() => handleNav('/requisition')} />
+              <SubmenuItem icon={<ShoppingBag />} label="Order" active={activeTab === 'purchase-order'} onClick={() => handleNav('/purchase-order')} />
+              <SubmenuItem icon={<Truck />} label="Supplier" active={activeTab === 'supplier'} onClick={() => handleNav('/supplier')} />
+              <SubmenuItem icon={<BarChart3 />} label="Report" active={activeTab === 'purchase-report'} onClick={() => handleNav('/purchase-report')} />
             </div>
           </SidebarItem>
 
           <SidebarItem icon={<Warehouse />} label="Warehouse" hasSubmenu isCollapsed={isSidebarCollapsed && !isMobileMenuOpen} isOpen={openMenus.warehouse} onClick={() => toggleMenu('warehouse')}>
             <div className="space-y-0.5">
-              <SubmenuItem icon={<LayoutGrid />} label="Inventory" active={activeTab === 'inventory'} onClick={() => handleTabChange('inventory')} />
-              <SubmenuItem icon={<ArrowRight />} label="Receive" active={activeTab === 'receive'} onClick={() => handleTabChange('receive')} />
-              <SubmenuItem icon={<ArrowLeft />} label="Issue" active={activeTab === 'issue'} onClick={() => handleTabChange('issue')} />
-              <SubmenuItem icon={<FileText />} label="Tnx-Report" active={activeTab === 'tnx-report'} onClick={() => handleTabChange('tnx-report')} />
-              <SubmenuItem icon={<FileText />} label="MO-Report" active={activeTab === 'mo-report'} onClick={() => handleTabChange('mo-report')} />
+              <SubmenuItem icon={<LayoutGrid />} label="Inventory" active={activeTab === 'inventory'} onClick={() => handleNav('/inventory')} />
+              <SubmenuItem icon={<ArrowRight />} label="Receive" active={activeTab === 'receive'} onClick={() => handleNav('/receive')} />
+              <SubmenuItem icon={<ArrowLeft />} label="Issue" active={activeTab === 'issue'} onClick={() => handleNav('/issue')} />
+              <SubmenuItem icon={<FileText />} label="Tnx-Report" active={activeTab === 'tnx-report'} onClick={() => handleNav('/tnx-report')} />
+              <SubmenuItem icon={<FileText />} label="MO-Report" active={activeTab === 'mo-report'} onClick={() => handleNav('/mo-report')} />
             </div>
           </SidebarItem>
 
           <SidebarItem icon={<LayoutGrid />} label="Item Master" hasSubmenu isCollapsed={isSidebarCollapsed && !isMobileMenuOpen} isOpen={openMenus.itemMaster} onClick={() => toggleMenu('itemMaster')}>
             <div className="space-y-0.5">
-              <SubmenuItem icon={<FileText />} label="Item List" active={activeTab === 'item-list'} onClick={() => handleTabChange('item-list')} />
-              <SubmenuItem icon={<Boxes />} label="Item UOM" active={activeTab === 'item-uom'} onClick={() => handleTabChange('item-uom')} />
-              <SubmenuItem icon={<Layers />} label="Item Group" active={activeTab === 'item-group'} onClick={() => handleTabChange('item-group')} />
-              <SubmenuItem icon={<Tag />} label="Item Type" active={activeTab === 'item-type'} onClick={() => handleTabChange('item-type')} />
-              <SubmenuItem icon={<Home />} label="Cost Center" active={activeTab === 'cost-center'} onClick={() => handleTabChange('cost-center')} />
+              <SubmenuItem icon={<FileText />} label="Item List" active={activeTab === 'item-list'} onClick={() => handleNav('/item-list')} />
+              <SubmenuItem icon={<Boxes />} label="Item UOM" active={activeTab === 'item-uom'} onClick={() => handleNav('/item-uom')} />
+              <SubmenuItem icon={<Layers />} label="Item Group" active={activeTab === 'item-group'} onClick={() => handleNav('/item-group')} />
+              <SubmenuItem icon={<Tag />} label="Item Type" active={activeTab === 'item-type'} onClick={() => handleNav('/item-type')} />
+              <SubmenuItem icon={<Home />} label="Cost Center" active={activeTab === 'cost-center'} onClick={() => handleNav('/cost-center')} />
             </div>
           </SidebarItem>
 
           {hasPermission('manage_users') && (
-            <SidebarItem icon={<UserIcon />} label="Users" active={activeTab === 'users'} isCollapsed={isSidebarCollapsed && !isMobileMenuOpen} onClick={() => handleTabChange('users')} />
+            <SidebarItem icon={<UserIcon />} label="Users" active={activeTab === 'users'} isCollapsed={isSidebarCollapsed && !isMobileMenuOpen} onClick={() => handleNav('/users')} />
           )}
         </div>
 
@@ -235,7 +264,7 @@ const Dashboard: React.FC = () => {
             <button onClick={() => window.innerWidth < 768 ? setIsMobileMenuOpen(true) : setIsSidebarCollapsed(!isSidebarCollapsed)} className="p-1.5 hover:bg-gray-100 rounded-md transition-colors text-[#2d808e] focus:outline-none">
               <Menu size={18} />
             </button>
-            <button onClick={() => handleTabChange('overview')} className="text-lg md:text-2xl font-black text-gray-800 tracking-tighter hover:text-[#2d808e] transition-colors">ALIGN</button>
+            <button onClick={() => handleNav('/overview')} className="text-lg md:text-2xl font-black text-gray-800 tracking-tighter hover:text-[#2d808e] transition-colors">ALIGN</button>
           </div>
           
           <div className="flex-1 max-w-xs px-2 hidden lg:block">
@@ -263,65 +292,25 @@ const Dashboard: React.FC = () => {
 
         <main className="flex-1 overflow-y-auto p-3 md:p-6 bg-[#f1f3f4] pb-24">
           <div className="max-w-[1600px] mx-auto w-full">
-            {activeTab === 'users' ? (
-              <UserManagement />
-            ) : activeTab === 'requisition' ? (
-              <PurchaseRequisition requisitions={[]} setRequisitions={() => {}} />
-            ) : activeTab === 'purchase-order' ? (
-              <PurchaseOrder orders={[]} />
-            ) : activeTab === 'supplier' ? (
-              <Supplier />
-            ) : activeTab === 'purchase-report' ? (
-              <PurchaseReport />
-            ) : activeTab === 'inventory' ? (
-              <Inventory />
-            ) : activeTab === 'receive' ? (
-              <Receive />
-            ) : activeTab === 'issue' ? (
-              <Issue />
-            ) : activeTab === 'tnx-report' ? (
-              <TnxReport />
-            ) : activeTab === 'mo-report' ? (
-              <MOReport />
-            ) : activeTab === 'item-list' ? (
-              <ItemList />
-            ) : activeTab === 'item-uom' ? (
-              <ItemUOM />
-            ) : activeTab === 'item-group' ? (
-              <ItemGroup />
-            ) : activeTab === 'item-type' ? (
-              <ItemType />
-            ) : activeTab === 'cost-center' ? (
-              <CostCenter />
-            ) : activeTab === 'overview' ? (
-              <div className="space-y-4 md:space-y-6">
-                <div className="grid grid-cols-2 lg:grid-cols-6 gap-2 md:gap-4">
-                  {[
-                    { label: 'Today Order', value: '0' },
-                    { label: 'Lastday Order', value: '338K' },
-                    { label: 'Weekly Order', value: '1.2M' },
-                    { label: 'Monthly Order', value: '5.7M' },
-                    { label: 'Weekly PR', value: '94K' },
-                    { label: 'Monthly PR', value: '578K' },
-                  ].map((stat, i) => (
-                    <div key={i} className="bg-white p-3 md:p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col justify-center transition-all hover:shadow-md">
-                      <span className="text-[8px] md:text-[9px] text-gray-400 font-bold uppercase mb-1">{stat.label}</span>
-                      <span className="text-sm md:text-xl font-bold text-red-500 tracking-tight">{stat.value}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="bg-white p-8 md:p-24 rounded-lg shadow-sm border border-gray-100 text-center text-gray-400 flex flex-col items-center">
-                  <Gauge size={40} className="mb-4 text-[#2d808e]/20" />
-                  <h3 className="text-sm md:text-lg font-bold text-gray-800 mb-2">System Dashboard Overview</h3>
-                  <p className="text-[10px] md:text-sm max-w-sm">Navigate through the left menu to manage Purchase Requisitions, Orders, Inventory, and view analytical reports.</p>
-                </div>
-              </div>
-            ) : (
-               <div className="flex flex-col items-center justify-center h-64 text-gray-300">
-                  <FileText size={48} strokeWidth={1} />
-                  <p className="mt-4 text-[11px] font-bold uppercase tracking-widest">{activeTab.replace('-', ' ')} module</p>
-               </div>
-            )}
+            <Routes>
+              <Route path="/overview" element={<DashboardOverview />} />
+              <Route path="/users" element={hasPermission('manage_users') ? <UserManagement /> : <Navigate to="/overview" />} />
+              <Route path="/requisition" element={<PurchaseRequisition requisitions={[]} setRequisitions={() => {}} />} />
+              <Route path="/purchase-order" element={<PurchaseOrder orders={[]} />} />
+              <Route path="/supplier" element={<Supplier />} />
+              <Route path="/purchase-report" element={<PurchaseReport />} />
+              <Route path="/inventory" element={<Inventory />} />
+              <Route path="/receive" element={<Receive />} />
+              <Route path="/issue" element={<Issue />} />
+              <Route path="/tnx-report" element={<TnxReport />} />
+              <Route path="/mo-report" element={<MOReport />} />
+              <Route path="/item-list" element={<ItemList />} />
+              <Route path="/item-uom" element={<ItemUOM />} />
+              <Route path="/item-group" element={<ItemGroup />} />
+              <Route path="/item-type" element={<ItemType />} />
+              <Route path="/cost-center" element={<CostCenter />} />
+              <Route path="/" element={<Navigate to="/overview" replace />} />
+            </Routes>
           </div>
         </main>
 
