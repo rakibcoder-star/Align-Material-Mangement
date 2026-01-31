@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { Home, Plus, ChevronDown, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -116,7 +117,7 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
       updatedAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
       status: initialData?.status || 'In-Process',
       value: totalValue,
-      items: items, // Persist full item list for re-editing
+      items: items, 
       note: prNote,
       type: supplierType,
       contact: contactNumber,
@@ -127,27 +128,27 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
   };
 
   return (
-    <div className="flex flex-col space-y-6">
+    <div className="flex flex-col space-y-4 md:space-y-6">
       {/* Breadcrumbs */}
-      <div className="flex items-center space-x-2 text-[11px] font-bold text-[#2d808e] uppercase tracking-wider">
+      <div className="flex items-center space-x-2 text-[10px] md:text-[11px] font-bold text-[#2d808e] uppercase tracking-wider">
         <Home size={14} className="text-gray-400" />
         <span className="text-gray-400">/</span>
-        <button onClick={onBack} className="hover:underline transition-all text-gray-400">Purchase-Requisition</button>
+        <button onClick={onBack} className="hover:underline transition-all text-gray-400 truncate max-w-[100px] md:max-w-none">Purchase-Requisition</button>
         <span className="text-gray-400">/</span>
         <span>{initialData ? 'Edit' : 'New'}</span>
       </div>
 
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-[#2d808e] tracking-tight">
+        <h1 className="text-xl md:text-2xl font-bold text-[#2d808e] tracking-tight">
           {initialData ? `Edit Requisition: ${initialData.PR}` : 'New Purchase Requisition'}
         </h1>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-8 space-y-8">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4 md:p-8 space-y-6 md:space-y-8">
         {/* Top Fields */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
           <div className="space-y-1.5">
-            <label className="text-sm font-bold text-[#2d808e]">PR Referance</label>
+            <label className="text-xs md:text-sm font-bold text-[#2d808e]">PR Referance</label>
             <div className="relative">
               <input
                 type="text"
@@ -155,23 +156,23 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
                 value={prReference}
                 onChange={(e) => setPrReference(e.target.value)}
                 placeholder="PR Referance"
-                className="w-full px-3 py-2 bg-white border border-[#2d808e]/40 rounded focus:border-[#2d808e] outline-none text-sm placeholder-gray-300 transition-all"
+                className="w-full px-3 py-2 bg-white border border-[#2d808e]/40 rounded focus:border-[#2d808e] outline-none text-xs md:text-sm placeholder-gray-300 transition-all"
               />
-              <span className="absolute right-3 top-2 text-[10px] text-gray-400 font-bold">
-                {prReference.length} / 30
+              <span className="absolute right-3 top-2 text-[9px] text-gray-400 font-bold">
+                {prReference.length}/30
               </span>
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-bold text-[#2d808e]">
+            <label className="text-xs md:text-sm font-bold text-[#2d808e]">
               <span className="text-red-500 mr-1">*</span>Type
             </label>
             <div className="relative">
               <select 
                 value={supplierType}
                 onChange={(e) => setSupplierType(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-[#2d808e]/40 rounded focus:border-[#2d808e] outline-none text-sm text-gray-400 appearance-none transition-all"
+                className="w-full px-3 py-2 bg-white border border-[#2d808e]/40 rounded focus:border-[#2d808e] outline-none text-xs md:text-sm text-gray-400 appearance-none transition-all"
               >
                 <option value="">Supplier Type</option>
                 <option value="local">Local Supplier</option>
@@ -184,7 +185,7 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-bold text-[#2d808e]">PR Note</label>
+            <label className="text-xs md:text-sm font-bold text-[#2d808e]">PR Note</label>
             <div className="relative">
               <input
                 type="text"
@@ -192,10 +193,10 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
                 value={prNote}
                 onChange={(e) => setPrNote(e.target.value)}
                 placeholder="PR Referance"
-                className="w-full px-3 py-2 bg-white border border-[#2d808e]/40 rounded focus:border-[#2d808e] outline-none text-sm placeholder-gray-300 transition-all"
+                className="w-full px-3 py-2 bg-white border border-[#2d808e]/40 rounded focus:border-[#2d808e] outline-none text-xs md:text-sm placeholder-gray-300 transition-all"
               />
-              <span className="absolute right-3 top-2 text-[10px] text-gray-400 font-bold">
-                {prNote.length} / 50
+              <span className="absolute right-3 top-2 text-[9px] text-gray-400 font-bold">
+                {prNote.length}/50
               </span>
             </div>
           </div>
@@ -203,170 +204,86 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
 
         {/* Requester Details */}
         <div className="space-y-4">
-          <h3 className="text-sm font-bold text-[#2d808e]">Requester Details</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <h3 className="text-xs md:text-sm font-bold text-[#2d808e] border-b border-gray-50 pb-2">Requester Details</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <input type="text" placeholder="Requester Name" value={requesterName} onChange={(e) => setRequesterName(e.target.value)} className="w-full px-3 py-2 bg-white border border-[#2d808e]/30 rounded text-xs md:text-sm text-gray-700 outline-none focus:ring-1 focus:ring-[#2d808e]" />
+            <input type="text" placeholder="Contact Number" value={contactNumber} onChange={(e) => setContactNumber(e.target.value)} className="w-full px-3 py-2 bg-white border border-[#2d808e]/30 rounded text-xs md:text-sm text-gray-700 outline-none focus:ring-1 focus:ring-[#2d808e]" />
+            <input type="email" placeholder="Email Address" value={emailAddress} onChange={(e) => setEmailAddress(e.target.value)} className="w-full px-3 py-2 bg-white border border-[#2d808e]/30 rounded text-xs md:text-sm text-gray-700 outline-none focus:ring-1 focus:ring-[#2d808e]" />
             <div className="relative">
-              <input
-                type="text"
-                placeholder="Requester Name"
-                value={requesterName}
-                onChange={(e) => setRequesterName(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-[#2d808e] rounded text-sm text-gray-700 outline-none placeholder-[#c4dee3] transition-all focus:ring-1 focus:ring-[#2d808e]"
-              />
-            </div>
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Contact Number"
-                value={contactNumber}
-                onChange={(e) => setContactNumber(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-[#2d808e] rounded text-sm text-gray-700 outline-none placeholder-[#c4dee3] transition-all focus:ring-1 focus:ring-[#2d808e]"
-              />
-            </div>
-            <div className="relative">
-              <input
-                type="email"
-                placeholder="Email Address"
-                value={emailAddress}
-                onChange={(e) => setEmailAddress(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-[#2d808e] rounded text-sm text-gray-700 outline-none placeholder-[#c4dee3] transition-all focus:ring-1 focus:ring-[#2d808e]"
-              />
-            </div>
-            <div className="relative">
-              <select 
-                value={costCenter}
-                onChange={(e) => setCostCenter(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-[#2d808e] rounded text-sm text-gray-700 appearance-none outline-none transition-all focus:ring-1 focus:ring-[#2d808e]"
-              >
+              <select value={costCenter} onChange={(e) => setCostCenter(e.target.value)} className="w-full px-3 py-2 bg-white border border-[#2d808e]/30 rounded text-xs md:text-sm text-gray-700 appearance-none outline-none focus:ring-1 focus:ring-[#2d808e]">
                 <option value="MMT">MMT</option>
                 <option value="IT">IT</option>
                 <option value="HR">HR</option>
                 <option value="FINANCE">FINANCE</option>
               </select>
-              <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400">
-                <ChevronDown size={14} />
-              </div>
+              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
             </div>
           </div>
         </div>
 
         {/* Item Details */}
         <div className="space-y-4">
-          <h3 className="text-sm font-bold text-[#2d808e]">Item Details</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="text-[11px] font-bold text-gray-700 text-left">
-                  <th className="pb-3 px-1">Name <span className="text-red-500">*</span></th>
-                  <th className="pb-3 px-1">SKU/Code</th>
-                  <th className="pb-3 px-1 text-center">Specification</th>
-                  <th className="pb-3 px-1 text-center">Brand</th>
-                  <th className="pb-3 px-1 text-center">UOM <span className="text-red-500">*</span></th>
-                  <th className="pb-3 px-1 text-center">Unit Price</th>
-                  <th className="pb-3 px-1 text-center">On-Hand Qty</th>
-                  <th className="pb-3 px-1 text-center">Req. Qty <span className="text-red-500">*</span></th>
-                  <th className="pb-3 px-1">Remarks</th>
-                  {items.length > 0 && <th className="pb-3 w-8"></th>}
-                </tr>
-              </thead>
-              <tbody className="space-y-2">
-                {items.map((item) => (
-                  <tr key={item.id} className="group">
-                    <td className="py-1 px-1 min-w-[180px]">
-                      <input
-                        type="text"
-                        placeholder="Item Name"
-                        className="w-full px-2 py-1.5 bg-white border border-gray-300 rounded text-xs focus:border-[#2d808e] focus:ring-1 focus:ring-[#2d808e]/20 outline-none transition-all"
-                        value={item.name}
-                        onChange={(e) => updateItem(item.id, 'name', e.target.value)}
-                      />
-                    </td>
-                    <td className="py-1 px-1 w-28">
-                      <input
-                        type="text"
-                        placeholder="SKU"
-                        className="w-full px-2 py-1.5 bg-white border border-gray-300 rounded text-xs focus:border-[#2d808e] focus:ring-1 focus:ring-[#2d808e]/20 outline-none transition-all text-center"
-                        value={item.sku}
-                        onChange={(e) => updateItem(item.id, 'sku', e.target.value)}
-                      />
-                    </td>
-                    <td className="py-1 px-1">
-                      <input
-                        type="text"
-                        placeholder="Spec"
-                        className="w-full px-2 py-1.5 bg-white border border-gray-300 rounded text-xs focus:border-[#2d808e] focus:ring-1 focus:ring-[#2d808e]/20 outline-none transition-all text-center"
-                        value={item.specification}
-                        onChange={(e) => updateItem(item.id, 'specification', e.target.value)}
-                      />
-                    </td>
-                    <td className="py-1 px-1">
-                      <input
-                        type="text"
-                        placeholder="Brand"
-                        className="w-full px-2 py-1.5 bg-white border border-gray-300 rounded text-xs focus:border-[#2d808e] focus:ring-1 focus:ring-[#2d808e]/20 outline-none transition-all text-center"
-                        value={item.brand}
-                        onChange={(e) => updateItem(item.id, 'brand', e.target.value)}
-                      />
-                    </td>
-                    <td className="py-1 px-1 w-20">
-                      <input
-                        type="text"
-                        placeholder="UOM"
-                        className="w-full px-2 py-1.5 bg-white border border-gray-300 rounded text-xs focus:border-[#2d808e] focus:ring-1 focus:ring-[#2d808e]/20 outline-none transition-all text-center"
-                        value={item.uom}
-                        onChange={(e) => updateItem(item.id, 'uom', e.target.value)}
-                      />
-                    </td>
-                    <td className="py-1 px-1 w-24">
-                      <input
-                        type="text"
-                        placeholder="0.00"
-                        className="w-full px-2 py-1.5 bg-white border border-gray-300 rounded text-xs focus:border-[#2d808e] focus:ring-1 focus:ring-[#2d808e]/20 outline-none transition-all text-center"
-                        value={item.unitPrice}
-                        onChange={(e) => updateItem(item.id, 'unitPrice', e.target.value)}
-                      />
-                    </td>
-                    <td className="py-1 px-1 w-24">
-                      <input
-                        type="text"
-                        placeholder="0"
-                        className="w-full px-2 py-1.5 bg-white border border-gray-300 rounded text-xs focus:border-[#2d808e] focus:ring-1 focus:ring-[#2d808e]/20 outline-none transition-all text-center"
-                        value={item.onHand}
-                        onChange={(e) => updateItem(item.id, 'onHand', e.target.value)}
-                      />
-                    </td>
-                    <td className="py-1 px-1 w-24">
-                      <input
-                        type="text"
-                        placeholder="0"
-                        className="w-full px-2 py-1.5 bg-white border border-gray-300 rounded text-xs focus:border-[#2d808e] focus:ring-1 focus:ring-[#2d808e]/20 outline-none transition-all text-center"
-                        value={item.reqQty}
-                        onChange={(e) => updateItem(item.id, 'reqQty', e.target.value)}
-                      />
-                    </td>
-                    <td className="py-1 px-1">
-                      <input
-                        type="text"
-                        placeholder="Remarks"
-                        className="w-full px-2 py-1.5 bg-white border border-gray-300 rounded text-xs focus:border-[#2d808e] focus:ring-1 focus:ring-[#2d808e]/20 outline-none transition-all"
-                        value={item.remarks}
-                        onChange={(e) => updateItem(item.id, 'remarks', e.target.value)}
-                      />
-                    </td>
-                    <td className="py-1 px-1 text-center">
-                      <button onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-600 transition-colors p-1 hover:bg-red-50 rounded">
-                        <Trash2 size={16} />
-                      </button>
-                    </td>
+          <h3 className="text-xs md:text-sm font-bold text-[#2d808e] border-b border-gray-50 pb-2">Item Details</h3>
+          <div className="overflow-x-auto -mx-4 md:mx-0">
+            <div className="inline-block min-w-full align-middle px-4 md:px-0">
+              <table className="min-w-full border-collapse">
+                <thead>
+                  <tr className="text-[10px] md:text-[11px] font-bold text-gray-700 text-left whitespace-nowrap">
+                    <th className="pb-3 px-1">Name <span className="text-red-500">*</span></th>
+                    <th className="pb-3 px-1">SKU</th>
+                    <th className="pb-3 px-1">Spec.</th>
+                    <th className="pb-3 px-1">Brand</th>
+                    <th className="pb-3 px-1 text-center">UOM <span className="text-red-500">*</span></th>
+                    <th className="pb-3 px-1 text-center">Price</th>
+                    <th className="pb-3 px-1 text-center">On-Hand</th>
+                    <th className="pb-3 px-1 text-center">Req.Qty <span className="text-red-500">*</span></th>
+                    <th className="pb-3 px-1">Remarks</th>
+                    <th className="pb-3 w-8"></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="space-y-2">
+                  {items.map((item) => (
+                    <tr key={item.id} className="group">
+                      <td className="py-1 px-1 min-w-[150px]">
+                        <input type="text" placeholder="Item Name" className="w-full px-2 py-1.5 border border-gray-200 rounded text-[10px] md:text-xs outline-none focus:border-[#2d808e]" value={item.name} onChange={(e) => updateItem(item.id, 'name', e.target.value)} />
+                      </td>
+                      <td className="py-1 px-1 w-20">
+                        <input type="text" className="w-full px-2 py-1.5 border border-gray-200 rounded text-[10px] md:text-xs text-center outline-none" value={item.sku} onChange={(e) => updateItem(item.id, 'sku', e.target.value)} />
+                      </td>
+                      <td className="py-1 px-1 min-w-[100px]">
+                        <input type="text" className="w-full px-2 py-1.5 border border-gray-200 rounded text-[10px] md:text-xs outline-none" value={item.specification} onChange={(e) => updateItem(item.id, 'specification', e.target.value)} />
+                      </td>
+                      <td className="py-1 px-1 w-20">
+                        <input type="text" className="w-full px-2 py-1.5 border border-gray-200 rounded text-[10px] md:text-xs outline-none" value={item.brand} onChange={(e) => updateItem(item.id, 'brand', e.target.value)} />
+                      </td>
+                      <td className="py-1 px-1 w-16 text-center">
+                        <input type="text" className="w-full px-2 py-1.5 border border-gray-200 rounded text-[10px] md:text-xs text-center outline-none" value={item.uom} onChange={(e) => updateItem(item.id, 'uom', e.target.value)} />
+                      </td>
+                      <td className="py-1 px-1 w-16 text-center">
+                        <input type="text" className="w-full px-2 py-1.5 border border-gray-200 rounded text-[10px] md:text-xs text-center outline-none" value={item.unitPrice} onChange={(e) => updateItem(item.id, 'unitPrice', e.target.value)} />
+                      </td>
+                      <td className="py-1 px-1 w-16 text-center">
+                        <input type="text" className="w-full px-2 py-1.5 border border-gray-200 rounded text-[10px] md:text-xs text-center outline-none" value={item.onHand} onChange={(e) => updateItem(item.id, 'onHand', e.target.value)} />
+                      </td>
+                      <td className="py-1 px-1 w-16 text-center">
+                        <input type="text" className="w-full px-2 py-1.5 border border-gray-200 rounded text-[10px] md:text-xs text-center outline-none" value={item.reqQty} onChange={(e) => updateItem(item.id, 'reqQty', e.target.value)} />
+                      </td>
+                      <td className="py-1 px-1 min-w-[100px]">
+                        <input type="text" className="w-full px-2 py-1.5 border border-gray-200 rounded text-[10px] md:text-xs outline-none" value={item.remarks} onChange={(e) => updateItem(item.id, 'remarks', e.target.value)} />
+                      </td>
+                      <td className="py-1 px-1 text-center">
+                        <button onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-600 p-1"><Trash2 size={14} /></button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <button
             onClick={addItem}
-            className="w-full py-2 bg-[#2d808e] text-white flex items-center justify-center space-x-2 text-sm font-bold rounded hover:bg-[#256b78] transition-all shadow-sm active:scale-[0.99]"
+            className="w-full py-2 bg-[#2d808e] text-white flex items-center justify-center space-x-2 text-[12px] md:text-sm font-bold rounded hover:bg-[#256b78] transition-all shadow-sm"
           >
             <Plus size={16} strokeWidth={3} />
             <span>Add Item</span>
@@ -374,10 +291,10 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
         </div>
 
         {/* Submit Button */}
-        <div className="pt-4">
+        <div className="pt-2">
           <button 
             onClick={handleFormSubmit}
-            className="w-full py-2.5 bg-[#2d808e] text-white text-sm font-bold rounded shadow-lg hover:bg-[#256b78] transition-all active:scale-[0.98]"
+            className="w-full py-3 bg-[#2d808e] text-white text-xs md:text-sm font-bold rounded shadow-lg hover:bg-[#256b78] transition-all active:scale-[0.98]"
           >
             {initialData ? 'Update Requisition' : 'Submit Requisition'}
           </button>

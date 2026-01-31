@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import UserManagement from './UserManagement';
 import MoveOrderModal from './MoveOrderModal';
@@ -42,7 +42,8 @@ import {
   ClipboardList,
   ShoppingBag,
   Truck,
-  BarChart3
+  BarChart3,
+  X
 } from 'lucide-react';
 
 const SidebarItem: React.FC<{ 
@@ -103,7 +104,7 @@ const SubmenuItem: React.FC<{
     <div className={`${active ? 'text-[#2d808e]' : 'text-gray-400'}`}>
       {icon}
     </div>
-    <span>{label}</span>
+    <span className="truncate">{label}</span>
   </button>
 );
 
@@ -111,6 +112,7 @@ const Dashboard: React.FC = () => {
   const { user, logout, hasPermission } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMoveOrderModalOpen, setIsMoveOrderModalOpen] = useState(false);
   const [isStockStatusModalOpen, setIsStockStatusModalOpen] = useState(false);
   
@@ -120,32 +122,15 @@ const Dashboard: React.FC = () => {
     itemMaster: true
   });
 
-  // Requisition State
-  const [requisitions, setRequisitions] = useState([
-    { 
-      PR: '3000000018', code: '1000000280', SKU: '3100000117', name: 'ARM GUARD', spec: 'JA Brand, Black', UOM: 'PAIR', 
-      PRPrice: 310.02, reqQty: 60, POQty: 0, recQty: 0, reqDpt: 'MMT', reqBy: 'Sohel Rana', 
-      createdAt: '2026-01-26 12:05', updateBy: 'Sohel Rana', updatedAt: '2026-01-26 12:05', status: 'In-Process', value: 18601.2
-    },
-    { 
-      PR: '3000000017', code: 'NA', SKU: 'non-storage', name: 'Servicing Charge', spec: 'SVSD & Serial No.', UOM: 'JOB', 
-      PRPrice: 18500, reqQty: 1, POQty: 0, recQty: 0, reqDpt: 'Maintenance', reqBy: 'Md. Jahangir Alam', 
-      createdAt: '2026-01-24 16:21', updateBy: 'Sohel Rana', updatedAt: '2026-01-24 16:21', status: 'Checked', value: 18500
-    },
-    { 
-      PR: '3000000016', code: '1000001573', SKU: '3300000035', name: 'A4 PAPER', spec: 'Double A', UOM: 'REAM', 
-      PRPrice: 499.5, reqQty: 10, POQty: 10, recQty: 10, reqDpt: 'Admin', reqBy: 'Mr. Nahidul Hassan', 
-      createdAt: '2026-01-22 10:01', updateBy: 'Sohel Rana', updatedAt: '2026-01-22 10:17', status: 'Approved', value: 4995
-    }
-  ]);
-
-  // Purchase Order State
-  const [purchaseOrders] = useState([
-    { poNo: '4000000004', prNo: '3000000016', sku: '3300000035', name: 'A4 PAPER', price: '499.5', qty: 10, value: 4995.00, grnQty: 10, reqBy: 'Sohel Rana', supplier: 'NSR COMPUTER & STATIONERY' },
-    { poNo: '4000000003', prNo: '3000000011', sku: '3100000198', name: 'COOLANT PREMIXED, RED, 4 LTR', price: '383', qty: 252, value: 96516.00, grnQty: 252, reqBy: 'Sohel Rana', supplier: 'M/S SHIFA ENTERPRISE' },
-    { poNo: '4000000002', prNo: '3000000010', sku: '3100000121', name: 'AC GAS, R134A', price: '18900', qty: 2, value: 37800.00, grnQty: 2, reqBy: 'Sohel Rana', supplier: 'M/S SHIFA ENTERPRISE' },
-    { poNo: '4000000001', prNo: '3000000009', sku: '3100001447', name: 'PTFE DIAPHRAGM REPAIR KIT SET (245065)', price: '12837.5', qty: 8, value: 102700.00, grnQty: 8, reqBy: 'Sohel Rana', supplier: 'TALUS MACHINANERY CO. LIMITED' }
-  ]);
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const toggleMenu = (menu: string) => {
     if (isSidebarCollapsed) {
@@ -156,229 +141,194 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    if (window.innerWidth < 768) {
+      setIsMobileMenuOpen(false);
+    }
+  };
+
   if (!user) return null;
 
   return (
     <div className="flex h-screen bg-[#f1f3f4] overflow-hidden font-['Inter'] no-print">
+      {/* MOBILE OVERLAY */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden animate-in fade-in duration-300"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
       {/* SIDEBAR */}
-      <aside className={`${isSidebarCollapsed ? 'w-16' : 'w-64'} bg-white border-r border-gray-200 flex flex-col h-full transition-all duration-300 ease-in-out z-20 shadow-sm shrink-0`}>
-        <div className={`pt-8 pb-6 px-4 flex flex-col items-center space-y-4 ${isSidebarCollapsed ? 'px-0' : ''}`}>
-          <div className={`${isSidebarCollapsed ? 'w-10 h-10' : 'w-24 h-24'} rounded-full bg-[#e2eff1] flex items-center justify-center transition-all duration-300`}>
-            <UserIcon size={isSidebarCollapsed ? 20 : 48} className="text-[#2d808e]" strokeWidth={1.5} />
+      <aside className={`
+        fixed inset-y-0 left-0 z-50 transform md:relative md:translate-x-0 transition-all duration-300 ease-in-out
+        ${isMobileMenuOpen ? 'translate-x-0 w-[280px]' : '-translate-x-full md:translate-x-0'}
+        ${isSidebarCollapsed && !isMobileMenuOpen ? 'md:w-16' : 'md:w-64'}
+        bg-white border-r border-gray-200 flex flex-col h-full shadow-sm shrink-0
+      `}>
+        <div className="flex justify-between items-center p-5 md:hidden border-b border-gray-100 mb-2">
+          <h2 className="text-xl font-black text-[#2d808e] tracking-tighter">ALIGN</h2>
+          <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-gray-400 hover:text-gray-600 focus:outline-none">
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className={`pt-4 pb-6 px-4 flex flex-col items-center space-y-4 ${isSidebarCollapsed && !isMobileMenuOpen ? 'md:px-0' : ''}`}>
+          <div className={`${isSidebarCollapsed && !isMobileMenuOpen ? 'w-10 h-10' : 'w-20 h-20'} rounded-full bg-[#e2eff1] flex items-center justify-center transition-all duration-300 shadow-inner`}>
+            <UserIcon size={isSidebarCollapsed && !isMobileMenuOpen ? 18 : 36} className="text-[#2d808e]" strokeWidth={1.5} />
           </div>
-          {!isSidebarCollapsed && (
+          {(!isSidebarCollapsed || isMobileMenuOpen) && (
             <div className="text-center overflow-hidden w-full px-2">
               <span className="text-[13px] font-bold text-[#2d808e] block truncate uppercase tracking-tight">{user.email.split('@')[0]}</span>
-              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{user.role}</span>
+              <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{user.role}</span>
             </div>
           )}
         </div>
 
-        <div className="flex-1 py-4 overflow-y-auto overflow-x-hidden space-y-1">
-          <SidebarItem 
-            icon={<Gauge size={18} />} 
-            label="Dashboard" 
-            active={activeTab === 'overview'} 
-            isCollapsed={isSidebarCollapsed} 
-            onClick={() => setActiveTab('overview')} 
-          />
+        <div className="flex-1 py-4 overflow-y-auto overflow-x-hidden space-y-1 scrollbar-thin">
+          <SidebarItem icon={<Gauge size={18} />} label="Dashboard" active={activeTab === 'overview'} isCollapsed={isSidebarCollapsed && !isMobileMenuOpen} onClick={() => handleTabChange('overview')} />
 
-          <SidebarItem 
-            icon={<ShoppingCart size={18} />} 
-            label="Purchase" 
-            hasSubmenu 
-            isCollapsed={isSidebarCollapsed} 
-            isOpen={openMenus.purchase} 
-            onClick={() => toggleMenu('purchase')}
-          >
+          <SidebarItem icon={<ShoppingCart size={18} />} label="Purchase" hasSubmenu isCollapsed={isSidebarCollapsed && !isMobileMenuOpen} isOpen={openMenus.purchase} onClick={() => toggleMenu('purchase')}>
             <div className="space-y-1 mt-1">
-              <SubmenuItem icon={<ClipboardList size={16} />} label="Requisition" active={activeTab === 'requisition'} onClick={() => setActiveTab('requisition')} />
-              <SubmenuItem icon={<ShoppingBag size={16} />} label="Order" active={activeTab === 'purchase-order'} onClick={() => setActiveTab('purchase-order')} />
-              <SubmenuItem icon={<Truck size={16} />} label="Supplier" active={activeTab === 'supplier'} onClick={() => setActiveTab('supplier')} />
-              <SubmenuItem icon={<BarChart3 size={16} />} label="Report" active={activeTab === 'purchase-report'} onClick={() => setActiveTab('purchase-report')} />
+              <SubmenuItem icon={<ClipboardList size={16} />} label="Requisition" active={activeTab === 'requisition'} onClick={() => handleTabChange('requisition')} />
+              <SubmenuItem icon={<ShoppingBag size={16} />} label="Order" active={activeTab === 'purchase-order'} onClick={() => handleTabChange('purchase-order')} />
+              <SubmenuItem icon={<Truck size={16} />} label="Supplier" active={activeTab === 'supplier'} onClick={() => handleTabChange('supplier')} />
+              <SubmenuItem icon={<BarChart3 size={16} />} label="Report" active={activeTab === 'purchase-report'} onClick={() => handleTabChange('purchase-report')} />
             </div>
           </SidebarItem>
 
-          <SidebarItem 
-            icon={<Warehouse size={18} />} 
-            label="Warehouse" 
-            hasSubmenu 
-            isCollapsed={isSidebarCollapsed} 
-            isOpen={openMenus.warehouse} 
-            onClick={() => toggleMenu('warehouse')}
-          >
+          <SidebarItem icon={<Warehouse size={18} />} label="Warehouse" hasSubmenu isCollapsed={isSidebarCollapsed && !isMobileMenuOpen} isOpen={openMenus.warehouse} onClick={() => toggleMenu('warehouse')}>
             <div className="space-y-1 mt-1">
-              <SubmenuItem icon={<LayoutGrid size={16} />} label="Inventory" active={activeTab === 'inventory'} onClick={() => setActiveTab('inventory')} />
-              <SubmenuItem icon={<ArrowRight size={16} />} label="Receive" active={activeTab === 'receive'} onClick={() => setActiveTab('receive')} />
-              <SubmenuItem icon={<ArrowLeft size={16} />} label="Issue" active={activeTab === 'issue'} onClick={() => setActiveTab('issue')} />
-              <SubmenuItem icon={<FileText size={16} />} label="Tnx-Report" active={activeTab === 'tnx-report'} onClick={() => setActiveTab('tnx-report')} />
-              <SubmenuItem icon={<FileText size={16} />} label="MO-Report" active={activeTab === 'mo-report'} onClick={() => setActiveTab('mo-report')} />
+              <SubmenuItem icon={<LayoutGrid size={16} />} label="Inventory" active={activeTab === 'inventory'} onClick={() => handleTabChange('inventory')} />
+              <SubmenuItem icon={<ArrowRight size={16} />} label="Receive" active={activeTab === 'receive'} onClick={() => handleTabChange('receive')} />
+              <SubmenuItem icon={<ArrowLeft size={16} />} label="Issue" active={activeTab === 'issue'} onClick={() => handleTabChange('issue')} />
+              <SubmenuItem icon={<FileText size={16} />} label="Tnx-Report" active={activeTab === 'tnx-report'} onClick={() => handleTabChange('tnx-report')} />
+              <SubmenuItem icon={<FileText size={16} />} label="MO-Report" active={activeTab === 'mo-report'} onClick={() => handleTabChange('mo-report')} />
             </div>
           </SidebarItem>
 
-          <SidebarItem 
-            icon={<LayoutGrid size={18} />} 
-            label="Item Master" 
-            hasSubmenu 
-            isCollapsed={isSidebarCollapsed} 
-            isOpen={openMenus.itemMaster} 
-            onClick={() => toggleMenu('itemMaster')}
-          >
+          <SidebarItem icon={<LayoutGrid size={18} />} label="Item Master" hasSubmenu isCollapsed={isSidebarCollapsed && !isMobileMenuOpen} isOpen={openMenus.itemMaster} onClick={() => toggleMenu('itemMaster')}>
             <div className="space-y-1 mt-1">
-              <SubmenuItem icon={<FileText size={16} />} label="Item List" active={activeTab === 'item-list'} onClick={() => setActiveTab('item-list')} />
-              <SubmenuItem icon={<Boxes size={16} />} label="Item UOM" active={activeTab === 'item-uom'} onClick={() => setActiveTab('item-uom')} />
-              <SubmenuItem icon={<Layers size={16} />} label="Item Group" active={activeTab === 'item-group'} onClick={() => setActiveTab('item-group')} />
-              <SubmenuItem icon={<Tag size={16} />} label="Item Type" active={activeTab === 'item-type'} onClick={() => setActiveTab('item-type')} />
-              <SubmenuItem icon={<Home size={16} />} label="Cost Center" active={activeTab === 'cost-center'} onClick={() => setActiveTab('cost-center')} />
-              <SubmenuItem icon={<FileText size={16} />} label="Item Details" active={activeTab === 'item-details'} onClick={() => setActiveTab('item-details')} />
+              <SubmenuItem icon={<FileText size={16} />} label="Item List" active={activeTab === 'item-list'} onClick={() => handleTabChange('item-list')} />
+              <SubmenuItem icon={<Boxes size={16} />} label="Item UOM" active={activeTab === 'item-uom'} onClick={() => handleTabChange('item-uom')} />
+              <SubmenuItem icon={<Layers size={16} />} label="Item Group" active={activeTab === 'item-group'} onClick={() => handleTabChange('item-group')} />
+              <SubmenuItem icon={<Tag size={16} />} label="Item Type" active={activeTab === 'item-type'} onClick={() => handleTabChange('item-type')} />
+              <SubmenuItem icon={<Home size={16} />} label="Cost Center" active={activeTab === 'cost-center'} onClick={() => handleTabChange('cost-center')} />
             </div>
           </SidebarItem>
 
           {hasPermission('manage_users') && (
-            <SidebarItem 
-              icon={<UserIcon size={18} />} 
-              label="User Management" 
-              active={activeTab === 'users'} 
-              isCollapsed={isSidebarCollapsed} 
-              onClick={() => setActiveTab('users')} 
-            />
+            <SidebarItem icon={<UserIcon size={18} />} label="User Management" active={activeTab === 'users'} isCollapsed={isSidebarCollapsed && !isMobileMenuOpen} onClick={() => handleTabChange('users')} />
           )}
         </div>
 
         <div className="border-t border-gray-100 py-2">
-          <SidebarItem icon={<LogOut size={18} />} label="Logout" danger isCollapsed={isSidebarCollapsed} onClick={logout} />
+          <SidebarItem icon={<LogOut size={18} />} label="Logout" danger isCollapsed={isSidebarCollapsed && !isMobileMenuOpen} onClick={logout} />
         </div>
       </aside>
 
-      {/* MAIN CONTENT AREA */}
+      {/* MAIN CONTENT */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-10 shrink-0">
-          <div className="flex items-center space-x-6">
-            <button onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} className="p-1.5 hover:bg-gray-100 rounded-md transition-colors text-gray-600"><Menu size={24} /></button>
-            <h1 className="text-2xl font-black text-gray-800 tracking-tighter">ALIGN</h1>
+        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-6 z-30 shrink-0">
+          <div className="flex items-center space-x-2 md:space-x-4">
+            <button onClick={() => window.innerWidth < 768 ? setIsMobileMenuOpen(true) : setIsSidebarCollapsed(!isSidebarCollapsed)} className="p-2 hover:bg-gray-100 rounded-md transition-colors text-[#2d808e] focus:outline-none">
+              <Menu size={22} />
+            </button>
+            <h1 className="text-xl md:text-2xl font-black text-gray-800 tracking-tighter">ALIGN</h1>
           </div>
-          <div className="flex-1 max-w-2xl px-8">
+          
+          <div className="flex-1 max-w-lg px-4 hidden sm:block">
             <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Search size={18} className="text-gray-400 group-focus-within:text-[#2d808e]" /></div>
-              <input type="text" placeholder="Search resources..." className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-transparent focus:border-[#2d808e] focus:bg-white rounded-lg outline-none text-sm transition-all" />
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#2d808e]" />
+              <input type="text" placeholder="Quick search..." className="w-full pl-9 pr-4 py-1.5 bg-gray-50 border border-transparent focus:border-[#2d808e] focus:bg-white rounded-lg outline-none text-xs md:text-sm transition-all" />
             </div>
           </div>
-          <div className="flex items-center space-x-4">
-             <button className="flex items-center space-x-2 mr-4 text-gray-400 hover:text-[#2d808e] transition-colors">
-                <Bell size={20} />
-             </button>
+
+          <div className="flex items-center space-x-2 md:space-x-3">
+             <button className="p-2 text-gray-400 hover:text-[#2d808e] transition-colors"><Bell size={18} /></button>
              
-             <button 
-                onClick={() => setIsStockStatusModalOpen(true)}
-                className="flex items-center px-4 py-2 bg-[#2d808e] text-white text-xs font-bold rounded shadow-sm hover:bg-[#256b78] transition-all"
-              >
-                <CheckCircle2 size={14} className="mr-2" /> Check Stock
-             </button>
-             <button 
-                onClick={() => setIsMoveOrderModalOpen(true)}
-                className="flex items-center px-4 py-2 bg-[#17a2b8] text-white text-xs font-bold rounded shadow-sm hover:bg-[#138496] transition-all"
-              >
-               <ArrowRightLeft size={14} className="mr-2" /> Move Order
-             </button>
+             <div className="flex space-x-1.5">
+               <button onClick={() => setIsStockStatusModalOpen(true)} className="flex items-center p-2 md:px-3 md:py-1.5 bg-[#2d808e] text-white text-[10px] md:text-xs font-bold rounded shadow-sm hover:bg-[#256b78] transition-all">
+                  <CheckCircle2 size={14} className="md:mr-1.5" /> 
+                  <span className="hidden md:inline">Check Stock</span>
+               </button>
+               <button onClick={() => setIsMoveOrderModalOpen(true)} className="flex items-center p-2 md:px-3 md:py-1.5 bg-[#17a2b8] text-white text-[10px] md:text-xs font-bold rounded shadow-sm hover:bg-[#138496] transition-all">
+                 <ArrowRightLeft size={14} className="md:mr-1.5" /> 
+                 <span className="hidden md:inline">Move Order</span>
+               </button>
+             </div>
           </div>
         </header>
 
-        {/* PAGE CONTENT */}
-        <main className="flex-1 overflow-y-auto p-6 bg-[#f1f3f4] pb-24">
-          {activeTab === 'users' ? (
-            <div className="max-w-6xl mx-auto"><UserManagement /></div>
-          ) : activeTab === 'requisition' ? (
-            <div className="max-w-[1600px] mx-auto">
-              <PurchaseRequisition requisitions={requisitions} setRequisitions={setRequisitions} />
-            </div>
-          ) : activeTab === 'purchase-order' ? (
-            <div className="max-w-[1600px] mx-auto">
-              <PurchaseOrder orders={purchaseOrders} />
-            </div>
-          ) : activeTab === 'supplier' ? (
-            <div className="max-w-[1600px] mx-auto">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-[#f1f3f4] pb-24">
+          <div className="max-w-[1600px] mx-auto w-full">
+            {activeTab === 'users' ? (
+              <UserManagement />
+            ) : activeTab === 'requisition' ? (
+              <PurchaseRequisition requisitions={[]} setRequisitions={() => {}} />
+            ) : activeTab === 'purchase-order' ? (
+              <PurchaseOrder orders={[]} />
+            ) : activeTab === 'supplier' ? (
               <Supplier />
-            </div>
-          ) : activeTab === 'purchase-report' ? (
-            <div className="max-w-[1600px] mx-auto">
+            ) : activeTab === 'purchase-report' ? (
               <PurchaseReport />
-            </div>
-          ) : activeTab === 'inventory' ? (
-            <div className="max-w-[1600px] mx-auto">
+            ) : activeTab === 'inventory' ? (
               <Inventory />
-            </div>
-          ) : activeTab === 'receive' ? (
-            <div className="max-w-[1600px] mx-auto">
+            ) : activeTab === 'receive' ? (
               <Receive />
-            </div>
-          ) : activeTab === 'issue' ? (
-            <div className="max-w-[1600px] mx-auto">
+            ) : activeTab === 'issue' ? (
               <Issue />
-            </div>
-          ) : activeTab === 'tnx-report' ? (
-            <div className="max-w-[1600px] mx-auto">
+            ) : activeTab === 'tnx-report' ? (
               <TnxReport />
-            </div>
-          ) : activeTab === 'mo-report' ? (
-            <div className="max-w-[1600px] mx-auto">
+            ) : activeTab === 'mo-report' ? (
               <MOReport />
-            </div>
-          ) : activeTab === 'item-list' ? (
-            <div className="max-w-[1600px] mx-auto">
+            ) : activeTab === 'item-list' ? (
               <ItemList />
-            </div>
-          ) : activeTab === 'item-uom' ? (
-            <div className="max-w-[1600px] mx-auto">
+            ) : activeTab === 'item-uom' ? (
               <ItemUOM />
-            </div>
-          ) : activeTab === 'item-group' ? (
-            <div className="max-w-[1600px] mx-auto">
+            ) : activeTab === 'item-group' ? (
               <ItemGroup />
-            </div>
-          ) : activeTab === 'item-type' ? (
-            <div className="max-w-[1600px] mx-auto">
+            ) : activeTab === 'item-type' ? (
               <ItemType />
-            </div>
-          ) : activeTab === 'cost-center' ? (
-            <div className="max-w-[1600px] mx-auto">
+            ) : activeTab === 'cost-center' ? (
               <CostCenter />
-            </div>
-          ) : activeTab === 'overview' ? (
-            <div className="max-w-[1600px] mx-auto space-y-6">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                {[
-                  { label: 'Today Order(Qty)', value: '0 (0)' },
-                  { label: 'Lastday Order(Qty)', value: '338.3K (380)' },
-                  { label: 'Weekly Order(Qty)', value: '1.2M (2.0K)' },
-                  { label: 'Monthly Order(Qty)', value: '5.7M (8.5K)' },
-                  { label: 'Weekly PR(Qty)', value: '94.0K (1.7K)' },
-                  { label: 'Monthly PR(Qty)', value: '578.2K (3.3K)' },
-                ].map((stat, i) => (
-                  <div key={i} className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 flex flex-col justify-center">
-                    <span className="text-[10px] text-gray-400 font-bold uppercase mb-2">{stat.label}</span>
-                    <span className="text-lg font-bold text-red-500">{stat.value}</span>
-                  </div>
-                ))}
+            ) : activeTab === 'overview' ? (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 md:gap-4">
+                  {[
+                    { label: 'Today Order', value: '0' },
+                    { label: 'Lastday Order', value: '338K' },
+                    { label: 'Weekly Order', value: '1.2M' },
+                    { label: 'Monthly Order', value: '5.7M' },
+                    { label: 'Weekly PR', value: '94K' },
+                    { label: 'Monthly PR', value: '578K' },
+                  ].map((stat, i) => (
+                    <div key={i} className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col justify-center transition-all hover:shadow-md">
+                      <span className="text-[9px] text-gray-400 font-bold uppercase mb-1">{stat.label}</span>
+                      <span className="text-base md:text-xl font-bold text-red-500 tracking-tight">{stat.value}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-white p-12 md:p-24 rounded-lg shadow-sm border border-gray-100 text-center text-gray-400 flex flex-col items-center">
+                  <Gauge size={56} className="mb-4 text-[#2d808e]/20" />
+                  <h3 className="text-lg font-bold text-gray-800 mb-2">System Dashboard Overview</h3>
+                  <p className="text-xs md:text-sm max-w-md">Navigate through the left menu to manage Purchase Requisitions, Orders, Inventory, and view detailed analytical reports.</p>
+                </div>
               </div>
-              {/* Simplified overview for clarity */}
-              <div className="bg-white p-8 rounded shadow-sm border border-gray-100 text-center py-20 text-gray-400">
-                <Gauge size={48} className="mx-auto mb-4" />
-                <p>Welcome to ALIGN ERP Dashboard. Use the sidebar to navigate through modules.</p>
-              </div>
-            </div>
-          ) : (
-             <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                <FileText size={48} strokeWidth={1} />
-                <p className="mt-4 text-sm font-medium capitalize">{activeTab.replace('-', ' ')} module content here</p>
-             </div>
-          )}
+            ) : (
+               <div className="flex flex-col items-center justify-center h-80 text-gray-300">
+                  <FileText size={64} strokeWidth={1} />
+                  <p className="mt-4 text-sm font-bold uppercase tracking-widest">{activeTab.replace('-', ' ')} module</p>
+               </div>
+            )}
+          </div>
         </main>
 
-        {/* FIXED FOOTER */}
-        <footer className="h-16 border-t border-gray-200 flex items-center justify-center bg-white px-6 shrink-0 sticky bottom-0 z-10">
-           <div className="flex items-center space-x-6 text-[10px] uppercase font-bold tracking-[0.2em]">
+        <footer className="h-16 border-t border-gray-200 flex flex-col md:flex-row items-center justify-center bg-white px-6 shrink-0 sticky bottom-0 z-10">
+           <div className="flex flex-col md:flex-row items-center md:space-x-6 text-[9px] font-bold uppercase tracking-widest text-center">
               <p className="text-gray-500">All rights Reserved © ALIGN 2026</p>
-              <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
+              <div className="hidden md:block w-1.5 h-1.5 bg-[#2d808e]/20 rounded-full"></div>
               <p className="text-gray-400">Developed by <span className="text-[#2d808e] font-black">Al Amin ET</span></p>
            </div>
         </footer>

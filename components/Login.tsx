@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 
@@ -20,8 +21,8 @@ const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-[#f1f3f4]">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-10 flex flex-col items-center border border-gray-100">
-        <h1 className="text-4xl font-bold mb-8 tracking-wide text-gray-800">ALIGN</h1>
+      <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-6 md:p-10 flex flex-col items-center border border-gray-100">
+        <h1 className="text-3xl md:text-4xl font-bold mb-8 tracking-wide text-gray-800">ALIGN</h1>
         
         <form onSubmit={handleSubmit} className="w-full space-y-4">
           <div className="relative group">
@@ -35,7 +36,7 @@ const Login: React.FC = () => {
               placeholder="Enter your mail here"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 focus:border-[#2d808e] focus:ring-0 outline-none transition-colors text-gray-600 placeholder-gray-400"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 focus:border-[#2d808e] focus:ring-0 outline-none transition-colors text-sm text-gray-600 placeholder-gray-400"
             />
           </div>
 
@@ -50,7 +51,7 @@ const Login: React.FC = () => {
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full pl-10 pr-10 py-2.5 border border-gray-200 focus:border-[#2d808e] focus:ring-0 outline-none transition-colors text-gray-600 placeholder-gray-400"
+              className="w-full pl-10 pr-10 py-2.5 border border-gray-200 focus:border-[#2d808e] focus:ring-0 outline-none transition-colors text-sm text-gray-600 placeholder-gray-400"
             />
             <button
               type="button"

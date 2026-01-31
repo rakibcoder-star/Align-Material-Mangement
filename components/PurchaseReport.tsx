@@ -27,7 +27,6 @@ const PurchaseReport: React.FC = () => {
   const [status, setStatus] = useState('All');
   const [docRef, setDocRef] = useState('');
   
-  // Initial empty state as seen in user image
   const [reportData] = useState<PurchaseReportEntry[]>([]);
 
   const handleExportExcel = () => {
@@ -44,17 +43,17 @@ const PurchaseReport: React.FC = () => {
 
   return (
     <div className="flex flex-col space-y-4 font-sans antialiased">
-      {/* Top Header & Breadcrumb */}
-      <div className="flex items-center justify-between">
+      {/* Header & Breadcrumb */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="flex items-center space-x-2 text-[10px] font-bold text-[#2d808e] uppercase tracking-wider">
           <Home size={12} className="text-gray-400" />
           <span className="text-gray-300">/</span>
           <span>PURCHASE-REPORT</span>
         </div>
 
-        {/* Filters - Right Aligned Bar */}
-        <div className="flex items-center space-x-2">
-          <div className="relative min-w-[130px]">
+        {/* Filters - Responsive Grid/Flex */}
+        <div className="flex flex-wrap items-center gap-2 md:justify-end">
+          <div className="relative flex-1 min-w-[120px] md:flex-initial">
             <select 
               value={itemType}
               onChange={(e) => setItemType(e.target.value)}
@@ -66,41 +65,28 @@ const PurchaseReport: React.FC = () => {
             <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
           </div>
 
-          <div className="relative">
+          <div className="relative flex-1 min-w-[130px] md:flex-initial">
             <input 
               type="date" 
               value={filterDateStart}
               onChange={(e) => setFilterDateStart(e.target.value)}
-              className="appearance-none bg-white border border-gray-200 rounded px-2 py-1.5 text-[11px] text-gray-600 font-medium outline-none focus:border-[#2d808e] transition-all pr-8 w-[130px]"
+              className="w-full appearance-none bg-white border border-gray-200 rounded px-2 py-1.5 text-[11px] text-gray-600 font-medium outline-none focus:border-[#2d808e] transition-all"
             />
-            <Calendar size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
           </div>
 
-          <div className="relative">
+          <div className="relative flex-1 min-w-[130px] md:flex-initial">
             <input 
               type="date" 
               value={filterDateEnd}
               onChange={(e) => setFilterDateEnd(e.target.value)}
-              className="appearance-none bg-white border border-gray-200 rounded px-2 py-1.5 text-[11px] text-gray-600 font-medium outline-none focus:border-[#2d808e] transition-all pr-8 w-[130px]"
+              className="w-full appearance-none bg-white border border-gray-200 rounded px-2 py-1.5 text-[11px] text-gray-600 font-medium outline-none focus:border-[#2d808e] transition-all"
             />
-            <Calendar size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
           </div>
 
-          <div className="relative min-w-[80px]">
+          <div className="relative flex-1 min-w-[80px] md:flex-initial">
             <select 
               value={tnxType}
               onChange={(e) => setTnxType(e.target.value)}
-              className="w-full appearance-none bg-white border border-gray-200 rounded px-3 py-1.5 text-[11px] text-gray-600 font-medium outline-none focus:border-[#2d808e] transition-all"
-            >
-              <option>All</option>
-            </select>
-            <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
-          </div>
-
-          <div className="relative min-w-[80px]">
-            <select 
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
               className="w-full appearance-none bg-white border border-gray-200 rounded px-3 py-1.5 text-[11px] text-gray-600 font-medium outline-none focus:border-[#2d808e] transition-all"
             >
               <option>All</option>
@@ -113,16 +99,15 @@ const PurchaseReport: React.FC = () => {
             placeholder="PR/PO No."
             value={docRef}
             onChange={(e) => setDocRef(e.target.value)}
-            className="bg-white border border-gray-200 rounded px-3 py-1.5 text-[11px] text-gray-600 font-medium outline-none focus:border-[#2d808e] transition-all w-[110px]"
+            className="flex-1 md:flex-initial bg-white border border-gray-200 rounded px-3 py-1.5 text-[11px] text-gray-600 font-medium outline-none focus:border-[#2d808e] transition-all md:w-[110px]"
           />
 
-          <button className="bg-[#2d808e] text-white px-5 py-1.5 rounded text-[11px] font-bold shadow-sm hover:bg-[#256b78] transition-all">
+          <button className="bg-[#2d808e] text-white px-5 py-1.5 rounded text-[11px] font-bold shadow-sm hover:bg-[#256b78] transition-all whitespace-nowrap">
             Find
           </button>
         </div>
       </div>
 
-      {/* Excel Export Button */}
       <div className="flex justify-end">
         <button 
           onClick={handleExportExcel}
@@ -133,29 +118,24 @@ const PurchaseReport: React.FC = () => {
         </button>
       </div>
 
-      {/* Main Table */}
       <div className="bg-white rounded shadow-sm border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto scrollbar-thin">
           <table className="w-full text-left border-collapse min-w-[1400px]">
             <thead className="bg-[#fcfcfc]">
               <tr className="text-[10px] font-bold text-gray-800 border-b border-gray-100 uppercase tracking-tighter">
                 <th className="px-4 py-4 text-center w-12 border-r border-gray-50">SL</th>
                 <th className="px-4 py-4 text-left border-r border-gray-50">Tnx. Date</th>
                 <th className="px-4 py-4 text-left border-r border-gray-50 relative group">
-                  Tnx. Type
-                  <Filter size={10} className="inline-block ml-1 text-gray-300" />
+                  Tnx. Type <Filter size={10} className="inline-block ml-1 text-gray-300" />
                 </th>
                 <th className="px-4 py-4 text-left border-r border-gray-50 relative group">
-                  Doc.Ref
-                  <Filter size={10} className="inline-block ml-1 text-gray-300" />
+                  Doc.Ref <Filter size={10} className="inline-block ml-1 text-gray-300" />
                 </th>
                 <th className="px-4 py-4 text-left border-r border-gray-50 relative group">
-                  SKU
-                  <Filter size={10} className="inline-block ml-1 text-gray-300" />
+                  SKU <Filter size={10} className="inline-block ml-1 text-gray-300" />
                 </th>
                 <th className="px-4 py-4 text-left border-r border-gray-50 relative group">
-                  Name
-                  <Filter size={10} className="inline-block ml-1 text-gray-300" />
+                  Name <Filter size={10} className="inline-block ml-1 text-gray-300" />
                 </th>
                 <th className="px-4 py-4 text-center border-r border-gray-50">UOM</th>
                 <th className="px-4 py-4 text-right border-r border-gray-50">Unit Price</th>
@@ -171,7 +151,18 @@ const PurchaseReport: React.FC = () => {
                 reportData.map((row, idx) => (
                   <tr key={idx} className="border-b border-gray-50 text-[10px] hover:bg-gray-50/50">
                     <td className="px-4 py-3 text-center">{idx + 1}</td>
-                    {/* Data rows mapping... */}
+                    <td className="px-4 py-3">{row.tnxDate}</td>
+                    <td className="px-4 py-3">{row.tnxType}</td>
+                    <td className="px-4 py-3 text-blue-500 font-bold">{row.docRef}</td>
+                    <td className="px-4 py-3">{row.sku}</td>
+                    <td className="px-4 py-3 font-bold uppercase">{row.name}</td>
+                    <td className="px-4 py-3 text-center">{row.uom}</td>
+                    <td className="px-4 py-3 text-right">{row.unitPrice.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-center font-bold">{row.qty}</td>
+                    <td className="px-4 py-3 text-right font-bold">{row.tnxValue.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-center">{row.status}</td>
+                    <td className="px-4 py-3 text-center whitespace-nowrap">{row.createdBy}</td>
+                    <td className="px-4 py-3 text-center whitespace-nowrap">{row.updatedBy}</td>
                   </tr>
                 ))
               ) : (
