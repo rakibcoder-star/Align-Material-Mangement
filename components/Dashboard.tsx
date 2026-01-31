@@ -21,7 +21,7 @@ import ItemType from './ItemType';
 import CostCenter from './CostCenter';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  PieChart, Pie, Cell, AreaChart, Area, Legend
+  PieChart, Pie, Cell, AreaChart, Area
 } from 'recharts';
 import { 
   Gauge, 
@@ -140,7 +140,6 @@ const KPICard: React.FC<{ label: string; value: string; icon: React.ReactNode; t
 );
 
 const DashboardOverview: React.FC = () => {
-  // Mock data for visualizations
   const purchaseData = [
     { month: 'Jan', value: 450000 },
     { month: 'Feb', value: 380000 },
@@ -171,7 +170,6 @@ const DashboardOverview: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Top Row KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard label="Open Requisitions" value="42" icon={<ClipboardList />} trend="+12%" trendUp color="bg-blue-500" />
         <KPICard label="PO Value (MTD)" value="৳750,000" icon={<ShoppingBag />} trend="+8.5%" trendUp color="bg-emerald-500" />
@@ -179,9 +177,7 @@ const DashboardOverview: React.FC = () => {
         <KPICard label="Active Suppliers" value="128" icon={<Truck />} color="bg-indigo-500" />
       </div>
 
-      {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Bar Chart */}
         <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-sm font-bold text-gray-700 flex items-center">
@@ -198,7 +194,7 @@ const DashboardOverview: React.FC = () => {
               <BarChart data={purchaseData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f5f5f5" />
                 <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 600 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 600 }} tickFormatter={(val) => `${val/1000}k`} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 600 }} tickFormatter={(val: number) => `${val/1000}k`} />
                 <Tooltip 
                   cursor={{ fill: '#f8fafc' }}
                   contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
@@ -210,7 +206,6 @@ const DashboardOverview: React.FC = () => {
           </div>
         </div>
 
-        {/* Pie Chart */}
         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
           <h3 className="text-sm font-bold text-gray-700 mb-6 flex items-center">
             <Layers size={16} className="mr-2 text-[#2d808e]" />
@@ -228,7 +223,7 @@ const DashboardOverview: React.FC = () => {
                   paddingAngle={5}
                   dataKey="value"
                 >
-                  {categoryData.map((entry, index) => (
+                  {categoryData.map((_entry, index) => (
                     <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                   ))}
                 </Pie>
@@ -251,7 +246,6 @@ const DashboardOverview: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-6">
-        {/* Fulfillment Flow Chart */}
         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
           <h3 className="text-sm font-bold text-gray-700 mb-6 flex items-center">
             <Activity size={16} className="mr-2 text-[#2d808e]" />
@@ -285,7 +279,6 @@ const DashboardOverview: React.FC = () => {
           </div>
         </div>
 
-        {/* Recent Activities */}
         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
           <h3 className="text-sm font-bold text-gray-700 mb-4 flex items-center">
             <History size={16} className="mr-2 text-[#2d808e]" />
@@ -301,7 +294,7 @@ const DashboardOverview: React.FC = () => {
             ].map((activity, i) => (
               <div key={i} className="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors border-l-4 border-transparent hover:border-[#2d808e]">
                 <div className="mr-4 bg-white p-2 rounded-full shadow-sm border border-gray-50">
-                  {React.isValidElement(activity.icon) ? React.cloneElement(activity.icon as React.ReactElement, { size: 14 }) : activity.icon}
+                  {React.isValidElement(activity.icon) ? React.cloneElement(activity.icon as React.ReactElement<any>, { size: 14 }) : activity.icon}
                 </div>
                 <div className="flex-1">
                   <p className="text-[11px] font-bold text-gray-800">{activity.action}</p>
@@ -364,7 +357,6 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-[#f1f3f4] overflow-hidden font-['Inter'] no-print">
-      {/* MOBILE OVERLAY */}
       {isMobileMenuOpen && (
         <div 
           className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden animate-in fade-in duration-300"
@@ -372,7 +364,6 @@ const Dashboard: React.FC = () => {
         />
       )}
 
-      {/* SIDEBAR */}
       <aside className={`
         fixed inset-y-0 left-0 z-50 transform md:relative md:translate-x-0 transition-all duration-300 ease-in-out
         ${isMobileMenuOpen ? 'translate-x-0 w-[190px]' : '-translate-x-full md:translate-x-0'}
@@ -440,7 +431,6 @@ const Dashboard: React.FC = () => {
         </div>
       </aside>
 
-      {/* MAIN CONTENT */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
         <header className="h-14 md:h-16 bg-white border-b border-gray-200 flex items-center justify-between px-3 md:px-6 z-30 shrink-0">
           <div className="flex items-center space-x-1.5 md:space-x-4">
