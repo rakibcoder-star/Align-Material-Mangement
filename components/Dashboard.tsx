@@ -116,10 +116,11 @@ const Dashboard: React.FC = () => {
   const [isMoveOrderModalOpen, setIsMoveOrderModalOpen] = useState(false);
   const [isStockStatusModalOpen, setIsStockStatusModalOpen] = useState(false);
   
+  // Set all mother menus to false initially so children are hidden by default
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
-    purchase: true,
-    warehouse: true,
-    itemMaster: true
+    purchase: false,
+    warehouse: false,
+    itemMaster: false
   });
 
   useEffect(() => {
@@ -168,7 +169,7 @@ const Dashboard: React.FC = () => {
         bg-white border-r border-gray-200 flex flex-col h-full shadow-sm shrink-0
       `}>
         <div className="flex justify-between items-center p-5 md:hidden border-b border-gray-100 mb-2">
-          <h2 className="text-xl font-black text-[#2d808e] tracking-tighter">ALIGN</h2>
+          <button onClick={() => handleTabChange('overview')} className="text-xl font-black text-[#2d808e] tracking-tighter">ALIGN</button>
           <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-gray-400 hover:text-gray-600 focus:outline-none">
             <X size={20} />
           </button>
@@ -235,7 +236,7 @@ const Dashboard: React.FC = () => {
             <button onClick={() => window.innerWidth < 768 ? setIsMobileMenuOpen(true) : setIsSidebarCollapsed(!isSidebarCollapsed)} className="p-2 hover:bg-gray-100 rounded-md transition-colors text-[#2d808e] focus:outline-none">
               <Menu size={22} />
             </button>
-            <h1 className="text-xl md:text-2xl font-black text-gray-800 tracking-tighter">ALIGN</h1>
+            <button onClick={() => handleTabChange('overview')} className="text-xl md:text-2xl font-black text-gray-800 tracking-tighter hover:text-[#2d808e] transition-colors">ALIGN</button>
           </div>
           
           <div className="flex-1 max-w-lg px-4 hidden sm:block">
