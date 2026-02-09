@@ -83,7 +83,7 @@ const SidebarItem: React.FC<{
       >
         <div className="flex items-center space-x-2">
           <div className={`${active ? 'text-[#2d808e]' : danger ? 'text-red-400' : 'text-gray-500'} shrink-0`}>
-            {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { size: 15 }) : icon}
+            {icon && React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { size: 15 }) : icon}
           </div>
           {!isCollapsed && <span className="text-[11px] leading-tight tracking-tight whitespace-nowrap overflow-hidden">{label}</span>}
         </div>
@@ -113,7 +113,7 @@ const SubmenuItem: React.FC<{
     }`}
   >
     <div className={`${active ? 'text-[#2d808e]' : 'text-gray-400'} shrink-0`}>
-      {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { size: 12 }) : icon}
+      {icon && React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { size: 12 }) : icon}
     </div>
     <span className="truncate tracking-tight">{label}</span>
   </button>
@@ -122,8 +122,8 @@ const SubmenuItem: React.FC<{
 const KPICard: React.FC<{ label: string; value: string; icon: React.ReactNode; trend?: string; trendUp?: boolean; color: string }> = ({ label, value, icon, trend, trendUp, color }) => (
   <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between hover:shadow-md transition-all">
     <div className="flex justify-between items-start mb-2">
-      <div className={`p-2 rounded-lg ${color} bg-opacity-10 text-${color.split('-')[1]}-600`}>
-        {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { size: 20 }) : icon}
+      <div className={`p-2 rounded-lg ${color} bg-opacity-10`}>
+        {icon && React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { size: 20 }) : icon}
       </div>
       {trend && (
         <span className={`text-[10px] font-bold flex items-center ${trendUp ? 'text-green-500' : 'text-red-500'}`}>
@@ -294,7 +294,7 @@ const DashboardOverview: React.FC = () => {
             ].map((activity, i) => (
               <div key={i} className="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors border-l-4 border-transparent hover:border-[#2d808e]">
                 <div className="mr-4 bg-white p-2 rounded-full shadow-sm border border-gray-50">
-                  {React.isValidElement(activity.icon) ? React.cloneElement(activity.icon as React.ReactElement<any>, { size: 14 }) : activity.icon}
+                  {activity.icon && React.isValidElement(activity.icon) ? React.cloneElement(activity.icon as React.ReactElement<any>, { size: 14 }) : null}
                 </div>
                 <div className="flex-1">
                   <p className="text-[11px] font-bold text-gray-800">{activity.action}</p>
@@ -491,7 +491,7 @@ const Dashboard: React.FC = () => {
            <div className="flex flex-col md:flex-row items-center md:space-x-4 text-[8px] md:text-[9px] font-bold uppercase tracking-widest text-center">
               <p className="text-gray-500">All rights Reserved © ALIGN 2026</p>
               <div className="hidden md:block w-1 h-1 bg-[#2d808e]/20 rounded-full"></div>
-              <p className="text-gray-400">Developed by <a href="https://github.com/rakibcoder-star" target="_blank" rel="noopener noreferrer" className="text-[#2d808e] font-black hover:underline">RAKIB H SHUVO</a></p>
+              <p className="text-gray-400">Developed by <a href="https://github.com/rakibcoder-star" target="_blank" rel="noopener noreferrer" className="text-[#2d808e] font-black hover:underline transition-all">RAKIB H SHUVO</a></p>
            </div>
         </footer>
       </div>

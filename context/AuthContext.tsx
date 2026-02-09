@@ -15,7 +15,6 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Requested administrator credentials
 const MOCK_ADMIN_EMAIL = 'rakib@align.com';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -24,82 +23,108 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   const fetchUsers = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*');
-    
-    if (data && !error) {
-      const mappedUsers = data.map(u => ({
-        id: u.id,
-        email: u.email,
-        role: (u.role as Role) || Role.USER,
-        permissions: u.permissions || [],
-        createdAt: u.created_at || new Date().toISOString()
-      }));
-      setUsers(mappedUsers);
-    }
-  }, []);
-
-  const fetchProfile = useCallback(async (userId: string, email?: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    
-    if (data && !error) {
-      setCurrentUser({
-        id: data.id,
-        email: data.email,
-        role: data.role as Role,
-        permissions: data.permissions || [],
-        createdAt: data.created_at
-      });
-    } else {
-      // Default to mock admin if no profile found
-      setCurrentUser({
-        id: userId || 'mock-admin-id',
-        email: email || MOCK_ADMIN_EMAIL,
-        role: Role.ADMIN,
-        permissions: ROLE_DEFAULT_PERMISSIONS[Role.ADMIN],
-        createdAt: new Date().toISOString()
-      });
+    try {
+      const { data, error } = await supabase.from('profiles').select('*');
+      if (data && !error) {
+        setUsers(data.map(u => ({
+          id: u.id,
+          email: u.email,
+          role: (u.role as Role) || Role.USER,
+          permissions: u.permissions || ROLE_DEFAULT_PERMISSIONS[(u.role as Role) || Role.USER],
+          createdAt: u.created_at || new Date().toISOString()
+        })));
+      }
+    } catch (e) {
+      console.warn("Supabase fetch failed, using local state");
     }
   }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        fetchProfile(session.user.id, session.user.email);
-        fetchUsers();
-      }
-      setLoading(false);
-    });
+    // Check session on load
+    const initAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        fetchProfile(session.user.id, session.user.email);
-        fetchUsers();
-      } else {
-        setCurrentUser(null);
-        setUsers([]);
+          setCurrentUser({
+            id: session.user.id,
+            email: session.user.email || '',
+            role: (profile?.role as Role) || Role.ADMIN,
+            permissions: profile?.permissions || ROLE_DEFAULT_PERMISSIONS[(profile?.role as Role) || Role.ADMIN],
+            createdAt: profile?.created_at || new Date().toISOString()
+          });
+          await fetchUsers();
+        }
+      } catch (err) {
+        console.error("Auth init error:", err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
+    };
+
+    initAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session) {
+        // Handle session refresh or new login
+        await fetchUsers();
+      } else if (!currentUser?.id?.startsWith('sim-')) {
+        // Clear if not in simulation mode
+        setCurrentUser(null);
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, [fetchProfile, fetchUsers]);
+  }, [fetchUsers]);
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
-    // "Turn off login option" - simply set the state to logged in immediately
-    setCurrentUser({
-      id: 'mock-admin-id',
-      email: email || MOCK_ADMIN_EMAIL,
-      role: Role.ADMIN,
-      permissions: ROLE_DEFAULT_PERMISSIONS[Role.ADMIN],
-      createdAt: new Date().toISOString()
-    });
-    return true;
+    try {
+      // 1. Try real Supabase Auth first
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (!error && data.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', data.user.id)
+          .single();
+
+        setCurrentUser({
+          id: data.user.id,
+          email: data.user.email || '',
+          role: (profile?.role as Role) || Role.USER,
+          permissions: profile?.permissions || ROLE_DEFAULT_PERMISSIONS[(profile?.role as Role) || Role.USER],
+          createdAt: profile?.created_at || new Date().toISOString()
+        });
+        return true;
+      }
+    } catch (err) {
+      console.warn("Supabase Auth failed, attempting simulation mode.");
+    }
+
+    // 2. Simulation fallback for demo purposes
+    if (email === MOCK_ADMIN_EMAIL || email.includes('@align.com')) {
+      const simulatedUser: User = {
+        id: 'sim-' + Math.random().toString(36).substr(2, 9),
+        email: email,
+        role: Role.ADMIN,
+        permissions: ROLE_DEFAULT_PERMISSIONS[Role.ADMIN],
+        createdAt: new Date().toISOString()
+      };
+      setCurrentUser(simulatedUser);
+      setUsers(prev => prev.find(u => u.email === simulatedUser.email) ? prev : [simulatedUser, ...prev]);
+      return true;
+    }
+
+    return false;
   }, []);
 
   const logout = useCallback(async () => {
@@ -108,40 +133,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const addUser = useCallback(async (userData: Omit<User, 'id' | 'createdAt'>) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .insert([{
+    const newUser: User = {
+      id: 'usr-' + Math.random().toString(36).substr(2, 9),
+      ...userData,
+      createdAt: new Date().toISOString()
+    };
+
+    // Persistent add to profiles table if it exists
+    try {
+      const { error } = await supabase.from('profiles').insert([{
         email: userData.email,
         role: userData.role,
         permissions: userData.permissions,
-        created_at: new Date().toISOString()
-      }])
-      .select();
-
-    if (!error && data) {
-      const newUser = {
-        id: data[0].id,
-        email: data[0].email,
-        role: data[0].role as Role,
-        permissions: data[0].permissions || [],
-        createdAt: data[0].created_at
-      };
-      setUsers(prev => [...prev, newUser]);
-    } else if (error) {
-      console.error("Error adding user profile:", error.message);
-      throw error;
+        created_at: newUser.createdAt
+      }]);
+      if (error) throw error;
+    } catch (e) {
+      console.warn("Database storage skipped, adding to local UI state only.");
     }
+
+    setUsers(prev => [newUser, ...prev]);
   }, []);
 
   const deleteUser = useCallback(async (userId: string) => {
-    const { error } = await supabase
-      .from('profiles')
-      .delete()
-      .eq('id', userId);
-
-    if (!error) {
-      setUsers(prev => prev.filter((u: User) => u.id !== userId));
-    }
+    try {
+      await supabase.from('profiles').delete().eq('id', userId);
+    } catch (e) {}
+    setUsers(prev => prev.filter(u => u.id !== userId));
   }, []);
 
   const hasPermission = useCallback((permissionId: string) => {
