@@ -15,8 +15,6 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const MOCK_ADMIN_EMAIL = 'rakib@align.com';
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [users, setUsers] = useState<User[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -40,7 +38,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   useEffect(() => {
-    // Check session on load
     const initAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -68,63 +65,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     initAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session) {
-        // Handle session refresh or new login
-        await fetchUsers();
-      } else if (!currentUser?.id?.startsWith('sim-')) {
-        // Clear if not in simulation mode
-        setCurrentUser(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
   }, [fetchUsers]);
 
-  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
-    try {
-      // 1. Try real Supabase Auth first
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (!error && data.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', data.user.id)
-          .single();
-
-        setCurrentUser({
-          id: data.user.id,
-          email: data.user.email || '',
-          role: (profile?.role as Role) || Role.USER,
-          permissions: profile?.permissions || ROLE_DEFAULT_PERMISSIONS[(profile?.role as Role) || Role.USER],
-          createdAt: profile?.created_at || new Date().toISOString()
-        });
-        return true;
-      }
-    } catch (err) {
-      console.warn("Supabase Auth failed, attempting simulation mode.");
-    }
-
-    // 2. Simulation fallback for demo purposes
-    if (email === MOCK_ADMIN_EMAIL || email.includes('@align.com')) {
-      const simulatedUser: User = {
-        id: 'sim-' + Math.random().toString(36).substr(2, 9),
-        email: email,
-        role: Role.ADMIN,
-        permissions: ROLE_DEFAULT_PERMISSIONS[Role.ADMIN],
-        createdAt: new Date().toISOString()
-      };
-      setCurrentUser(simulatedUser);
-      setUsers(prev => prev.find(u => u.email === simulatedUser.email) ? prev : [simulatedUser, ...prev]);
-      return true;
-    }
-
-    return false;
+  const login = useCallback(async (email: string, _password: string): Promise<boolean> => {
+    // Modified to allow instant login for development/demo purposes as requested
+    const simulatedUser: User = {
+      id: 'sim-' + Math.random().toString(36).substr(2, 9),
+      email: email || 'user@align.com',
+      role: Role.ADMIN,
+      permissions: ROLE_DEFAULT_PERMISSIONS[Role.ADMIN],
+      createdAt: new Date().toISOString()
+    };
+    setCurrentUser(simulatedUser);
+    setUsers(prev => prev.find(u => u.email === simulatedUser.email) ? prev : [simulatedUser, ...prev]);
+    return true;
   }, []);
 
   const logout = useCallback(async () => {
@@ -139,7 +93,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createdAt: new Date().toISOString()
     };
 
-    // Persistent add to profiles table if it exists
     try {
       const { error } = await supabase.from('profiles').insert([{
         email: userData.email,
