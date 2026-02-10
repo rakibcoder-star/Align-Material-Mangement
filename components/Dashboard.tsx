@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -468,7 +467,7 @@ const Dashboard: React.FC = () => {
             <Routes>
               <Route path="/overview" element={<DashboardOverview />} />
               <Route path="/users" element={hasPermission('manage_users') ? <UserManagement /> : <Navigate to="/overview" />} />
-              <Route path="/requisition" element={<PurchaseRequisition requisitions={[]} setRequisitions={() => {}} />} />
+              <Route path="/requisition" element={<PurchaseRequisition />} />
               <Route path="/purchase-order" element={<PurchaseOrder orders={[]} />} />
               <Route path="/supplier" element={<Supplier />} />
               <Route path="/purchase-report" element={<PurchaseReport />} />
