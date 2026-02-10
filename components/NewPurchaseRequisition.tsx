@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Home, Plus, ChevronDown, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -29,9 +28,10 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
   const [supplierType, setSupplierType] = useState(initialData?.type || '');
   
   // Requester Details State
-  const [requesterName, setRequesterName] = useState(initialData?.reqBy || 'Md Azizul Hakim');
-  const [contactNumber, setContactNumber] = useState(initialData?.contact || '+880 1777 702323');
-  const [emailAddress, setEmailAddress] = useState(initialData?.email || user?.email || 'azizul.hakim@fairtechnology.com.bd');
+  const displayName = user?.email?.split('@')[0].split('.').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ') || 'User';
+  const [requesterName, setRequesterName] = useState(initialData?.reqBy || displayName);
+  const [contactNumber, setContactNumber] = useState(initialData?.contact || '+880 1700 000000');
+  const [emailAddress, setEmailAddress] = useState(initialData?.email || user?.email || '');
   const [costCenter, setCostCenter] = useState(initialData?.reqDpt || 'MMT');
 
   const [items, setItems] = useState<RequisitionItem[]>(
@@ -95,12 +95,16 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
       return;
     }
 
-    // Generate new PR object
     const totalQty = items.reduce((sum, item) => sum + (Number(item.reqQty) || 0), 0);
     const totalValue = items.reduce((sum, item) => sum + (Number(item.reqQty) * Number(item.unitPrice) || 0), 0);
     
+    // START PR NO ON 2000000000
+    const prNumberBase = 2000000000;
+    const randomSuffix = Math.floor(Math.random() * 999999);
+    const generatedPRNo = (prNumberBase + randomSuffix).toString();
+
     const newPR = {
-      PR: prReference || (initialData?.PR || `3000000${Math.floor(Math.random() * 900) + 100}`),
+      PR: generatedPRNo,
       code: items[0]?.sku || 'NA',
       SKU: items[0]?.sku || 'NA',
       name: items[0]?.name || 'NEW REQUISITION',
@@ -108,13 +112,9 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
       UOM: items[0]?.uom || 'PC',
       PRPrice: Number(items[0]?.unitPrice) || 0,
       reqQty: totalQty,
-      POQty: initialData?.POQty || 0,
-      recQty: initialData?.recQty || 0,
       reqDpt: costCenter,
       reqBy: requesterName,
-      createdAt: initialData?.createdAt || new Date().toISOString().slice(0, 16).replace('T', ' '),
-      updateBy: 'Sohel Rana',
-      updatedAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
+      createdAt: initialData?.createdAt || new Date().toISOString(),
       status: initialData?.status || 'In-Process',
       value: totalValue,
       items: items, 
@@ -129,7 +129,6 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
 
   return (
     <div className="flex flex-col space-y-4 md:space-y-6">
-      {/* Breadcrumbs */}
       <div className="flex items-center space-x-2 text-[10px] md:text-[11px] font-bold text-[#2d808e] uppercase tracking-wider">
         <Home size={14} className="text-gray-400" />
         <span className="text-gray-400">/</span>
@@ -145,7 +144,6 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4 md:p-8 space-y-6 md:space-y-8">
-        {/* Top Fields */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
           <div className="space-y-1.5">
             <label className="text-xs md:text-sm font-bold text-[#2d808e]">PR Referance</label>
@@ -192,7 +190,7 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
                 maxLength={50}
                 value={prNote}
                 onChange={(e) => setPrNote(e.target.value)}
-                placeholder="PR Referance"
+                placeholder="Internal Notes"
                 className="w-full px-3 py-2 bg-white border border-[#2d808e]/40 rounded focus:border-[#2d808e] outline-none text-xs md:text-sm placeholder-gray-300 transition-all"
               />
               <span className="absolute right-3 top-2 text-[9px] text-gray-400 font-bold">
@@ -202,7 +200,6 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
           </div>
         </div>
 
-        {/* Requester Details */}
         <div className="space-y-4">
           <h3 className="text-xs md:text-sm font-bold text-[#2d808e] border-b border-gray-50 pb-2">Requester Details</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
@@ -221,7 +218,6 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
           </div>
         </div>
 
-        {/* Item Details */}
         <div className="space-y-4">
           <h3 className="text-xs md:text-sm font-bold text-[#2d808e] border-b border-gray-50 pb-2">Item Details</h3>
           <div className="overflow-x-auto -mx-4 md:mx-0">
@@ -290,7 +286,6 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
           </button>
         </div>
 
-        {/* Submit Button */}
         <div className="pt-2">
           <button 
             onClick={handleFormSubmit}

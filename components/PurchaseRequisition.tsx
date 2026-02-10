@@ -16,6 +16,7 @@ const PurchaseRequisition: React.FC = () => {
 
   const fetchRequisitions = async () => {
     setLoading(true);
+    // Fetching requisitions and joining with profiles and potentially some metadata if available
     const { data, error } = await supabase
       .from('requisitions')
       .select(`*, profiles(email)`)
@@ -25,10 +26,13 @@ const PurchaseRequisition: React.FC = () => {
       setRequisitions(data.map(r => ({
         ...r,
         PR: r.pr_no,
-        reqBy: r.profiles?.email?.split('@')[0] || 'Unknown',
-        createdAt: r.created_at,
-        name: 'Item List Attached', // Summary
+        // In a real app we would join with requisition_items to get a summary SKU
+        sku: 'SKU-META', 
+        name: r.reference || 'Item List Attached',
         reqQty: 'Multi',
+        reqBy: r.profiles?.email?.split('@')[0] || 'Unknown',
+        reqDept: r.type === 'foreign' ? 'IMPORTS' : 'LOCAL PROCUREMENT', // Example mapping
+        createdAt: r.created_at,
         status: r.status
       })));
     }
@@ -54,7 +58,6 @@ const PurchaseRequisition: React.FC = () => {
   };
 
   const handleSubmitNew = async (newPR: any) => {
-    // 1. Insert Requisition Header
     const { data: prData, error: prError } = await supabase
       .from('requisitions')
       .insert([{
@@ -72,12 +75,6 @@ const PurchaseRequisition: React.FC = () => {
     if (prError) {
       alert("Error saving requisition: " + prError.message);
       return;
-    }
-
-    // 2. Insert Items (if any were passed in the newPR object)
-    if (newPR.items && newPR.items.length > 0) {
-      // In a real app, you'd map items to IDs
-      console.log("Saving items for PR:", prData.id);
     }
 
     await fetchRequisitions();
@@ -108,15 +105,16 @@ const PurchaseRequisition: React.FC = () => {
         {loading ? (
           <div className="p-20 text-center text-gray-400">Loading requisitions...</div>
         ) : (
-          <table className="w-full text-left border-collapse min-w-[1000px]">
+          <table className="w-full text-left border-collapse min-w-[1200px]">
             <thead className="bg-[#fafbfc]">
               <tr className="text-[11px] font-bold text-gray-700 uppercase border-b border-gray-100">
                 <th className="px-4 py-4 text-center w-12">SL</th>
                 <th className="px-4 py-4 text-center">PR No</th>
-                <th className="px-4 py-4">Reference</th>
-                <th className="px-4 py-4 text-center">Status</th>
+                <th className="px-4 py-4 text-center">SKU</th>
+                <th className="px-4 py-4">Name</th>
+                <th className="px-4 py-4 text-center">Req. Qty</th>
                 <th className="px-4 py-4 text-center">Req. By</th>
-                <th className="px-4 py-4 text-center">Date</th>
+                <th className="px-4 py-4 text-center">Req. Dept.</th>
                 <th className="px-4 py-4 text-center w-24">Action</th>
               </tr>
             </thead>
@@ -125,14 +123,15 @@ const PurchaseRequisition: React.FC = () => {
                 <tr key={item.id} className="hover:bg-gray-50 border-b border-gray-50 last:border-0">
                   <td className="px-4 py-3.5 text-center">{index + 1}</td>
                   <td className="px-4 py-3.5 text-center text-blue-500 font-bold">{item.PR}</td>
-                  <td className="px-4 py-3.5">{item.reference || '-'}</td>
+                  <td className="px-4 py-3.5 text-center text-gray-500">{item.sku}</td>
+                  <td className="px-4 py-3.5">{item.name}</td>
+                  <td className="px-4 py-3.5 text-center font-bold">{item.reqQty}</td>
+                  <td className="px-4 py-3.5 text-center">{item.reqBy}</td>
                   <td className="px-4 py-3.5 text-center">
-                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-orange-100 text-orange-700">
-                      {item.status}
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-gray-100 text-gray-600">
+                      {item.reqDept}
                     </span>
                   </td>
-                  <td className="px-4 py-3.5 text-center">{item.reqBy}</td>
-                  <td className="px-4 py-3.5 text-center">{new Date(item.createdAt).toLocaleDateString()}</td>
                   <td className="px-4 py-3.5 text-center">
                     <button onClick={() => handleEdit(item)} className="p-1.5 text-gray-400 hover:text-blue-500 border border-gray-100 rounded">
                       <Edit2 size={12} />
@@ -140,6 +139,11 @@ const PurchaseRequisition: React.FC = () => {
                   </td>
                 </tr>
               ))}
+              {filteredData.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="py-20 text-center text-gray-300">No requisitions found.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         )}

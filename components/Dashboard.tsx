@@ -121,12 +121,12 @@ const SubmenuItem: React.FC<{
   </button>
 );
 
-const KPICard: React.FC<{ label: string; value: string; subValue?: string; color?: string }> = ({ label, value, subValue, color }) => (
-  <div className="bg-white p-4 rounded border border-gray-100 shadow-sm flex flex-col justify-center min-h-[90px] hover:shadow-md transition-all">
-    <h3 className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">{label}</h3>
+const KPICard: React.FC<{ label: string; value: string; subValue?: string }> = ({ label, value, subValue }) => (
+  <div className="bg-white p-4 rounded shadow-sm border border-gray-100 flex flex-col justify-center min-h-[90px] hover:shadow-md transition-all">
+    <h3 className="text-[11px] text-gray-400 font-bold tracking-tight mb-1">{label}</h3>
     <div className="flex items-baseline space-x-1">
-      <p className="text-lg font-black text-gray-700 tracking-tight">{value}</p>
-      {subValue && <p className="text-[11px] font-bold text-gray-400">({subValue})</p>}
+      <p className="text-xl font-black text-gray-700 tracking-tight">{value}</p>
+      {subValue && <p className="text-[13px] font-bold text-gray-400">({subValue})</p>}
     </div>
   </div>
 );
@@ -138,9 +138,9 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setInterval(() => setDateTime(new Date()), 60000);
+    const timer = setInterval(() => setDateTime(new Date()), 1000);
     const fetchDashboardData = async () => {
-      const { data } = await supabase.from('requisitions').select('*').order('created_at', { ascending: false }).limit(5);
+      const { data } = await supabase.from('requisitions').select('*').order('created_at', { ascending: false }).limit(10);
       if (data) setRecentPrs(data);
       setLoading(false);
     };
@@ -150,7 +150,7 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) + 
-           ' ' + date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+           ' ' + date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
   };
 
   const displayName = user?.email?.split('@')[0].split('.').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ') || 'User';
@@ -158,26 +158,26 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
   return (
     <div className="space-y-6">
       {/* Personalized Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-[#2d808e] tracking-tight">Hi, {displayName}!</h1>
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">{formatDate(dateTime)}</p>
+          <p className="text-[11px] font-bold text-gray-400 mt-0.5">{formatDate(dateTime)}</p>
         </div>
         <div className="flex items-center space-x-2">
           <button className="flex items-center px-4 py-2 bg-[#2d808e] text-white text-[11px] font-bold rounded shadow-sm hover:bg-[#256b78] transition-all">
-            <Printer size={14} className="mr-2" /> Code Print
+             <Menu size={14} className="mr-2" /> Code Print
           </button>
           <button onClick={onCheckStock} className="flex items-center px-4 py-2 bg-[#2d808e] text-white text-[11px] font-bold rounded shadow-sm hover:bg-[#256b78] transition-all">
-            <LayoutGrid size={14} className="mr-2" /> Check Stock
+             <LayoutGrid size={14} className="mr-2" /> Check Stock
           </button>
           <button onClick={onMoveOrder} className="flex items-center px-4 py-2 bg-[#2d808e] text-white text-[11px] font-bold rounded shadow-sm hover:bg-[#256b78] transition-all">
-            <Plus size={14} className="mr-2" /> Move Order
+             <Plus size={14} className="mr-2" /> Move Order
           </button>
         </div>
       </div>
 
-      {/* KPI Section matching 2nd image */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      {/* KPI Section */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
         <KPICard label="Today Order(Qty)" value="0" subValue="0" />
         <KPICard label="Lastday Order(Qty)" value="20.9K" subValue="126" />
         <KPICard label="Weekly Order(Qty)" value="63.5K" subValue="502" />
@@ -186,54 +186,46 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
         <KPICard label="Monthly PR(Qty)" value="32.1K" subValue="539" />
       </div>
 
-      {/* PR Approval Section - Permission-based */}
+      {/* PR Approval Section - Role Restricted */}
       {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1 bg-white rounded shadow-sm border border-gray-100 overflow-hidden flex flex-col h-[300px]">
-            <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
-              <h3 className="text-sm font-black text-[#2d808e] uppercase tracking-tighter">PR Approval</h3>
-            </div>
-            <div className="flex-1 overflow-y-auto scrollbar-thin">
-              <table className="w-full text-left border-collapse">
-                <thead className="bg-gray-50 sticky top-0 z-10">
-                  <tr className="text-[10px] font-bold text-gray-500 uppercase">
-                    <th className="px-5 py-3 text-center">Date</th>
-                    <th className="px-5 py-3 text-center">Ref.No</th>
-                    <th className="px-5 py-3 text-right">Value</th>
-                  </tr>
-                </thead>
-                <tbody className="text-[11px]">
-                  {loading ? (
-                    <tr><td colSpan={3} className="py-10 text-center text-gray-400">Loading...</td></tr>
-                  ) : recentPrs.length > 0 ? (
-                    recentPrs.map((pr) => (
-                      <tr key={pr.id} className="border-b border-gray-50 hover:bg-gray-50">
-                        <td className="px-5 py-3 text-center whitespace-nowrap">{new Date(pr.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })}</td>
-                        <td className="px-5 py-3 text-center text-blue-500 font-bold">{pr.pr_no}</td>
-                        <td className="px-5 py-3 text-right font-black text-gray-600">{pr.total_value || 0}</td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr><td colSpan={3} className="py-10 text-center text-gray-400">No PRs found</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+        <div className="bg-white rounded shadow-sm border border-gray-100 overflow-hidden flex flex-col w-full max-w-md">
+          <div className="px-5 py-4 border-b border-gray-50 bg-[#fafbfc]">
+            <h3 className="text-sm font-black text-[#2d808e] uppercase tracking-tighter">PR Approval</h3>
           </div>
-          
-          <div className="lg:col-span-2 bg-white rounded shadow-sm border border-gray-100 p-6 flex flex-col justify-center items-center text-gray-300">
-             <BarChart3 size={48} strokeWidth={1} />
-             <p className="text-[10px] font-bold uppercase tracking-widest mt-2">Additional Dashboard Insights</p>
+          <div className="overflow-y-auto max-h-[400px] scrollbar-thin">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-gray-50 sticky top-0 z-10">
+                <tr className="text-[10px] font-bold text-gray-500 uppercase">
+                  <th className="px-5 py-3 text-center">Date</th>
+                  <th className="px-5 py-3 text-center">Ref.No</th>
+                  <th className="px-5 py-3 text-right">Value</th>
+                </tr>
+              </thead>
+              <tbody className="text-[11px]">
+                {loading ? (
+                  <tr><td colSpan={3} className="py-10 text-center text-gray-400">Loading...</td></tr>
+                ) : recentPrs.length > 0 ? (
+                  recentPrs.map((pr) => (
+                    <tr key={pr.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                      <td className="px-5 py-3 text-center whitespace-nowrap text-gray-600">
+                        {new Date(pr.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })}
+                      </td>
+                      <td className="px-5 py-3 text-center">
+                        <button className="text-blue-500 font-bold hover:underline transition-all">
+                          {pr.pr_no}
+                        </button>
+                      </td>
+                      <td className="px-5 py-3 text-right font-black text-gray-800">
+                        {pr.total_value ? Number(pr.total_value).toLocaleString() : '0'}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr><td colSpan={3} className="py-10 text-center text-gray-400">No PRs found</td></tr>
+                )}
+              </tbody>
+            </table>
           </div>
-        </div>
-      )}
-
-      {/* Basic Users view */}
-      {!(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
-        <div className="bg-white p-12 rounded border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center">
-          <Activity size={48} className="text-[#2d808e]/30 mb-4" />
-          <h2 className="text-lg font-bold text-gray-700">Welcome to ALIGN</h2>
-          <p className="text-sm text-gray-400 max-w-md mx-auto">Access your purchase requisitions and item master from the sidebar menu to get started with your daily tasks.</p>
         </div>
       )}
     </div>
@@ -352,7 +344,6 @@ const Dashboard: React.FC = () => {
             </div>
           </SidebarItem>
 
-          {/* New Admin Top-level Menu */}
           {hasPermission('manage_users') && (
             <SidebarItem icon={<ShieldAlert />} label="Admin" hasSubmenu isCollapsed={isSidebarCollapsed && !isMobileMenuOpen} isOpen={openMenus.admin} onClick={() => toggleMenu('admin')}>
               <div className="space-y-0.5">
