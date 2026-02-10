@@ -6,7 +6,7 @@ import { ROLE_DEFAULT_PERMISSIONS } from '../constants';
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
-  addUser: (userData: Omit<User, 'id' | 'createdAt'>) => Promise<void>;
+  addUser: (userData: any) => Promise<void>;
   deleteUser: (userId: string) => Promise<void>;
   users: User[];
   hasPermission: (permissionId: string) => boolean;
@@ -21,105 +21,93 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   const fetchUsers = useCallback(async () => {
-    try {
-      const { data, error } = await supabase.from('profiles').select('*');
-      if (data && !error) {
-        setUsers(data.map(u => ({
-          id: u.id,
-          email: u.email,
-          role: (u.role as Role) || Role.USER,
-          permissions: u.permissions || ROLE_DEFAULT_PERMISSIONS[(u.role as Role) || Role.USER],
-          createdAt: u.created_at || new Date().toISOString()
-        })));
-      }
-    } catch (e) {
-      console.warn("Supabase fetch failed, using local state");
+    const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+    if (data && !error) {
+      setUsers(data.map(u => ({
+        id: u.id,
+        email: u.email,
+        role: u.role as Role,
+        permissions: u.permissions || [],
+        createdAt: u.created_at
+      })));
     }
   }, []);
 
   useEffect(() => {
     const initAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
 
+        if (profile) {
           setCurrentUser({
-            id: session.user.id,
-            email: session.user.email || '',
-            role: (profile?.role as Role) || Role.ADMIN,
-            permissions: profile?.permissions || ROLE_DEFAULT_PERMISSIONS[(profile?.role as Role) || Role.ADMIN],
-            createdAt: profile?.created_at || new Date().toISOString()
+            id: profile.id,
+            email: profile.email,
+            role: profile.role as Role,
+            permissions: profile.permissions,
+            createdAt: profile.created_at
           });
-          await fetchUsers();
         }
-      } catch (err) {
-        console.error("Auth init error:", err);
-      } finally {
-        setLoading(false);
+        await fetchUsers();
       }
+      setLoading(false);
     };
-
     initAuth();
   }, [fetchUsers]);
 
-  const login = useCallback(async (email: string, _password: string): Promise<boolean> => {
-    // Modified to allow instant login for development/demo purposes as requested
-    const simulatedUser: User = {
-      id: 'sim-' + Math.random().toString(36).substr(2, 9),
-      email: email || 'user@align.com',
+  const login = async (email: string, _password: string): Promise<boolean> => {
+    // For demo: We use a static login that maps to a "Master Admin" if no session exists
+    // In production, use supabase.auth.signInWithPassword
+    const mockId = '00000000-0000-0000-0000-000000000000';
+    const profile = {
+      id: mockId,
+      email: email || 'admin@align.com',
       role: Role.ADMIN,
       permissions: ROLE_DEFAULT_PERMISSIONS[Role.ADMIN],
       createdAt: new Date().toISOString()
     };
-    setCurrentUser(simulatedUser);
-    setUsers(prev => prev.find(u => u.email === simulatedUser.email) ? prev : [simulatedUser, ...prev]);
+    
+    setCurrentUser(profile);
     return true;
-  }, []);
+  };
 
-  const logout = useCallback(async () => {
+  const logout = async () => {
     await supabase.auth.signOut();
     setCurrentUser(null);
-  }, []);
+  };
 
-  const addUser = useCallback(async (userData: Omit<User, 'id' | 'createdAt'>) => {
-    const newUser: User = {
-      id: 'usr-' + Math.random().toString(36).substr(2, 9),
-      ...userData,
-      createdAt: new Date().toISOString()
-    };
+  const addUser = async (userData: any) => {
+    const { data, error } = await supabase.from('profiles').insert([{
+      id: uuidv4(), // Client side UUID for demo if not using Auth signup
+      email: userData.email,
+      role: userData.role,
+      permissions: userData.permissions
+    }]).select();
+    
+    if (!error) await fetchUsers();
+  };
 
-    try {
-      const { error } = await supabase.from('profiles').insert([{
-        email: userData.email,
-        role: userData.role,
-        permissions: userData.permissions,
-        created_at: newUser.createdAt
-      }]);
-      if (error) throw error;
-    } catch (e) {
-      console.warn("Database storage skipped, adding to local UI state only.");
-    }
+  const deleteUser = async (userId: string) => {
+    const { error } = await supabase.from('profiles').delete().eq('id', userId);
+    if (!error) await fetchUsers();
+  };
 
-    setUsers(prev => [newUser, ...prev]);
-  }, []);
-
-  const deleteUser = useCallback(async (userId: string) => {
-    try {
-      await supabase.from('profiles').delete().eq('id', userId);
-    } catch (e) {}
-    setUsers(prev => prev.filter(u => u.id !== userId));
-  }, []);
-
-  const hasPermission = useCallback((permissionId: string) => {
+  const hasPermission = (permissionId: string) => {
     if (!currentUser) return false;
     if (currentUser.role === Role.ADMIN) return true;
     return currentUser.permissions.includes(permissionId);
-  }, [currentUser]);
+  };
+
+  function uuidv4() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
 
   return (
     <AuthContext.Provider value={{ 
@@ -140,8 +128,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within AuthProvider');
   return context;
 };
