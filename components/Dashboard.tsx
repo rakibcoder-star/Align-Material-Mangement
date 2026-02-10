@@ -18,6 +18,7 @@ import ItemUOM from './ItemUOM';
 import ItemGroup from './ItemGroup';
 import ItemType from './ItemType';
 import CostCenter from './CostCenter';
+import { supabase } from '../lib/supabase';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   PieChart, Pie, Cell, AreaChart, Area
@@ -53,7 +54,9 @@ import {
   Package,
   Activity,
   Plus,
-  History
+  History,
+  Printer,
+  ShieldAlert
 } from 'lucide-react';
 
 const SidebarItem: React.FC<{ 
@@ -118,193 +121,121 @@ const SubmenuItem: React.FC<{
   </button>
 );
 
-const KPICard: React.FC<{ label: string; value: string; icon: React.ReactNode; trend?: string; trendUp?: boolean; color: string }> = ({ label, value, icon, trend, trendUp, color }) => (
-  <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between hover:shadow-md transition-all">
-    <div className="flex justify-between items-start mb-2">
-      <div className={`p-2 rounded-lg ${color} bg-opacity-10`}>
-        {icon && React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { size: 20 }) : icon}
-      </div>
-      {trend && (
-        <span className={`text-[10px] font-bold flex items-center ${trendUp ? 'text-green-500' : 'text-red-500'}`}>
-          {trendUp ? <TrendingUp size={10} className="mr-0.5" /> : null}
-          {trend}
-        </span>
-      )}
-    </div>
-    <div>
-      <h3 className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{label}</h3>
-      <p className="text-xl font-black text-gray-800 tracking-tight">{value}</p>
+const KPICard: React.FC<{ label: string; value: string; subValue?: string; color?: string }> = ({ label, value, subValue, color }) => (
+  <div className="bg-white p-4 rounded border border-gray-100 shadow-sm flex flex-col justify-center min-h-[90px] hover:shadow-md transition-all">
+    <h3 className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">{label}</h3>
+    <div className="flex items-baseline space-x-1">
+      <p className="text-lg font-black text-gray-700 tracking-tight">{value}</p>
+      {subValue && <p className="text-[11px] font-bold text-gray-400">({subValue})</p>}
     </div>
   </div>
 );
 
-const DashboardOverview: React.FC = () => {
-  const purchaseData = [
-    { month: 'Jan', value: 450000 },
-    { month: 'Feb', value: 380000 },
-    { month: 'Mar', value: 520000 },
-    { month: 'Apr', value: 480000 },
-    { month: 'May', value: 610000 },
-    { month: 'Jun', value: 750000 },
-  ];
+const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () => void }> = ({ onCheckStock, onMoveOrder }) => {
+  const { user } = useAuth();
+  const [dateTime, setDateTime] = useState(new Date());
+  const [recentPrs, setRecentPrs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const categoryData = [
-    { name: 'Spare Parts', value: 400 },
-    { name: 'Consumables', value: 300 },
-    { name: 'Admin Supplies', value: 150 },
-    { name: 'Tools', value: 100 },
-  ];
+  useEffect(() => {
+    const timer = setInterval(() => setDateTime(new Date()), 60000);
+    const fetchDashboardData = async () => {
+      const { data } = await supabase.from('requisitions').select('*').order('created_at', { ascending: false }).limit(5);
+      if (data) setRecentPrs(data);
+      setLoading(false);
+    };
+    fetchDashboardData();
+    return () => clearInterval(timer);
+  }, []);
 
-  const flowData = [
-    { day: '01', pr: 12, po: 8 },
-    { day: '05', pr: 18, po: 14 },
-    { day: '10', pr: 15, po: 15 },
-    { day: '15', pr: 22, po: 18 },
-    { day: '20', pr: 30, po: 25 },
-    { day: '25', pr: 25, po: 22 },
-    { day: '30', pr: 28, po: 26 },
-  ];
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) + 
+           ' ' + date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  };
 
-  const PIE_COLORS = ['#2d808e', '#17a2b8', '#6c757d', '#dc3545'];
+  const displayName = user?.email?.split('@')[0].split('.').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ') || 'User';
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard label="Open Requisitions" value="42" icon={<ClipboardList />} trend="+12%" trendUp color="bg-blue-500" />
-        <KPICard label="PO Value (MTD)" value="৳750,000" icon={<ShoppingBag />} trend="+8.5%" trendUp color="bg-emerald-500" />
-        <KPICard label="Low Stock Alerts" value="15" icon={<AlertTriangle />} trend="-3" trendUp={false} color="bg-red-500" />
-        <KPICard label="Active Suppliers" value="128" icon={<Truck />} color="bg-indigo-500" />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-sm font-bold text-gray-700 flex items-center">
-              <BarChart3 size={16} className="mr-2 text-[#2d808e]" />
-              Monthly Procurement Spend (BDT)
-            </h3>
-            <select className="text-[10px] font-bold border rounded p-1 outline-none text-gray-400">
-              <option>Last 6 Months</option>
-              <option>Full Year</option>
-            </select>
-          </div>
-          <div className="h-[250px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={purchaseData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f5f5f5" />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 600 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 600 }} tickFormatter={(val: number) => `${val/1000}k`} />
-                <Tooltip 
-                  cursor={{ fill: '#f8fafc' }}
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
-                />
-                <Bar dataKey="value" fill="#2d808e" radius={[4, 4, 0, 0]} barSize={40} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+      {/* Personalized Header Section */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-black text-[#2d808e] tracking-tight">Hi, {displayName}!</h1>
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">{formatDate(dateTime)}</p>
         </div>
-
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-          <h3 className="text-sm font-bold text-gray-700 mb-6 flex items-center">
-            <Layers size={16} className="mr-2 text-[#2d808e]" />
-            Item Composition
-          </h3>
-          <div className="h-[200px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={categoryData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {categoryData.map((_entry, index) => (
-                    <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="mt-4 space-y-2">
-            {categoryData.map((item, i) => (
-              <div key={i} className="flex justify-between items-center text-[10px]">
-                <div className="flex items-center">
-                  <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: PIE_COLORS[i] }}></div>
-                  <span className="text-gray-500 font-medium">{item.name}</span>
-                </div>
-                <span className="font-bold text-gray-800">{item.value} units</span>
-              </div>
-            ))}
-          </div>
+        <div className="flex items-center space-x-2">
+          <button className="flex items-center px-4 py-2 bg-[#2d808e] text-white text-[11px] font-bold rounded shadow-sm hover:bg-[#256b78] transition-all">
+            <Printer size={14} className="mr-2" /> Code Print
+          </button>
+          <button onClick={onCheckStock} className="flex items-center px-4 py-2 bg-[#2d808e] text-white text-[11px] font-bold rounded shadow-sm hover:bg-[#256b78] transition-all">
+            <LayoutGrid size={14} className="mr-2" /> Check Stock
+          </button>
+          <button onClick={onMoveOrder} className="flex items-center px-4 py-2 bg-[#2d808e] text-white text-[11px] font-bold rounded shadow-sm hover:bg-[#256b78] transition-all">
+            <Plus size={14} className="mr-2" /> Move Order
+          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-6">
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-          <h3 className="text-sm font-bold text-gray-700 mb-6 flex items-center">
-            <Activity size={16} className="mr-2 text-[#2d808e]" />
-            PR vs. PO Fulfillment Trend
-          </h3>
-          <div className="h-[200px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={flowData}>
-                <defs>
-                  <linearGradient id="colorPr" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#2d808e" stopOpacity={0.1}/>
-                    <stop offset="95%" stopColor="#2d808e" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
-                <Tooltip />
-                <Area type="monotone" dataKey="pr" stroke="#2d808e" fillOpacity={1} fill="url(#colorPr)" strokeWidth={3} />
-                <Area type="monotone" dataKey="po" stroke="#17a2b8" fillOpacity={0} strokeWidth={2} strokeDasharray="5 5" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="flex justify-center space-x-6 mt-4">
-            <div className="flex items-center text-[10px] font-bold text-gray-500">
-              <div className="w-3 h-0.5 bg-[#2d808e] mr-2"></div>
-              Requisitions Created
+      {/* KPI Section matching 2nd image */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <KPICard label="Today Order(Qty)" value="0" subValue="0" />
+        <KPICard label="Lastday Order(Qty)" value="20.9K" subValue="126" />
+        <KPICard label="Weekly Order(Qty)" value="63.5K" subValue="502" />
+        <KPICard label="Monthly Order(Qty)" value="296.2K" subValue="577" />
+        <KPICard label="Weekly PR(Qty)" value="32.1K" subValue="539" />
+        <KPICard label="Monthly PR(Qty)" value="32.1K" subValue="539" />
+      </div>
+
+      {/* PR Approval Section - Permission-based */}
+      {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-1 bg-white rounded shadow-sm border border-gray-100 overflow-hidden flex flex-col h-[300px]">
+            <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
+              <h3 className="text-sm font-black text-[#2d808e] uppercase tracking-tighter">PR Approval</h3>
             </div>
-            <div className="flex items-center text-[10px] font-bold text-gray-500">
-              <div className="w-3 h-0.5 bg-[#17a2b8] border-dashed border-t mr-2"></div>
-              Orders Fulfilled
+            <div className="flex-1 overflow-y-auto scrollbar-thin">
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-gray-50 sticky top-0 z-10">
+                  <tr className="text-[10px] font-bold text-gray-500 uppercase">
+                    <th className="px-5 py-3 text-center">Date</th>
+                    <th className="px-5 py-3 text-center">Ref.No</th>
+                    <th className="px-5 py-3 text-right">Value</th>
+                  </tr>
+                </thead>
+                <tbody className="text-[11px]">
+                  {loading ? (
+                    <tr><td colSpan={3} className="py-10 text-center text-gray-400">Loading...</td></tr>
+                  ) : recentPrs.length > 0 ? (
+                    recentPrs.map((pr) => (
+                      <tr key={pr.id} className="border-b border-gray-50 hover:bg-gray-50">
+                        <td className="px-5 py-3 text-center whitespace-nowrap">{new Date(pr.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })}</td>
+                        <td className="px-5 py-3 text-center text-blue-500 font-bold">{pr.pr_no}</td>
+                        <td className="px-5 py-3 text-right font-black text-gray-600">{pr.total_value || 0}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr><td colSpan={3} className="py-10 text-center text-gray-400">No PRs found</td></tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
-          <h3 className="text-sm font-bold text-gray-700 mb-4 flex items-center">
-            <History size={16} className="mr-2 text-[#2d808e]" />
-            Recent Platform Activity
-          </h3>
-          <div className="flex-1 space-y-4 overflow-y-auto pr-2 scrollbar-thin">
-            {[
-              { user: 'Rakib H', action: 'Approved PO-400012', time: '12 mins ago', icon: <CheckCircle2 className="text-green-500" /> },
-              { user: 'Azizul H', action: 'Received Stock for SKU-310', time: '45 mins ago', icon: <Package className="text-blue-500" /> },
-              { user: 'Sohel Rana', action: 'Created PR-300055', time: '2 hours ago', icon: <Plus className="text-[#2d808e]" /> },
-              { user: 'System', action: 'Low stock alert for A4 Paper', time: '5 hours ago', icon: <AlertTriangle className="text-red-500" /> },
-              { user: 'Rakib H', action: 'New Supplier Added: NSR Ltd', time: '1 day ago', icon: <Truck className="text-indigo-500" /> },
-            ].map((activity, i) => (
-              <div key={i} className="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors border-l-4 border-transparent hover:border-[#2d808e]">
-                <div className="mr-4 bg-white p-2 rounded-full shadow-sm border border-gray-50">
-                  {activity.icon && React.isValidElement(activity.icon) ? React.cloneElement(activity.icon as React.ReactElement<any>, { size: 14 }) : null}
-                </div>
-                <div className="flex-1">
-                  <p className="text-[11px] font-bold text-gray-800">{activity.action}</p>
-                  <p className="text-[9px] text-gray-400 uppercase tracking-tighter">{activity.user} • {activity.time}</p>
-                </div>
-                <ChevronRight size={14} className="text-gray-200" />
-              </div>
-            ))}
+          
+          <div className="lg:col-span-2 bg-white rounded shadow-sm border border-gray-100 p-6 flex flex-col justify-center items-center text-gray-300">
+             <BarChart3 size={48} strokeWidth={1} />
+             <p className="text-[10px] font-bold uppercase tracking-widest mt-2">Additional Dashboard Insights</p>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Basic Users view */}
+      {!(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
+        <div className="bg-white p-12 rounded border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center">
+          <Activity size={48} className="text-[#2d808e]/30 mb-4" />
+          <h2 className="text-lg font-bold text-gray-700">Welcome to ALIGN</h2>
+          <p className="text-sm text-gray-400 max-w-md mx-auto">Access your purchase requisitions and item master from the sidebar menu to get started with your daily tasks.</p>
+        </div>
+      )}
     </div>
   );
 };
@@ -323,7 +254,8 @@ const Dashboard: React.FC = () => {
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
     purchase: location.pathname.includes('requisition') || location.pathname.includes('purchase-order') || location.pathname.includes('supplier') || location.pathname.includes('purchase-report'),
     warehouse: location.pathname.includes('inventory') || location.pathname.includes('receive') || location.pathname.includes('issue') || location.pathname.includes('tnx-report') || location.pathname.includes('mo-report'),
-    itemMaster: location.pathname.includes('item-list') || location.pathname.includes('item-uom') || location.pathname.includes('item-group') || location.pathname.includes('item-type') || location.pathname.includes('cost-center')
+    itemMaster: location.pathname.includes('item-list') || location.pathname.includes('item-uom') || location.pathname.includes('item-group') || location.pathname.includes('item-type') || location.pathname.includes('cost-center'),
+    admin: location.pathname.includes('users')
   });
 
   useEffect(() => {
@@ -420,8 +352,13 @@ const Dashboard: React.FC = () => {
             </div>
           </SidebarItem>
 
+          {/* New Admin Top-level Menu */}
           {hasPermission('manage_users') && (
-            <SidebarItem icon={<UserIcon />} label="Users" active={activeTab === 'users'} isCollapsed={isSidebarCollapsed && !isMobileMenuOpen} onClick={() => handleNav('/users')} />
+            <SidebarItem icon={<ShieldAlert />} label="Admin" hasSubmenu isCollapsed={isSidebarCollapsed && !isMobileMenuOpen} isOpen={openMenus.admin} onClick={() => toggleMenu('admin')}>
+              <div className="space-y-0.5">
+                <SubmenuItem icon={<UserIcon />} label="Users" active={activeTab === 'users'} onClick={() => handleNav('/users')} />
+              </div>
+            </SidebarItem>
           )}
         </div>
 
@@ -448,16 +385,8 @@ const Dashboard: React.FC = () => {
 
           <div className="flex items-center space-x-1.5 md:space-x-3">
              <button className="p-1.5 text-gray-400 hover:text-[#2d808e] transition-colors"><Bell size={16} /></button>
-             
-             <div className="flex space-x-1">
-               <button onClick={() => setIsStockStatusModalOpen(true)} className="flex items-center p-1.5 md:px-2.5 md:py-1.5 bg-[#2d808e] text-white text-[9px] md:text-[10px] font-bold rounded shadow-sm hover:bg-[#256b78] transition-all">
-                  <CheckCircle2 size={12} className="md:mr-1 shrink-0" /> 
-                  <span className="hidden md:inline">Stock</span>
-               </button>
-               <button onClick={() => setIsMoveOrderModalOpen(true)} className="flex items-center p-1.5 md:px-2.5 md:py-1.5 bg-[#17a2b8] text-white text-[9px] md:text-[10px] font-bold rounded shadow-sm hover:bg-[#138496] transition-all">
-                 <ArrowRightLeft size={12} className="md:mr-1 shrink-0" /> 
-                 <span className="hidden md:inline">Move</span>
-               </button>
+             <div className="w-8 h-8 rounded-full bg-[#e2eff1] flex items-center justify-center border border-gray-100">
+               <UserIcon size={16} className="text-[#2d808e]" />
              </div>
           </div>
         </header>
@@ -465,7 +394,7 @@ const Dashboard: React.FC = () => {
         <main className="flex-1 overflow-y-auto p-3 md:p-6 bg-[#f1f3f4] pb-10">
           <div className="max-w-[1600px] mx-auto w-full">
             <Routes>
-              <Route path="/overview" element={<DashboardOverview />} />
+              <Route path="/overview" element={<DashboardOverview onCheckStock={() => setIsStockStatusModalOpen(true)} onMoveOrder={() => setIsMoveOrderModalOpen(true)} />} />
               <Route path="/users" element={hasPermission('manage_users') ? <UserManagement /> : <Navigate to="/overview" />} />
               <Route path="/requisition" element={<PurchaseRequisition />} />
               <Route path="/purchase-order" element={<PurchaseOrder orders={[]} />} />
