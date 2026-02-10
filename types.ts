@@ -4,17 +4,29 @@ export enum Role {
   USER = 'USER'
 }
 
+// Added Permission interface to fix import error in constants.ts
 export interface Permission {
   id: string;
   name: string;
   description: string;
 }
 
+export interface ModulePermissions {
+  view: boolean;
+  edit: boolean;
+  dl: boolean;
+}
+
 export interface User {
   id: string;
   email: string;
+  fullName: string;
+  username: string;
   role: Role;
-  permissions: string[];
+  status: 'Active' | 'Inactive';
+  lastLogin: string;
+  permissions: string[]; // Legacy support
+  granularPermissions: Record<string, ModulePermissions>;
   createdAt: string;
 }
 

@@ -1,183 +1,312 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Role } from '../types';
-import { ROLE_DEFAULT_PERMISSIONS } from '../constants';
+import { Role, User, ModulePermissions } from '../types';
+import { X, User as UserIcon, Plus, Trash2, Edit, ChevronDown, Check } from 'lucide-react';
+
+interface PermissionCardProps {
+  label: string;
+  moduleId: string;
+  permissions: ModulePermissions;
+  onChange: (moduleId: string, field: keyof ModulePermissions, value: boolean) => void;
+}
+
+const PermissionCard: React.FC<PermissionCardProps> = ({ label, moduleId, permissions, onChange }) => (
+  <div className="bg-white border border-cyan-100 rounded-lg p-3 flex flex-col space-y-3">
+    <span className="text-[10px] font-black text-gray-500 uppercase tracking-tighter">{label}</span>
+    <div className="flex items-center space-x-4">
+      {(['view', 'edit', 'dl'] as const).map((field) => (
+        <label key={field} className="flex items-center space-x-1.5 cursor-pointer group">
+          <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${permissions[field] ? 'bg-[#2d808e] border-[#2d808e]' : 'border-gray-300 group-hover:border-[#2d808e]'}`}>
+            {permissions[field] && <Check size={10} className="text-white" strokeWidth={4} />}
+            <input 
+              type="checkbox" 
+              className="hidden" 
+              checked={permissions[field]} 
+              onChange={(e) => onChange(moduleId, field, e.target.checked)} 
+            />
+          </div>
+          <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{field}</span>
+        </label>
+      ))}
+    </div>
+  </div>
+);
 
 const UserManagement: React.FC = () => {
-  const { users, addUser, deleteUser, user: currentUser } = useAuth();
+  const { users, addUser, updateUser, deleteUser, user: currentUser } = useAuth();
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isAdding, setIsAdding] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   
-  const [newEmail, setNewEmail] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [newRole, setNewRole] = useState<Role>(Role.USER);
+  // Local state for modal/form
+  const [formData, setFormData] = useState<Partial<User>>({});
 
-  const handleAddUser = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-    try {
-      await addUser({
-        email: newEmail,
-        password: newPassword,
-        role: newRole,
-        permissions: ROLE_DEFAULT_PERMISSIONS[newRole]
-      });
-      setNewEmail('');
-      setNewPassword('');
+  const handleEditClick = (user: User) => {
+    setEditingUser(user);
+    setFormData({ ...user });
+  };
+
+  const handleCommitChanges = async () => {
+    if (editingUser) {
+      await updateUser(editingUser.id, formData);
+      setEditingUser(null);
+    } else if (isAdding) {
+      await addUser(formData);
       setIsAdding(false);
-    } finally {
-      setSubmitting(false);
     }
   };
 
-  const handleDelete = async (id: string, email: string) => {
-    if (window.confirm(`Are you absolutely sure you want to delete the user "${email}"? This action cannot be undone and will immediately revoke their access.`)) {
-      await deleteUser(id);
-    }
+  const handlePermissionChange = (moduleId: string, field: keyof ModulePermissions, value: boolean) => {
+    const current = formData.granularPermissions || {};
+    const modulePerms = current[moduleId] || { view: false, edit: false, dl: false };
+    
+    setFormData({
+      ...formData,
+      granularPermissions: {
+        ...current,
+        [moduleId]: { ...modulePerms, [field]: value }
+      }
+    });
+  };
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: '2-digit', 
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">User Management</h2>
-          <p className="text-sm text-gray-500">Add, edit or remove platform users from Supabase.</p>
+          <h2 className="text-xl font-bold text-gray-900 tracking-tight">System Access Control</h2>
+          <p className="text-xs text-gray-400 font-medium uppercase tracking-widest mt-0.5">Manage users and granular module permissions</p>
         </div>
         <button
-          onClick={() => setIsAdding(!isAdding)}
-          className="flex items-center px-4 py-2 bg-[#2d808e] text-white rounded hover:bg-[#256b78] transition-colors shadow-sm"
+          onClick={() => {
+            setIsAdding(true);
+            setFormData({ role: Role.USER, granularPermissions: {} });
+          }}
+          className="flex items-center px-4 py-2 bg-[#2d808e] text-white text-xs font-bold rounded shadow-sm hover:bg-[#256b78] transition-all uppercase tracking-widest"
         >
-          <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          Add User
+          <Plus size={14} className="mr-2" /> New User
         </button>
       </div>
 
-      {isAdding && (
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-lg font-semibold mb-4">Create New User</h3>
-          <form onSubmit={handleAddUser} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Email Address</label>
-              <input
-                type="email"
-                required
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-1 focus:ring-[#2d808e] outline-none"
-                placeholder="user@allot.com"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Password</label>
-              <input
-                type="password"
-                required
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-1 focus:ring-[#2d808e] outline-none"
-                placeholder="••••••••"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Assign Role</label>
-              <select
-                value={newRole}
-                onChange={(e) => setNewRole(e.target.value as Role)}
-                className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-1 focus:ring-[#2d808e] outline-none bg-white"
-              >
-                <option value={Role.ADMIN}>Administrator</option>
-                <option value={Role.MANAGER}>Manager</option>
-                <option value={Role.USER}>Standard User</option>
-              </select>
-            </div>
-            <div className="md:col-span-3 flex justify-end space-x-3 mt-4">
-              <button
-                type="button"
-                onClick={() => setIsAdding(false)}
-                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="px-6 py-2 bg-[#2d808e] text-white rounded text-sm font-medium hover:bg-[#256b78] disabled:opacity-50"
-              >
-                {submitting ? 'Saving...' : 'Save User'}
-              </button>
-            </div>
-          </form>
-          <p className="mt-4 text-xs text-gray-400 italic">
-            Note: For direct user creation to work, you must enable the Supabase Admin API or create users via Auth first.
-          </p>
-        </div>
-      )}
-
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Permissions</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+      <div className="bg-white rounded border border-gray-100 shadow-sm overflow-hidden">
+        <table className="min-w-full divide-y divide-gray-100">
+          <thead className="bg-[#fafbfc]">
+            <tr className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+              <th className="px-6 py-5 text-left">User</th>
+              <th className="px-6 py-5 text-left">Username</th>
+              <th className="px-6 py-5 text-left">Role</th>
+              <th className="px-6 py-5 text-left">Status</th>
+              <th className="px-6 py-5 text-left">Last Login</th>
+              <th className="px-6 py-5 text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white divide-y divide-gray-50">
             {users.map((u) => (
-              <tr key={u.id} className="hover:bg-gray-50 transition-colors">
+              <tr key={u.id} className="hover:bg-gray-50/50 transition-colors">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
-                    <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold text-xs">
-                      {u.email.substring(0, 1).toUpperCase()}
+                    <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center border border-gray-200 shadow-inner">
+                      <UserIcon size={18} className="text-gray-400" />
                     </div>
-                    <div className="ml-3">
-                      <div className="text-sm font-medium text-gray-900">{u.email}</div>
-                      <div className="text-xs text-gray-500">ID: {u.id.substring(0, 8)}...</div>
+                    <div className="ml-4">
+                      <div className="text-[12px] font-black text-gray-800 uppercase tracking-tight">{u.fullName}</div>
+                      <div className="text-[10px] text-gray-400">{u.email}</div>
                     </div>
                   </div>
                 </td>
+                <td className="px-6 py-4 whitespace-nowrap text-[12px] font-medium text-gray-600">
+                  {u.username}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    u.role === Role.ADMIN ? 'bg-purple-100 text-purple-800' : 
-                    u.role === Role.MANAGER ? 'bg-blue-100 text-blue-800' : 
-                    'bg-green-100 text-green-800'
-                  }`}>
+                  <span className="px-2.5 py-1 text-[9px] font-black uppercase tracking-widest border border-gray-200 rounded text-gray-600">
                     {u.role}
                   </span>
                 </td>
-                <td className="px-6 py-4">
-                  <div className="flex flex-wrap gap-1 max-w-xs">
-                    {u.permissions.slice(0, 2).map(p => (
-                      <span key={p} className="px-1.5 py-0.5 bg-gray-50 text-[10px] text-gray-500 border border-gray-100 rounded">
-                        {p.split('_').pop()}
-                      </span>
-                    ))}
-                    {u.permissions.length > 2 && (
-                      <span className="text-[10px] text-gray-400">+{u.permissions.length - 2} more</span>
-                    )}
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`px-2.5 py-1 text-[9px] font-black uppercase tracking-widest rounded-full ${
+                    u.status === 'Active' ? 'bg-green-50 text-green-600 border border-green-100' : 'bg-red-50 text-red-600 border border-red-100'
+                  }`}>
+                    {u.status}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-[11px] font-medium text-gray-400">
+                  {formatDate(u.lastLogin)}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right">
+                  <div className="flex items-center justify-end space-x-4">
+                    <button 
+                      onClick={() => handleEditClick(u)}
+                      className="text-[#2d808e] text-[11px] font-black hover:underline uppercase tracking-tight"
+                    >
+                      Edit Access
+                    </button>
+                    <button 
+                      disabled={u.id === currentUser?.id}
+                      onClick={() => {
+                         if(window.confirm(`Delete user ${u.fullName}?`)) deleteUser(u.id);
+                      }}
+                      className="text-red-500 text-[11px] font-black hover:underline uppercase tracking-tight disabled:opacity-20"
+                    >
+                      Delete
+                    </button>
                   </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {new Date(u.createdAt).toLocaleDateString()}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button 
-                    disabled={u.id === currentUser?.id}
-                    onClick={() => handleDelete(u.id, u.email)}
-                    className="text-red-600 hover:text-red-900 disabled:opacity-30 disabled:cursor-not-allowed"
-                  >
-                    Delete
-                  </button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {/* Edit Access Modal - Exact match to image */}
+      {(editingUser || isAdding) && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-[1000px] rounded-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-white sticky top-0 z-10">
+              <h3 className="text-lg font-black text-gray-800 tracking-tight">
+                {isAdding ? 'New Access' : `Edit Access: ${editingUser?.fullName}`}
+              </h3>
+              <button onClick={() => { setEditingUser(null); setIsAdding(false); }} className="text-gray-400 hover:text-gray-600">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-8 space-y-10 overflow-y-auto max-h-[80vh] scrollbar-thin">
+              {/* User Identity Info */}
+              <div className="flex flex-col md:flex-row gap-8 items-start">
+                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Full Name</label>
+                    <input 
+                      type="text" 
+                      value={formData.fullName || ''}
+                      onChange={(e) => setFormData({...formData, fullName: e.target.value})}
+                      className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-medium" 
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Username</label>
+                    <input 
+                      type="text" 
+                      value={formData.username || ''}
+                      onChange={(e) => setFormData({...formData, username: e.target.value})}
+                      className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-medium" 
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Role Template</label>
+                    <div className="relative">
+                      <select 
+                        value={formData.role}
+                        onChange={(e) => setFormData({...formData, role: e.target.value as Role})}
+                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-medium appearance-none"
+                      >
+                        <option value={Role.USER}>User</option>
+                        <option value={Role.MANAGER}>Manager</option>
+                        <option value={Role.ADMIN}>Admin</option>
+                      </select>
+                      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Password</label>
+                    <input 
+                      type="password" 
+                      placeholder="••••••••"
+                      className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-medium" 
+                    />
+                  </div>
+                </div>
+                
+                {/* Avatar section matching image */}
+                <div className="w-[300px] bg-gray-50/50 rounded-xl border border-gray-100 p-8 flex flex-col items-center justify-center space-y-4">
+                  <div className="relative">
+                    <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center shadow-inner border border-white">
+                      <UserIcon size={40} className="text-gray-400" />
+                    </div>
+                    <button className="absolute bottom-1 right-1 bg-[#2d808e] text-white p-1 rounded-full border-2 border-white shadow-sm">
+                      <Plus size={14} strokeWidth={3} />
+                    </button>
+                  </div>
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Avatar</span>
+                </div>
+              </div>
+
+              {/* Granular Module Restrictions */}
+              <div className="space-y-6">
+                <div className="flex items-center space-x-3">
+                   <div className="w-1 h-5 bg-[#2d808e] rounded-full"></div>
+                   <h4 className="text-[12px] font-black text-gray-700 uppercase tracking-widest">Granular Module Restrictions</h4>
+                </div>
+
+                <div className="space-y-8">
+                  {/* System Base Section */}
+                  <div className="bg-gray-50/50 rounded-xl border border-gray-100 p-6 space-y-4">
+                    <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">System Base</h5>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <PermissionCard 
+                        label="A I Assistant" 
+                        moduleId="ai_assistant"
+                        permissions={formData.granularPermissions?.ai_assistant || {view: false, edit: false, dl: false}}
+                        onChange={handlePermissionChange}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Production Section */}
+                  <div className="bg-gray-50/50 rounded-xl border border-gray-100 p-6 space-y-4">
+                    <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">Production</h5>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <PermissionCard 
+                        label="Rolled Out" 
+                        moduleId="rolled_out"
+                        permissions={formData.granularPermissions?.rolled_out || {view: false, edit: false, dl: false}}
+                        onChange={handlePermissionChange}
+                      />
+                      <PermissionCard 
+                        label="Process Damage" 
+                        moduleId="process_damage"
+                        permissions={formData.granularPermissions?.process_damage || {view: false, edit: false, dl: false}}
+                        onChange={handlePermissionChange}
+                      />
+                      <PermissionCard 
+                        label="Incoming Damage" 
+                        moduleId="incoming_damage"
+                        permissions={formData.granularPermissions?.incoming_damage || {view: false, edit: false, dl: false}}
+                        onChange={handlePermissionChange}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer matching image */}
+            <div className="px-8 py-5 border-t border-gray-100 flex items-center justify-end space-x-6 bg-white sticky bottom-0 z-10">
+              <button 
+                onClick={() => { setEditingUser(null); setIsAdding(false); }}
+                className="text-[12px] font-black text-gray-500 hover:text-gray-800 uppercase tracking-widest"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleCommitChanges}
+                className="flex items-center px-10 py-3 bg-[#2d808e] text-white text-[12px] font-black rounded shadow-md hover:bg-[#256b78] transition-all uppercase tracking-widest"
+              >
+                <Plus size={16} className="mr-3" strokeWidth={3} />
+                Commit Access Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
