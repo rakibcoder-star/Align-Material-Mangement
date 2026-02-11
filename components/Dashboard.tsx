@@ -20,10 +20,6 @@ import ItemType from './ItemType';
 import CostCenter from './CostCenter';
 import { supabase } from '../lib/supabase';
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  PieChart, Pie, Cell, AreaChart, Area
-} from 'recharts';
-import { 
   Gauge, 
   ShoppingCart, 
   Warehouse, 
@@ -33,12 +29,10 @@ import {
   LogOut, 
   User as UserIcon,
   Search,
-  ArrowRightLeft,
   Menu,
   FileText,
   ArrowRight,
   ArrowLeft,
-  CheckCircle2,
   Bell,
   Layers,
   Tag,
@@ -49,13 +43,7 @@ import {
   Truck,
   BarChart3,
   X,
-  TrendingUp,
-  AlertTriangle,
-  Package,
-  Activity,
   Plus,
-  History,
-  Printer,
   ShieldAlert
 } from 'lucide-react';
 
@@ -157,10 +145,9 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
 
   return (
     <div className="space-y-6">
-      {/* Personalized Header Section */}
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-[#2d808e] tracking-tight">Hi, {displayName}!</h1>
+          <h1 className="text-2xl font-black text-[#2d808e] tracking-tight uppercase">Hi, {displayName}!</h1>
           <p className="text-[11px] font-bold text-gray-400 mt-0.5">{formatDate(dateTime)}</p>
         </div>
         <div className="flex items-center space-x-2">
@@ -176,7 +163,6 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
         </div>
       </div>
 
-      {/* KPI Section */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
         <KPICard label="Today Order(Qty)" value="0" subValue="0" />
         <KPICard label="Lastday Order(Qty)" value="20.9K" subValue="126" />
@@ -186,32 +172,31 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
         <KPICard label="Monthly PR(Qty)" value="32.1K" subValue="539" />
       </div>
 
-      {/* PR Approval Section - Role Restricted */}
       {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
         <div className="bg-white rounded shadow-sm border border-gray-100 overflow-hidden flex flex-col w-full max-w-md">
           <div className="px-5 py-4 border-b border-gray-50 bg-[#fafbfc]">
-            <h3 className="text-sm font-black text-[#2d808e] uppercase tracking-tighter">PR Approval</h3>
+            <h3 className="text-sm font-black text-[#2d808e] uppercase tracking-tighter">PR Approval Queue</h3>
           </div>
           <div className="overflow-y-auto max-h-[400px] scrollbar-thin">
             <table className="w-full text-left border-collapse">
               <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr className="text-[10px] font-bold text-gray-500 uppercase">
                   <th className="px-5 py-3 text-center">Date</th>
-                  <th className="px-5 py-3 text-center">Ref.No</th>
+                  <th className="px-5 py-3 text-center">Ref.No (PR)</th>
                   <th className="px-5 py-3 text-right">Value</th>
                 </tr>
               </thead>
-              <tbody className="text-[11px]">
+              <tbody className="text-[11px] font-medium">
                 {loading ? (
-                  <tr><td colSpan={3} className="py-10 text-center text-gray-400">Loading...</td></tr>
+                  <tr><td colSpan={3} className="py-10 text-center text-gray-400">Syncing...</td></tr>
                 ) : recentPrs.length > 0 ? (
                   recentPrs.map((pr) => (
-                    <tr key={pr.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                      <td className="px-5 py-3 text-center whitespace-nowrap text-gray-600">
-                        {new Date(pr.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })}
+                    <tr key={pr.id} className="border-b border-gray-50 hover:bg-cyan-50/10 transition-colors">
+                      <td className="px-5 py-3 text-center whitespace-nowrap text-gray-500">
+                        {new Date(pr.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
                       </td>
                       <td className="px-5 py-3 text-center">
-                        <button className="text-blue-500 font-bold hover:underline transition-all">
+                        <button className="text-[#2d808e] font-black hover:underline transition-all">
                           {pr.pr_no}
                         </button>
                       </td>
@@ -221,7 +206,7 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
                     </tr>
                   ))
                 ) : (
-                  <tr><td colSpan={3} className="py-10 text-center text-gray-400">No PRs found</td></tr>
+                  <tr><td colSpan={3} className="py-10 text-center text-gray-400 uppercase font-bold tracking-widest text-[9px]">No pending approvals</td></tr>
                 )}
               </tbody>
             </table>
@@ -312,7 +297,7 @@ const Dashboard: React.FC = () => {
           )}
         </div>
 
-        <div className="flex-1 py-1.5 overflow-y-auto overflow-x-hidden space-y-0.5 scrollbar-thin">
+        <div className="flex-1 py-1.5 overflow-y-auto overflow-x-hidden space-y-0.5 scrollbar-thin text-center">
           <SidebarItem icon={<Gauge />} label="Dashboard" active={activeTab === 'overview'} isCollapsed={isSidebarCollapsed && !isMobileMenuOpen} onClick={() => handleNav('/overview')} />
 
           <SidebarItem icon={<ShoppingCart />} label="Purchase" hasSubmenu isCollapsed={isSidebarCollapsed && !isMobileMenuOpen} isOpen={openMenus.purchase} onClick={() => toggleMenu('purchase')}>

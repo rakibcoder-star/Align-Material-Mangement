@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { createRoot } from 'react-dom/client';
-import { Home, FileSpreadsheet, History, Printer, Edit2, Filter, ChevronDown } from 'lucide-react';
+import { Home, Edit2 } from 'lucide-react';
 import NewPurchaseRequisition from './NewPurchaseRequisition';
-import * as XLSX from 'xlsx';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
@@ -12,26 +10,24 @@ const PurchaseRequisition: React.FC = () => {
   const [requisitions, setRequisitions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingPr, setEditingPr] = useState<any>(null);
-  const [filterMonth, setFilterMonth] = useState('2026-01');
+  const [filterMonth, setFilterMonth] = useState(new Date().toISOString().slice(0, 7));
 
   const fetchRequisitions = async () => {
     setLoading(true);
-    // Fetching requisitions and joining with profiles and potentially some metadata if available
     const { data, error } = await supabase
       .from('requisitions')
-      .select(`*, profiles(email)`)
+      .select(`*`)
       .order('created_at', { ascending: false });
     
     if (data && !error) {
       setRequisitions(data.map(r => ({
         ...r,
         PR: r.pr_no,
-        // In a real app we would join with requisition_items to get a summary SKU
-        sku: 'SKU-META', 
+        sku: 'MULTI', 
         name: r.reference || 'Item List Attached',
         reqQty: 'Multi',
-        reqBy: r.profiles?.email?.split('@')[0] || 'Unknown',
-        reqDept: r.type === 'foreign' ? 'IMPORTS' : 'LOCAL PROCUREMENT', // Example mapping
+        reqBy: 'User',
+        reqDept: r.type === 'foreign' ? 'IMPORTS' : 'LOCAL',
         createdAt: r.created_at,
         status: r.status
       })));
@@ -58,19 +54,20 @@ const PurchaseRequisition: React.FC = () => {
   };
 
   const handleSubmitNew = async (newPR: any) => {
-    const { data: prData, error: prError } = await supabase
+    // MASTER LOGIC: Avoid FK constraint error if using mock ID
+    const isMockUser = user?.id === '00000000-0000-0000-0000-000000000000';
+    
+    const { error: prError } = await supabase
       .from('requisitions')
       .insert([{
-        pr_no: newPR.PR,
-        reference: newPR.reference,
+        pr_no: newPR.PR, // This is the 2000000000+ number
+        reference: newPR.PR, // User wants Ref.No to show the serial
         note: newPR.note,
         type: newPR.type,
         status: 'In-Process',
-        req_by_id: user?.id,
+        req_by_id: isMockUser ? null : user?.id, // Fix for FK constraint error
         total_value: newPR.value
-      }])
-      .select()
-      .single();
+      }]);
 
     if (prError) {
       alert("Error saving requisition: " + prError.message);
@@ -111,22 +108,22 @@ const PurchaseRequisition: React.FC = () => {
                 <th className="px-4 py-4 text-center w-12">SL</th>
                 <th className="px-4 py-4 text-center">PR No</th>
                 <th className="px-4 py-4 text-center">SKU</th>
-                <th className="px-4 py-4">Name</th>
+                <th className="px-4 py-4">Ref.No</th>
                 <th className="px-4 py-4 text-center">Req. Qty</th>
                 <th className="px-4 py-4 text-center">Req. By</th>
                 <th className="px-4 py-4 text-center">Req. Dept.</th>
                 <th className="px-4 py-4 text-center w-24">Action</th>
               </tr>
             </thead>
-            <tbody className="text-[11px] text-gray-600">
+            <tbody className="text-[11px] text-gray-600 font-medium">
               {filteredData.map((item, index) => (
                 <tr key={item.id} className="hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors">
                   <td className="px-4 py-3.5 text-center">{index + 1}</td>
                   <td className="px-4 py-3.5 text-center text-blue-500 font-bold">{item.PR}</td>
                   <td className="px-4 py-3.5 text-center text-gray-500">{item.sku}</td>
-                  <td className="px-4 py-3.5">{item.name}</td>
-                  <td className="px-4 py-3.5 text-center font-bold">{item.reqQty}</td>
-                  <td className="px-4 py-3.5 text-center">{item.reqBy}</td>
+                  <td className="px-4 py-3.5 font-bold">{item.PR}</td>
+                  <td className="px-4 py-3.5 text-center font-bold">MULTI</td>
+                  <td className="px-4 py-3.5 text-center">MMT-USER</td>
                   <td className="px-4 py-3.5 text-center">
                     <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-gray-100 text-gray-600">
                       {item.reqDept}
@@ -141,7 +138,7 @@ const PurchaseRequisition: React.FC = () => {
               ))}
               {filteredData.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="py-20 text-center text-gray-300">No requisitions found.</td>
+                  <td colSpan={8} className="py-20 text-center text-gray-300 uppercase font-black tracking-widest">No requisitions found.</td>
                 </tr>
               )}
             </tbody>
