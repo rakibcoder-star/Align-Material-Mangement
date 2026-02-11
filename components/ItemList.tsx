@@ -1,97 +1,134 @@
-import React, { useState, useRef } from 'react';
-import { Home, Search, Filter, ListFilter, FileUp, Plus, Trash2 } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Home, Search, Filter, Edit2, FileUp, Plus, Trash2, Loader2, ListFilter } from 'lucide-react';
 import NewItem from './NewItem';
 import ItemHistoryModal from './ItemHistoryModal';
 import * as XLSX from 'xlsx';
+import { supabase } from '../lib/supabase';
 
 export interface ItemEntry {
-  sl: number;
+  id?: string;
+  sl?: number;
   code: string;
   sku: string;
   name: string;
   uom: string;
   location: string;
   type: string;
-  group: string;
-  lastPrice: string;
-  avgPrice: string;
-  safetyStock: string;
-  onHand: string;
+  group_name: string;
+  last_price: string | number;
+  avg_price: string | number;
+  safety_stock: string | number;
+  on_hand_stock: string | number;
 }
 
 const ItemList: React.FC = () => {
-  const [view, setView] = useState<'list' | 'add'>('list');
+  const [view, setView] = useState<'list' | 'add' | 'edit'>('list');
   const [searchTerm, setSearchTerm] = useState('');
-  const [historyItem, setHistoryItem] = useState<ItemEntry | null>(null);
+  const [historyItem, setHistoryItem] = useState<any>(null);
+  const [editingItem, setEditingItem] = useState<any>(null);
   const [items, setItems] = useState<ItemEntry[]>([]);
+  const [loading, setLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const fetchItems = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('items')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (data && !error) {
+      setItems(data.map((item, index) => ({
+        ...item,
+        sl: index + 1
+      })));
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchItems();
+  }, []);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       const bstr = event.target?.result;
       const workbook = XLSX.read(bstr, { type: 'binary' });
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
       const data = XLSX.utils.sheet_to_json(worksheet);
 
-      const mappedItems: ItemEntry[] = data.map((row: any, index: number) => ({
-        sl: row['SL'] || index + 1,
+      const mappedItems = data.map((row: any) => ({
         code: String(row['CODE'] || ''),
         sku: String(row['SKU'] || ''),
         name: String(row['NAME'] || ''),
         uom: String(row['UOM'] || ''),
         location: String(row['LOCATION'] || ''),
         type: String(row['TYPE'] || ''),
-        group: String(row['GROUP'] || ''),
-        lastPrice: String(row['LAST PRICE'] || '0.00'),
-        avgPrice: String(row['AVG. PRICE'] || '0.00'),
-        safetyStock: String(row['SAFETY STOCK'] || '0'),
-        onHand: String(row['ON-HAND STOCK'] || '0')
-      }));
+        group_name: String(row['GROUP'] || ''),
+        last_price: parseFloat(row['LAST PRICE']) || 0,
+        avg_price: parseFloat(row['AVG. PRICE']) || 0,
+        safety_stock: parseInt(row['SAFETY STOCK']) || 0,
+        on_hand_stock: parseInt(row['ON-HAND STOCK']) || 0
+      })).filter(item => item.name && item.code);
 
-      setItems(mappedItems);
+      if (mappedItems.length > 0) {
+        setLoading(true);
+        const { error } = await supabase.from('items').upsert(mappedItems, { onConflict: 'code' });
+        if (error) {
+          alert("Error uploading CSV: " + error.message);
+        } else {
+          alert(`Successfully processed ${mappedItems.length} items.`);
+          fetchItems();
+        }
+      }
     };
     reader.readAsBinaryString(file);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleAddItem = (newItem: any) => {
-    const entry: ItemEntry = {
-      sl: items.length + 1,
-      code: newItem.code || `100000${2200 + items.length}`,
-      sku: newItem.sku || 'NA',
-      name: newItem.name,
-      uom: newItem.uom || 'Piece',
-      location: newItem.location || 'N/A',
-      type: newItem.type || 'Consumables',
-      group: newItem.group || 'Maintenance Item',
-      lastPrice: newItem.lastPrice || '0.00',
-      avgPrice: newItem.avgPrice || '0.00',
-      safetyStock: newItem.safetyStock || '0',
-      onHand: newItem.onHand || '0'
-    };
-    setItems([entry, ...items]);
-    setView('list');
+  const handleDelete = async (id: string, name: string) => {
+    if (window.confirm(`Are you sure you want to permanently delete "${name}"?`)) {
+      const { error } = await supabase.from('items').delete().eq('id', id);
+      if (error) {
+        alert("Error deleting item: " + error.message);
+      } else {
+        fetchItems();
+      }
+    }
   };
 
-  const clearItems = () => {
-    if (window.confirm("Are you sure you want to clear all items?")) {
-      setItems([]);
-    }
+  const handleEdit = (item: any) => {
+    setEditingItem(item);
+    setView('edit');
+  };
+
+  const handleAddItem = () => {
+    setEditingItem(null);
+    setView('add');
   };
 
   const filteredItems = items.filter(item => 
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.code.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (view === 'add') {
-    return <NewItem onBack={() => setView('list')} onSubmit={handleAddItem} />;
+  if (view === 'add' || view === 'edit') {
+    return (
+      <NewItem 
+        onBack={() => setView('list')} 
+        onSuccess={() => {
+          setView('list');
+          fetchItems();
+        }} 
+        initialData={editingItem}
+      />
+    );
   }
 
   return (
@@ -118,7 +155,7 @@ const ItemList: React.FC = () => {
             <span>Import CSV</span>
           </button>
           <button 
-            onClick={() => setView('add')}
+            onClick={handleAddItem}
             className="bg-[#2d808e] text-white px-6 py-1.5 rounded text-[13px] font-bold shadow-sm hover:bg-[#256b78] transition-all flex items-center space-x-2"
           >
             <Plus size={14} />
@@ -133,11 +170,10 @@ const ItemList: React.FC = () => {
             Logs
           </button>
           <button 
-            onClick={clearItems}
-            className="border border-red-200 text-red-500 px-5 py-1 rounded text-[12px] font-bold hover:bg-red-50 transition-all flex items-center space-x-2"
+            onClick={fetchItems}
+            className="border border-gray-200 text-gray-500 px-5 py-1 rounded text-[12px] font-bold hover:bg-gray-50 transition-all flex items-center space-x-2"
           >
-            <Trash2 size={12} />
-            <span>Clear</span>
+            {loading ? <Loader2 size={12} className="animate-spin" /> : <span>Refresh</span>}
           </button>
         </div>
         <div className="flex items-center">
@@ -161,28 +197,13 @@ const ItemList: React.FC = () => {
           <thead className="bg-[#fcfcfc] sticky top-0 z-10">
             <tr className="text-[10px] font-black text-gray-700 border-b border-gray-100 uppercase tracking-tighter">
               <th className="px-3 py-4 text-center w-12 border-r border-gray-50">SL</th>
-              <th className="px-3 py-4 border-r border-gray-50 text-center relative group">
-                Code
-                <Filter size={10} className="inline-block ml-1 text-gray-200" />
-              </th>
-              <th className="px-3 py-4 border-r border-gray-50 text-center relative group">
-                SKU
-                <Filter size={10} className="inline-block ml-1 text-gray-200" />
-              </th>
-              <th className="px-3 py-4 border-r border-gray-50 text-left relative group w-64">
-                Name
-                <Filter size={10} className="inline-block ml-1 text-gray-200" />
-              </th>
+              <th className="px-3 py-4 border-r border-gray-50 text-center">Code</th>
+              <th className="px-3 py-4 border-r border-gray-50 text-center">SKU</th>
+              <th className="px-3 py-4 border-r border-gray-50 text-left w-64">Name</th>
               <th className="px-3 py-4 border-r border-gray-50 text-center">UOM</th>
               <th className="px-3 py-4 border-r border-gray-50 text-center">Location</th>
-              <th className="px-3 py-4 border-r border-gray-50 text-center relative group">
-                Type
-                <Filter size={10} className="inline-block ml-1 text-gray-200" />
-              </th>
-              <th className="px-3 py-4 border-r border-gray-50 text-center relative group">
-                Group
-                <Filter size={10} className="inline-block ml-1 text-gray-200" />
-              </th>
+              <th className="px-3 py-4 border-r border-gray-50 text-center">Type</th>
+              <th className="px-3 py-4 border-r border-gray-50 text-center">Group</th>
               <th className="px-3 py-4 border-r border-gray-50 text-right">Last Price</th>
               <th className="px-3 py-4 border-r border-gray-50 text-right">Avg. Price</th>
               <th className="px-3 py-4 border-r border-gray-50 text-center">Safety Stock</th>
@@ -191,8 +212,14 @@ const ItemList: React.FC = () => {
             </tr>
           </thead>
           <tbody className="text-[10px] text-gray-600 font-medium">
-            {filteredItems.map((item, idx) => (
-              <tr key={idx} className="hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0">
+            {loading ? (
+              <tr>
+                <td colSpan={13} className="py-20 text-center text-gray-400">
+                  <Loader2 className="animate-spin inline mr-2" /> Loading database items...
+                </td>
+              </tr>
+            ) : filteredItems.map((item, idx) => (
+              <tr key={item.id} className="hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0">
                 <td className="px-3 py-3 text-center border-r border-gray-50">{item.sl}</td>
                 <td className="px-3 py-3 text-center border-r border-gray-50 font-bold">{item.code}</td>
                 <td className="px-3 py-3 text-center border-r border-gray-50">{item.sku}</td>
@@ -200,23 +227,39 @@ const ItemList: React.FC = () => {
                 <td className="px-3 py-3 text-center border-r border-gray-50">{item.uom}</td>
                 <td className="px-3 py-3 text-center border-r border-gray-50 text-gray-400">{item.location}</td>
                 <td className="px-3 py-3 text-center border-r border-gray-50">{item.type}</td>
-                <td className="px-3 py-3 text-center border-r border-gray-50">{item.group}</td>
-                <td className="px-3 py-3 text-right border-r border-gray-50 font-bold text-gray-700">{item.lastPrice}</td>
-                <td className="px-3 py-3 text-right border-r border-gray-50 font-bold text-gray-700">{item.avgPrice}</td>
-                <td className="px-3 py-3 text-center border-r border-gray-50 font-bold text-orange-600">{item.safetyStock}</td>
-                <td className="px-3 py-3 text-center border-r border-gray-50 font-black text-[#2d808e]">{item.onHand}</td>
+                <td className="px-3 py-3 text-center border-r border-gray-50">{item.group_name}</td>
+                <td className="px-3 py-3 text-right border-r border-gray-50 font-bold text-gray-700">{item.last_price}</td>
+                <td className="px-3 py-3 text-right border-r border-gray-50 font-bold text-gray-700">{item.avg_price}</td>
+                <td className="px-3 py-3 text-center border-r border-gray-50 font-bold text-orange-600">{item.safety_stock}</td>
+                <td className="px-3 py-3 text-center border-r border-gray-50 font-black text-[#2d808e]">{item.on_hand_stock}</td>
                 <td className="px-3 py-3 text-center">
-                  <button 
-                    onClick={() => setHistoryItem(item)}
-                    title="View Update History"
-                    className="p-1 text-blue-500 hover:bg-blue-50 border border-blue-100 rounded transition-all"
-                  >
-                    <ListFilter size={12} />
-                  </button>
+                  <div className="flex items-center justify-center space-x-1.5">
+                    <button 
+                      onClick={() => handleEdit(item)}
+                      title="Edit Item"
+                      className="p-1 text-teal-600 hover:bg-teal-50 border border-teal-100 rounded transition-all"
+                    >
+                      <Edit2 size={12} />
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(item.id!, item.name)}
+                      title="Delete Item"
+                      className="p-1 text-red-500 hover:bg-red-50 border border-red-100 rounded transition-all"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                    <button 
+                      onClick={() => setHistoryItem(item)}
+                      title="View Update History"
+                      className="p-1 text-blue-500 hover:bg-blue-50 border border-blue-100 rounded transition-all"
+                    >
+                      <ListFilter size={12} />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
-            {filteredItems.length === 0 && (
+            {!loading && filteredItems.length === 0 && (
               <tr>
                 <td colSpan={13} className="py-20 text-center text-gray-300 uppercase font-black tracking-widest">
                   No Items found. Import a CSV or add manually.

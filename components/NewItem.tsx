@@ -1,52 +1,99 @@
-import React, { useState } from 'react';
-import { Home, ChevronDown, Save, ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Home, ChevronDown, Save, ArrowLeft, Loader2 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 interface NewItemProps {
   onBack: () => void;
-  onSubmit: (item: any) => void;
+  onSuccess: () => void;
+  initialData?: any;
 }
 
-const NewItem: React.FC<NewItemProps> = ({ onBack, onSubmit }) => {
+const NewItem: React.FC<NewItemProps> = ({ onBack, onSuccess, initialData }) => {
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     code: '',
     name: '',
-    description: '',
     sku: '',
     uom: '',
     location: '',
-    group: '',
+    group_name: '',
     type: '',
-    lastPrice: '0.00',
-    avgPrice: '0.00',
-    safetyStock: '0',
-    onHand: '0',
-    shelfLife: false,
-    serialized: false
+    last_price: '0.00',
+    avg_price: '0.00',
+    safety_stock: '0',
+    on_hand_stock: '0'
   });
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        code: initialData.code || '',
+        name: initialData.name || '',
+        sku: initialData.sku || '',
+        uom: initialData.uom || '',
+        location: initialData.location || '',
+        group_name: initialData.group_name || '',
+        type: initialData.type || '',
+        last_price: String(initialData.last_price || '0.00'),
+        avg_price: String(initialData.avg_price || '0.00'),
+        safety_stock: String(initialData.safety_stock || '0'),
+        on_hand_stock: String(initialData.on_hand_stock || '0')
+      });
+    }
+  }, [initialData]);
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.uom || !formData.group || !formData.type) {
+    if (!formData.name || !formData.uom || !formData.group_name || !formData.type || !formData.code) {
       alert("Please fill in all mandatory fields (*)");
       return;
     }
-    onSubmit(formData);
+
+    setLoading(true);
+    const payload = {
+      ...formData,
+      last_price: parseFloat(formData.last_price) || 0,
+      avg_price: parseFloat(formData.avg_price) || 0,
+      safety_stock: parseInt(formData.safety_stock) || 0,
+      on_hand_stock: parseInt(formData.on_hand_stock) || 0
+    };
+
+    let error;
+    if (initialData?.id) {
+      const { error: updateError } = await supabase
+        .from('items')
+        .update(payload)
+        .eq('id', initialData.id);
+      error = updateError;
+    } else {
+      const { error: insertError } = await supabase
+        .from('items')
+        .insert([payload]);
+      error = insertError;
+    }
+
+    setLoading(false);
+
+    if (error) {
+      alert("Database Error: " + error.message);
+    } else {
+      onSuccess();
+    }
   };
 
   return (
     <div className="flex flex-col space-y-6">
-      {/* Breadcrumbs */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2 text-[10px] font-bold text-[#2d808e] uppercase tracking-wider">
           <Home size={12} className="text-gray-400" />
           <span className="text-gray-300">/</span>
-          <button onClick={onBack} className="text-gray-400 hover:text-[#2d808e] transition-colors">ITEM-LIST</button>
+          <button onClick={onBack} className="text-gray-400 hover:text-[#2d808e] transition-colors uppercase">ITEM-LIST</button>
           <span className="text-gray-300">/</span>
-          <span className="text-[#2d808e]">NEW-ITEM</span>
+          <span className="text-[#2d808e]">{initialData ? 'EDIT-ITEM' : 'NEW-ITEM'}</span>
         </div>
         <button 
           onClick={onBack}
@@ -59,23 +106,27 @@ const NewItem: React.FC<NewItemProps> = ({ onBack, onSubmit }) => {
 
       <div className="flex items-center space-x-3">
         <div className="w-1 h-8 bg-[#2d808e] rounded-full"></div>
-        <h1 className="text-xl font-black text-gray-800 tracking-tight uppercase">Manual Item Entry</h1>
+        <h1 className="text-xl font-black text-gray-800 tracking-tight uppercase">
+          {initialData ? 'Edit Item Details' : 'Manual Item Entry'}
+        </h1>
       </div>
 
       <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden transition-all">
         <div className="p-8 space-y-10">
-          {/* Identity Section */}
           <div className="space-y-6">
             <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-2">Identification</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="space-y-1.5">
-                <label className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">Part Code</label>
+                <label className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">
+                   <span className="text-red-500 mr-1">*</span>Part Code
+                </label>
                 <input
                   type="text"
                   placeholder="e.g. 100000XXXX"
                   value={formData.code}
+                  disabled={!!initialData}
                   onChange={(e) => handleInputChange('code', e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded focus:border-[#2d808e] outline-none text-[12px] font-medium transition-all"
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded focus:border-[#2d808e] outline-none text-[12px] font-medium transition-all disabled:bg-gray-50"
                 />
               </div>
               <div className="space-y-1.5 md:col-span-2">
@@ -103,7 +154,6 @@ const NewItem: React.FC<NewItemProps> = ({ onBack, onSubmit }) => {
             </div>
           </div>
 
-          {/* Logistics Section */}
           <div className="space-y-6">
             <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-2">Classification & Logistics</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -111,60 +161,37 @@ const NewItem: React.FC<NewItemProps> = ({ onBack, onSubmit }) => {
                 <label className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">
                   <span className="text-red-500 mr-1">*</span>UOM
                 </label>
-                <div className="relative">
-                  <select
-                    value={formData.uom}
-                    onChange={(e) => handleInputChange('uom', e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-[12px] font-bold text-gray-600 appearance-none outline-none focus:border-[#2d808e] transition-all"
-                  >
-                    <option value="">Select Unit</option>
-                    <option value="PIECE">PIECE</option>
-                    <option value="BOX">BOX</option>
-                    <option value="SET">SET</option>
-                    <option value="REAM">REAM</option>
-                    <option value="KG">KG</option>
-                    <option value="LTR">LTR</option>
-                  </select>
-                  <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
-                </div>
+                <input
+                  type="text"
+                  placeholder="e.g. PIECE"
+                  value={formData.uom}
+                  onChange={(e) => handleInputChange('uom', e.target.value.toUpperCase())}
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-[12px] font-bold outline-none focus:border-[#2d808e] transition-all"
+                />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">
                   <span className="text-red-500 mr-1">*</span>Item Group
                 </label>
-                <div className="relative">
-                  <select
-                    value={formData.group}
-                    onChange={(e) => handleInputChange('group', e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-[12px] font-bold text-gray-600 appearance-none outline-none focus:border-[#2d808e] transition-all"
-                  >
-                    <option value="">Select Group</option>
-                    <option value="Maintenance Item">Maintenance Item</option>
-                    <option value="Paint Item">Paint Item</option>
-                    <option value="Admin Item">Admin Item</option>
-                    <option value="Civil Item">Civil Item</option>
-                  </select>
-                  <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
-                </div>
+                <input
+                  type="text"
+                  placeholder="e.g. Maintenance Item"
+                  value={formData.group_name}
+                  onChange={(e) => handleInputChange('group_name', e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-[12px] font-bold outline-none focus:border-[#2d808e] transition-all"
+                />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">
                   <span className="text-red-500 mr-1">*</span>Item Type
                 </label>
-                <div className="relative">
-                  <select
-                    value={formData.type}
-                    onChange={(e) => handleInputChange('type', e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-[12px] font-bold text-gray-600 appearance-none outline-none focus:border-[#2d808e] transition-all"
-                  >
-                    <option value="">Select Type</option>
-                    <option value="Spare Parts">Spare Parts</option>
-                    <option value="Consumables">Consumables</option>
-                    <option value="Fixed Asset">Fixed Asset</option>
-                    <option value="Stationary">Stationary</option>
-                  </select>
-                  <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
-                </div>
+                <input
+                  type="text"
+                  placeholder="e.g. Consumables"
+                  value={formData.type}
+                  onChange={(e) => handleInputChange('type', e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-[12px] font-bold outline-none focus:border-[#2d808e] transition-all"
+                />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">Stock Location</label>
@@ -179,25 +206,24 @@ const NewItem: React.FC<NewItemProps> = ({ onBack, onSubmit }) => {
             </div>
           </div>
 
-          {/* Inventory & Value Section */}
           <div className="space-y-6">
             <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-2">Inventory & Valuation</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="space-y-1.5">
                 <label className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">On-Hand Stock</label>
                 <input
-                  type="text"
-                  value={formData.onHand}
-                  onChange={(e) => handleInputChange('onHand', e.target.value)}
+                  type="number"
+                  value={formData.on_hand_stock}
+                  onChange={(e) => handleInputChange('on_hand_stock', e.target.value)}
                   className="w-full px-3 py-2 bg-[#fcfcfc] border border-gray-200 rounded focus:border-[#2d808e] outline-none text-[12px] font-black text-center"
                 />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">Safety Stock</label>
                 <input
-                  type="text"
-                  value={formData.safetyStock}
-                  onChange={(e) => handleInputChange('safetyStock', e.target.value)}
+                  type="number"
+                  value={formData.safety_stock}
+                  onChange={(e) => handleInputChange('safety_stock', e.target.value)}
                   className="w-full px-3 py-2 bg-orange-50/30 border border-gray-200 rounded focus:border-[#2d808e] outline-none text-[12px] font-black text-center text-orange-600"
                 />
               </div>
@@ -205,8 +231,8 @@ const NewItem: React.FC<NewItemProps> = ({ onBack, onSubmit }) => {
                 <label className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">Last Purchase Price</label>
                 <input
                   type="text"
-                  value={formData.lastPrice}
-                  onChange={(e) => handleInputChange('lastPrice', e.target.value)}
+                  value={formData.last_price}
+                  onChange={(e) => handleInputChange('last_price', e.target.value)}
                   className="w-full px-3 py-2 bg-white border border-gray-200 rounded focus:border-[#2d808e] outline-none text-[12px] font-bold text-right"
                 />
               </div>
@@ -214,39 +240,15 @@ const NewItem: React.FC<NewItemProps> = ({ onBack, onSubmit }) => {
                 <label className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">Avg. Price</label>
                 <input
                   type="text"
-                  value={formData.avgPrice}
-                  onChange={(e) => handleInputChange('avgPrice', e.target.value)}
+                  value={formData.avg_price}
+                  onChange={(e) => handleInputChange('avg_price', e.target.value)}
                   className="w-full px-3 py-2 bg-white border border-gray-200 rounded focus:border-[#2d808e] outline-none text-[12px] font-bold text-right"
                 />
               </div>
             </div>
           </div>
-
-          {/* Config Section */}
-          <div className="flex flex-wrap gap-10 bg-gray-50/50 p-6 rounded-lg border border-gray-100">
-            <div className="flex items-center space-x-4">
-              <label className="text-[11px] font-black text-gray-500 uppercase tracking-widest">Shelf Life Control</label>
-              <div 
-                onClick={() => handleInputChange('shelfLife', !formData.shelfLife)}
-                className={`w-10 h-5 rounded-full p-1 cursor-pointer transition-colors duration-200 ${formData.shelfLife ? 'bg-[#2d808e]' : 'bg-gray-300'} relative`}
-              >
-                <div className={`w-3 h-3 bg-white rounded-full transition-transform duration-200 ${formData.shelfLife ? 'translate-x-5' : 'translate-x-0'}`}></div>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <label className="text-[11px] font-black text-gray-500 uppercase tracking-widest">Serialization Required</label>
-              <div 
-                onClick={() => handleInputChange('serialized', !formData.serialized)}
-                className={`w-10 h-5 rounded-full p-1 cursor-pointer transition-colors duration-200 ${formData.serialized ? 'bg-[#2d808e]' : 'bg-gray-300'} relative`}
-              >
-                <div className={`w-3 h-3 bg-white rounded-full transition-transform duration-200 ${formData.serialized ? 'translate-x-5' : 'translate-x-0'}`}></div>
-              </div>
-            </div>
-          </div>
         </div>
 
-        {/* Form Actions */}
         <div className="bg-[#fcfcfc] border-t border-gray-100 px-8 py-6 flex justify-end items-center space-x-6">
           <button 
             type="button" 
@@ -257,10 +259,11 @@ const NewItem: React.FC<NewItemProps> = ({ onBack, onSubmit }) => {
           </button>
           <button
             type="submit"
-            className="flex items-center space-x-3 bg-[#2d808e] text-white px-12 py-3 rounded-lg text-[13px] font-black shadow-lg shadow-cyan-900/10 hover:bg-[#256b78] transition-all active:scale-[0.98] uppercase tracking-widest"
+            disabled={loading}
+            className="flex items-center space-x-3 bg-[#2d808e] text-white px-12 py-3 rounded-lg text-[13px] font-black shadow-lg shadow-cyan-900/10 hover:bg-[#256b78] transition-all active:scale-[0.98] uppercase tracking-widest disabled:opacity-50"
           >
-            <Save size={16} />
-            <span>Commit Item Entry</span>
+            {loading ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+            <span>{initialData ? 'Update Database' : 'Commit Item Entry'}</span>
           </button>
         </div>
       </form>
