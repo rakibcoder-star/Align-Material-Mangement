@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Home, Search, Filter, Edit2, FileUp, Plus, Trash2, Loader2, ListFilter } from 'lucide-react';
+import { Home, Search, Filter, Edit2, FileUp, Plus, Trash2, Loader2, ListFilter, RefreshCw } from 'lucide-react';
 import NewItem from './NewItem';
 import ItemHistoryModal from './ItemHistoryModal';
 import * as XLSX from 'xlsx';
@@ -63,39 +63,45 @@ const ItemList: React.FC = () => {
       const data = XLSX.utils.sheet_to_json(worksheet);
 
       const mappedItems = data.map((row: any) => ({
-        code: String(row['CODE'] || ''),
-        sku: String(row['SKU'] || ''),
-        name: String(row['NAME'] || ''),
-        uom: String(row['UOM'] || ''),
-        location: String(row['LOCATION'] || ''),
-        type: String(row['TYPE'] || ''),
-        group_name: String(row['GROUP'] || ''),
-        last_price: parseFloat(row['LAST PRICE']) || 0,
-        avg_price: parseFloat(row['AVG. PRICE']) || 0,
-        safety_stock: parseInt(row['SAFETY STOCK']) || 0,
-        on_hand_stock: parseInt(row['ON-HAND STOCK']) || 0
+        code: String(row['CODE'] || row['code'] || '').trim(),
+        sku: String(row['SKU'] || row['sku'] || 'N/A').trim(),
+        name: String(row['NAME'] || row['name'] || '').trim(),
+        uom: String(row['UOM'] || row['uom'] || '').trim(),
+        location: String(row['LOCATION'] || row['location'] || 'N/A').trim(),
+        type: String(row['TYPE'] || row['type'] || '').trim(),
+        group_name: String(row['GROUP'] || row['group'] || '').trim(),
+        last_price: parseFloat(row['LAST PRICE'] || row['last_price']) || 0,
+        avg_price: parseFloat(row['AVG. PRICE'] || row['avg_price']) || 0,
+        safety_stock: parseInt(row['SAFETY STOCK'] || row['safety_stock']) || 0,
+        on_hand_stock: parseInt(row['ON-HAND STOCK'] || row['on_hand_stock']) || 0
       })).filter(item => item.name && item.code);
 
       if (mappedItems.length > 0) {
         setLoading(true);
+        // Using upsert on 'code' requires 'code' to be UNIQUE in Supabase
         const { error } = await supabase.from('items').upsert(mappedItems, { onConflict: 'code' });
+        
         if (error) {
-          alert("Error uploading CSV: " + error.message);
+          console.error("Supabase Error:", error);
+          alert("Database Error: " + error.message + "\n\nTip: Ensure you have run the SQL schema to enable Public RLS access.");
         } else {
-          alert(`Successfully processed ${mappedItems.length} items.`);
+          alert(`Success! Processed ${mappedItems.length} items to database.`);
           fetchItems();
         }
+      } else {
+        alert("No valid items found in CSV. Ensure column headers match (CODE, NAME, etc.)");
       }
+      setLoading(false);
     };
     reader.readAsBinaryString(file);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (window.confirm(`Are you sure you want to permanently delete "${name}"?`)) {
+    if (window.confirm(`PERMANENTLY DELETE item "${name}" from database?`)) {
       const { error } = await supabase.from('items').delete().eq('id', id);
       if (error) {
-        alert("Error deleting item: " + error.message);
+        alert("Delete failed: " + error.message);
       } else {
         fetchItems();
       }
@@ -133,9 +139,12 @@ const ItemList: React.FC = () => {
 
   return (
     <div className="flex flex-col space-y-4">
+      {/* Top Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2 text-[11px] font-bold text-[#2d808e] uppercase tracking-wider">
           <Home size={14} className="text-gray-400" />
+          <span className="text-gray-300">/</span>
+          <span className="text-[#2d808e]">ITEM-MASTER</span>
           <span className="text-gray-300">/</span>
           <span className="text-[#2d808e]">ITEM-LIST</span>
         </div>
@@ -149,111 +158,114 @@ const ItemList: React.FC = () => {
           />
           <button 
             onClick={() => fileInputRef.current?.click()}
-            className="bg-white text-[#2d808e] border border-[#2d808e] px-4 py-1.5 rounded text-[13px] font-bold shadow-sm hover:bg-cyan-50 transition-all flex items-center space-x-2"
+            className="bg-white text-[#2d808e] border border-[#2d808e] px-5 py-2 rounded text-[13px] font-black shadow-sm hover:bg-cyan-50 transition-all flex items-center space-x-2 uppercase tracking-tight"
           >
-            <FileUp size={14} />
-            <span>Import CSV</span>
+            <FileUp size={16} strokeWidth={3} />
+            <span>Upload CSV</span>
           </button>
           <button 
             onClick={handleAddItem}
-            className="bg-[#2d808e] text-white px-6 py-1.5 rounded text-[13px] font-bold shadow-sm hover:bg-[#256b78] transition-all flex items-center space-x-2"
+            className="bg-[#2d808e] text-white px-6 py-2 rounded text-[13px] font-black shadow-lg shadow-cyan-900/10 hover:bg-[#256b78] transition-all flex items-center space-x-2 uppercase tracking-tight"
           >
-            <Plus size={14} />
-            <span>Add Item</span>
+            <Plus size={16} strokeWidth={3} />
+            <span>Add Item Manually</span>
           </button>
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
+      {/* Search and Filters */}
+      <div className="flex items-center justify-between bg-white p-3 rounded border border-gray-100 shadow-sm">
         <div className="flex items-center space-x-2">
-          <button className="border border-[#2d808e] text-[#2d808e] px-5 py-1 rounded text-[12px] font-bold hover:bg-gray-50 transition-all">
-            Logs
+          <button onClick={fetchItems} className="p-2 text-gray-400 hover:text-[#2d808e] transition-colors" title="Refresh Database">
+            <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
           </button>
-          <button 
-            onClick={fetchItems}
-            className="border border-gray-200 text-gray-500 px-5 py-1 rounded text-[12px] font-bold hover:bg-gray-50 transition-all flex items-center space-x-2"
-          >
-            {loading ? <Loader2 size={12} className="animate-spin" /> : <span>Refresh</span>}
-          </button>
+          <div className="h-6 w-px bg-gray-100 mx-2"></div>
+          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+            {filteredItems.length} Items found
+          </span>
         </div>
         <div className="flex items-center">
           <div className="relative flex">
             <input 
               type="text" 
-              placeholder="Search by name, SKU or code"
+              placeholder="Search by name, SKU or code..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-80 px-4 py-1.5 border border-gray-200 rounded-l outline-none text-[12px] text-gray-600 focus:border-[#2d808e]"
+              className="w-96 px-4 py-2 bg-gray-50 border border-gray-100 rounded-l outline-none text-[12px] font-medium text-gray-600 focus:border-[#2d808e] focus:bg-white transition-all"
             />
-            <button className="bg-[#2d808e] text-white px-3 rounded-r flex items-center justify-center hover:bg-[#256b78]">
-              <Search size={14} />
+            <button className="bg-[#2d808e] text-white px-4 rounded-r flex items-center justify-center hover:bg-[#256b78]">
+              <Search size={16} />
             </button>
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded shadow-sm border border-gray-100 overflow-x-auto scrollbar-thin">
+      {/* Main Table */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-x-auto scrollbar-thin">
         <table className="w-full text-left border-collapse min-w-[1600px]">
           <thead className="bg-[#fcfcfc] sticky top-0 z-10">
-            <tr className="text-[10px] font-black text-gray-700 border-b border-gray-100 uppercase tracking-tighter">
-              <th className="px-3 py-4 text-center w-12 border-r border-gray-50">SL</th>
-              <th className="px-3 py-4 border-r border-gray-50 text-center">Code</th>
-              <th className="px-3 py-4 border-r border-gray-50 text-center">SKU</th>
-              <th className="px-3 py-4 border-r border-gray-50 text-left w-64">Name</th>
-              <th className="px-3 py-4 border-r border-gray-50 text-center">UOM</th>
-              <th className="px-3 py-4 border-r border-gray-50 text-center">Location</th>
-              <th className="px-3 py-4 border-r border-gray-50 text-center">Type</th>
-              <th className="px-3 py-4 border-r border-gray-50 text-center">Group</th>
-              <th className="px-3 py-4 border-r border-gray-50 text-right">Last Price</th>
-              <th className="px-3 py-4 border-r border-gray-50 text-right">Avg. Price</th>
-              <th className="px-3 py-4 border-r border-gray-50 text-center">Safety Stock</th>
-              <th className="px-3 py-4 border-r border-gray-50 text-center">On-Hand Stock</th>
-              <th className="px-3 py-4 text-center">Action</th>
+            <tr className="text-[10px] font-black text-gray-500 border-b border-gray-100 uppercase tracking-widest">
+              <th className="px-4 py-5 text-center w-16 border-r border-gray-50">SL</th>
+              <th className="px-4 py-5 border-r border-gray-50 text-center">Code</th>
+              <th className="px-4 py-5 border-r border-gray-50 text-center">SKU</th>
+              <th className="px-4 py-5 border-r border-gray-50 text-left w-80">Item Name</th>
+              <th className="px-4 py-5 border-r border-gray-50 text-center">UOM</th>
+              <th className="px-4 py-5 border-r border-gray-50 text-center">Location</th>
+              <th className="px-4 py-5 border-r border-gray-50 text-center">Type</th>
+              <th className="px-4 py-5 border-r border-gray-50 text-center">Group</th>
+              <th className="px-4 py-5 border-r border-gray-50 text-right">Last Price</th>
+              <th className="px-4 py-5 border-r border-gray-50 text-right">Avg. Price</th>
+              <th className="px-4 py-5 border-r border-gray-50 text-center">Safety</th>
+              <th className="px-4 py-5 border-r border-gray-50 text-center">On-Hand</th>
+              <th className="px-4 py-5 text-center">Actions</th>
             </tr>
           </thead>
-          <tbody className="text-[10px] text-gray-600 font-medium">
+          <tbody className="text-[11px] text-gray-600 font-medium">
             {loading ? (
               <tr>
-                <td colSpan={13} className="py-20 text-center text-gray-400">
-                  <Loader2 className="animate-spin inline mr-2" /> Loading database items...
+                <td colSpan={13} className="py-32 text-center text-gray-400">
+                  <div className="flex flex-col items-center justify-center space-y-4">
+                    <Loader2 className="animate-spin text-[#2d808e]" size={32} />
+                    <span className="font-black uppercase tracking-widest text-[10px]">Syncing with Database...</span>
+                  </div>
                 </td>
               </tr>
             ) : filteredItems.map((item, idx) => (
-              <tr key={item.id} className="hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0">
-                <td className="px-3 py-3 text-center border-r border-gray-50">{item.sl}</td>
-                <td className="px-3 py-3 text-center border-r border-gray-50 font-bold">{item.code}</td>
-                <td className="px-3 py-3 text-center border-r border-gray-50">{item.sku}</td>
-                <td className="px-3 py-3 font-bold uppercase text-[10px] leading-tight border-r border-gray-50">{item.name}</td>
-                <td className="px-3 py-3 text-center border-r border-gray-50">{item.uom}</td>
-                <td className="px-3 py-3 text-center border-r border-gray-50 text-gray-400">{item.location}</td>
-                <td className="px-3 py-3 text-center border-r border-gray-50">{item.type}</td>
-                <td className="px-3 py-3 text-center border-r border-gray-50">{item.group_name}</td>
-                <td className="px-3 py-3 text-right border-r border-gray-50 font-bold text-gray-700">{item.last_price}</td>
-                <td className="px-3 py-3 text-right border-r border-gray-50 font-bold text-gray-700">{item.avg_price}</td>
-                <td className="px-3 py-3 text-center border-r border-gray-50 font-bold text-orange-600">{item.safety_stock}</td>
-                <td className="px-3 py-3 text-center border-r border-gray-50 font-black text-[#2d808e]">{item.on_hand_stock}</td>
-                <td className="px-3 py-3 text-center">
-                  <div className="flex items-center justify-center space-x-1.5">
+              <tr key={item.id} className="hover:bg-cyan-50/20 transition-colors border-b border-gray-50 last:border-0 group">
+                <td className="px-4 py-4 text-center border-r border-gray-50 text-gray-400">{item.sl}</td>
+                <td className="px-4 py-4 text-center border-r border-gray-50 font-black text-gray-800">{item.code}</td>
+                <td className="px-4 py-4 text-center border-r border-gray-50 text-gray-500">{item.sku}</td>
+                <td className="px-4 py-4 font-black uppercase text-[11px] leading-tight border-r border-gray-50 text-[#2d808e]">{item.name}</td>
+                <td className="px-4 py-4 text-center border-r border-gray-50"><span className="px-2 py-1 bg-gray-100 rounded text-[9px] font-black">{item.uom}</span></td>
+                <td className="px-4 py-4 text-center border-r border-gray-50 text-gray-400">{item.location}</td>
+                <td className="px-4 py-4 text-center border-r border-gray-50">{item.type}</td>
+                <td className="px-4 py-4 text-center border-r border-gray-50">{item.group_name}</td>
+                <td className="px-4 py-4 text-right border-r border-gray-50 font-bold text-gray-700">{Number(item.last_price).toFixed(2)}</td>
+                <td className="px-4 py-4 text-right border-r border-gray-50 font-bold text-gray-700">{Number(item.avg_price).toFixed(2)}</td>
+                <td className="px-4 py-4 text-center border-r border-gray-50 font-black text-orange-600">{item.safety_stock}</td>
+                <td className="px-4 py-4 text-center border-r border-gray-50 font-black text-[#2d808e] text-[13px]">{item.on_hand_stock}</td>
+                <td className="px-4 py-4 text-center">
+                  <div className="flex items-center justify-center space-x-2">
                     <button 
                       onClick={() => handleEdit(item)}
-                      title="Edit Item"
-                      className="p-1 text-teal-600 hover:bg-teal-50 border border-teal-100 rounded transition-all"
+                      title="Edit Item Data"
+                      className="p-2 text-teal-600 hover:bg-teal-600 hover:text-white border border-teal-100 rounded-md transition-all shadow-sm"
                     >
-                      <Edit2 size={12} />
+                      <Edit2 size={14} strokeWidth={2.5} />
                     </button>
                     <button 
                       onClick={() => handleDelete(item.id!, item.name)}
-                      title="Delete Item"
-                      className="p-1 text-red-500 hover:bg-red-50 border border-red-100 rounded transition-all"
+                      title="Delete Permanently"
+                      className="p-2 text-red-500 hover:bg-red-500 hover:text-white border border-red-100 rounded-md transition-all shadow-sm"
                     >
-                      <Trash2 size={12} />
+                      <Trash2 size={14} strokeWidth={2.5} />
                     </button>
                     <button 
                       onClick={() => setHistoryItem(item)}
                       title="View Update History"
-                      className="p-1 text-blue-500 hover:bg-blue-50 border border-blue-100 rounded transition-all"
+                      className="p-2 text-blue-500 hover:bg-blue-500 hover:text-white border border-blue-100 rounded-md transition-all shadow-sm"
                     >
-                      <ListFilter size={12} />
+                      <ListFilter size={14} strokeWidth={2.5} />
                     </button>
                   </div>
                 </td>
@@ -261,8 +273,11 @@ const ItemList: React.FC = () => {
             ))}
             {!loading && filteredItems.length === 0 && (
               <tr>
-                <td colSpan={13} className="py-20 text-center text-gray-300 uppercase font-black tracking-widest">
-                  No Items found. Import a CSV or add manually.
+                <td colSpan={13} className="py-32">
+                  <div className="flex flex-col items-center justify-center space-y-3 opacity-30">
+                    <FileUp size={48} />
+                    <p className="font-black uppercase tracking-[0.2em] text-sm text-center">Database is empty.<br/><span className="text-[10px]">Upload CSV or Add Manually to begin.</span></p>
+                  </div>
                 </td>
               </tr>
             )}
