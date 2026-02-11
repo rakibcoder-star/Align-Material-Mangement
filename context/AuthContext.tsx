@@ -17,10 +17,25 @@ interface AuthContextType extends AuthState {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const DEFAULT_GRANULAR: Record<string, ModulePermissions> = {
-  ai_assistant: { view: false, edit: false, dl: false },
-  rolled_out: { view: true, edit: false, dl: false },
-  process_damage: { view: true, edit: false, dl: false },
-  incoming_damage: { view: true, edit: false, dl: false }
+  // Purchase
+  requisition: { view: true, edit: false, dl: false },
+  purchase_order: { view: true, edit: false, dl: false },
+  supplier: { view: true, edit: false, dl: false },
+  purchase_report: { view: true, edit: false, dl: false },
+  // Warehouse
+  inventory: { view: true, edit: false, dl: false },
+  receive: { view: true, edit: false, dl: false },
+  issue: { view: true, edit: false, dl: false },
+  tnx_report: { view: true, edit: false, dl: false },
+  mo_report: { view: true, edit: false, dl: false },
+  // Item Master
+  item_list: { view: true, edit: false, dl: false },
+  item_uom: { view: true, edit: false, dl: false },
+  item_group: { view: true, edit: false, dl: false },
+  item_type: { view: true, edit: false, dl: false },
+  cost_center: { view: true, edit: false, dl: false },
+  // Admin
+  user_management: { view: false, edit: false, dl: false }
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -105,31 +120,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { error } = await supabase.from('profiles').insert([{
       id: uuidv4(),
       email: userData.email,
-      full_name: userData.fullName,
-      username: userData.username,
-      role: userData.role,
+      full_name: userData.fullName || userData.email.split('@')[0],
+      username: userData.username || userData.email.split('@')[0],
+      role: userData.role || Role.USER,
       status: 'Active',
-      granular_permissions: userData.granularPermissions || DEFAULT_GRANULAR
+      granular_permissions: userData.granularPermissions || DEFAULT_GRANULAR,
+      created_at: new Date().toISOString(),
+      last_login: new Date().toISOString()
     }]).select();
     
     if (!error) await fetchUsers();
+    else throw error;
   };
 
   const updateUser = async (userId: string, updates: Partial<User>) => {
-    // Map internal camelCase to DB snake_case if needed
     const dbUpdates: any = {};
     if (updates.fullName) dbUpdates.full_name = updates.fullName;
     if (updates.username) dbUpdates.username = updates.username;
     if (updates.role) dbUpdates.role = updates.role;
+    if (updates.status) dbUpdates.status = updates.status;
     if (updates.granularPermissions) dbUpdates.granular_permissions = updates.granularPermissions;
 
     const { error } = await supabase.from('profiles').update(dbUpdates).eq('id', userId);
     if (!error) await fetchUsers();
+    else throw error;
   };
 
   const deleteUser = async (userId: string) => {
     const { error } = await supabase.from('profiles').delete().eq('id', userId);
     if (!error) await fetchUsers();
+    else throw error;
   };
 
   const hasPermission = (permissionId: string) => {

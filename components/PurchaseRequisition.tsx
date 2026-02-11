@@ -101,12 +101,12 @@ const PurchaseRequisition: React.FC = () => {
         </button>
       </div>
 
-      <div className="bg-white rounded shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded shadow-sm border border-gray-100 overflow-x-auto scrollbar-thin">
         {loading ? (
           <div className="p-20 text-center text-gray-400">Loading requisitions...</div>
         ) : (
           <table className="w-full text-left border-collapse min-w-[1200px]">
-            <thead className="bg-[#fafbfc]">
+            <thead className="bg-[#fafbfc] sticky top-0 z-10">
               <tr className="text-[11px] font-bold text-gray-700 uppercase border-b border-gray-100">
                 <th className="px-4 py-4 text-center w-12">SL</th>
                 <th className="px-4 py-4 text-center">PR No</th>
@@ -120,7 +120,7 @@ const PurchaseRequisition: React.FC = () => {
             </thead>
             <tbody className="text-[11px] text-gray-600">
               {filteredData.map((item, index) => (
-                <tr key={item.id} className="hover:bg-gray-50 border-b border-gray-50 last:border-0">
+                <tr key={item.id} className="hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors">
                   <td className="px-4 py-3.5 text-center">{index + 1}</td>
                   <td className="px-4 py-3.5 text-center text-blue-500 font-bold">{item.PR}</td>
                   <td className="px-4 py-3.5 text-center text-gray-500">{item.sku}</td>
@@ -133,7 +133,7 @@ const PurchaseRequisition: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-4 py-3.5 text-center">
-                    <button onClick={() => handleEdit(item)} className="p-1.5 text-gray-400 hover:text-blue-500 border border-gray-100 rounded">
+                    <button onClick={() => handleEdit(item)} className="p-1.5 text-gray-400 hover:text-blue-500 border border-gray-100 rounded transition-all">
                       <Edit2 size={12} />
                     </button>
                   </td>

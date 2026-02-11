@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Role, User, ModulePermissions } from '../types';
-import { X, User as UserIcon, Plus, Trash2, Edit, ChevronDown, Check } from 'lucide-react';
+import { X, User as UserIcon, Plus, Check, ChevronDown, Save } from 'lucide-react';
 
 interface PermissionCardProps {
   label: string;
@@ -11,12 +11,16 @@ interface PermissionCardProps {
 }
 
 const PermissionCard: React.FC<PermissionCardProps> = ({ label, moduleId, permissions, onChange }) => (
-  <div className="bg-white border border-cyan-100 rounded-lg p-3 flex flex-col space-y-3">
+  <div className="bg-white border border-cyan-100/50 rounded-lg p-3.5 flex flex-col space-y-3.5 shadow-sm">
     <span className="text-[10px] font-black text-gray-500 uppercase tracking-tighter">{label}</span>
-    <div className="flex items-center space-x-4">
+    <div className="flex items-center space-x-5">
       {(['view', 'edit', 'dl'] as const).map((field) => (
         <label key={field} className="flex items-center space-x-1.5 cursor-pointer group">
-          <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${permissions[field] ? 'bg-[#2d808e] border-[#2d808e]' : 'border-gray-300 group-hover:border-[#2d808e]'}`}>
+          <div 
+            className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${
+              permissions[field] ? 'bg-[#2d808e] border-[#2d808e]' : 'border-gray-300 group-hover:border-[#2d808e]'
+            }`}
+          >
             {permissions[field] && <Check size={10} className="text-white" strokeWidth={4} />}
             <input 
               type="checkbox" 
@@ -37,7 +41,6 @@ const UserManagement: React.FC = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   
-  // Local state for modal/form
   const [formData, setFormData] = useState<Partial<User>>({});
 
   const handleEditClick = (user: User) => {
@@ -46,12 +49,21 @@ const UserManagement: React.FC = () => {
   };
 
   const handleCommitChanges = async () => {
-    if (editingUser) {
-      await updateUser(editingUser.id, formData);
-      setEditingUser(null);
-    } else if (isAdding) {
-      await addUser(formData);
-      setIsAdding(false);
+    try {
+      if (editingUser) {
+        await updateUser(editingUser.id, formData);
+        setEditingUser(null);
+      } else if (isAdding) {
+        if (!formData.email) {
+          alert("Email is required for new users");
+          return;
+        }
+        await addUser(formData);
+        setIsAdding(false);
+      }
+    } catch (err) {
+      console.error("Failed to save changes:", err);
+      alert("Error saving user access changes.");
     }
   };
 
@@ -69,12 +81,15 @@ const UserManagement: React.FC = () => {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', { 
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { 
       month: 'short', 
       day: '2-digit', 
-      year: 'numeric',
+      year: 'numeric'
+    }) + ', ' + date.toLocaleTimeString('en-US', {
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      hour12: true
     });
   };
 
@@ -82,69 +97,91 @@ const UserManagement: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-xl font-bold text-gray-900 tracking-tight">System Access Control</h2>
-          <p className="text-xs text-gray-400 font-medium uppercase tracking-widest mt-0.5">Manage users and granular module permissions</p>
+          <h2 className="text-xl font-bold text-gray-900 tracking-tight">User Management</h2>
+          <p className="text-xs text-gray-400 font-medium uppercase tracking-widest mt-0.5">Control system access levels and permissions</p>
         </div>
         <button
           onClick={() => {
             setIsAdding(true);
-            setFormData({ role: Role.USER, granularPermissions: {} });
+            setFormData({ 
+              role: Role.USER, 
+              status: 'Active',
+              granularPermissions: {
+                requisition: { view: true, edit: false, dl: false },
+                purchase_order: { view: true, edit: false, dl: false },
+                supplier: { view: true, edit: false, dl: false },
+                purchase_report: { view: true, edit: false, dl: false },
+                inventory: { view: true, edit: false, dl: false },
+                receive: { view: true, edit: false, dl: false },
+                issue: { view: true, edit: false, dl: false },
+                tnx_report: { view: true, edit: false, dl: false },
+                mo_report: { view: true, edit: false, dl: false },
+                item_list: { view: true, edit: false, dl: false },
+                item_uom: { view: true, edit: false, dl: false },
+                item_group: { view: true, edit: false, dl: false },
+                item_type: { view: true, edit: false, dl: false },
+                cost_center: { view: true, edit: false, dl: false },
+                user_management: { view: false, edit: false, dl: false }
+              } 
+            });
           }}
-          className="flex items-center px-4 py-2 bg-[#2d808e] text-white text-xs font-bold rounded shadow-sm hover:bg-[#256b78] transition-all uppercase tracking-widest"
+          className="flex items-center px-6 py-2 bg-[#2d808e] text-white text-xs font-bold rounded shadow-sm hover:bg-[#256b78] transition-all uppercase tracking-widest"
         >
-          <Plus size={14} className="mr-2" /> New User
+          <Plus size={14} className="mr-2" /> Add User
         </button>
       </div>
 
       <div className="bg-white rounded border border-gray-100 shadow-sm overflow-hidden">
         <table className="min-w-full divide-y divide-gray-100">
-          <thead className="bg-[#fafbfc]">
-            <tr className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-              <th className="px-6 py-5 text-left">User</th>
-              <th className="px-6 py-5 text-left">Username</th>
-              <th className="px-6 py-5 text-left">Role</th>
-              <th className="px-6 py-5 text-left">Status</th>
-              <th className="px-6 py-5 text-left">Last Login</th>
-              <th className="px-6 py-5 text-right">Actions</th>
+          <thead className="bg-white">
+            <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+              <th className="px-6 py-6 text-left">User</th>
+              <th className="px-6 py-6 text-left">Username</th>
+              <th className="px-6 py-6 text-left">Role</th>
+              <th className="px-6 py-6 text-left">Status</th>
+              <th className="px-6 py-6 text-left">Last Login</th>
+              <th className="px-6 py-6 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-50">
             {users.map((u) => (
-              <tr key={u.id} className="hover:bg-gray-50/50 transition-colors">
-                <td className="px-6 py-4 whitespace-nowrap">
+              <tr key={u.id} className="hover:bg-gray-50/30 transition-colors">
+                <td className="px-6 py-5 whitespace-nowrap">
                   <div className="flex items-center">
                     <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center border border-gray-200 shadow-inner">
                       <UserIcon size={18} className="text-gray-400" />
                     </div>
                     <div className="ml-4">
                       <div className="text-[12px] font-black text-gray-800 uppercase tracking-tight">{u.fullName}</div>
-                      <div className="text-[10px] text-gray-400">{u.email}</div>
+                      <div className="text-[10px] text-gray-400 font-medium">{u.email}</div>
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-[12px] font-medium text-gray-600">
+                <td className="px-6 py-5 whitespace-nowrap text-[12px] font-medium text-gray-600">
                   {u.username}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="px-2.5 py-1 text-[9px] font-black uppercase tracking-widest border border-gray-200 rounded text-gray-600">
+                <td className="px-6 py-5 whitespace-nowrap">
+                  <span className="px-3 py-1 text-[9px] font-black uppercase tracking-widest border border-gray-200 rounded-md text-gray-600 bg-white shadow-sm">
                     {u.role}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2.5 py-1 text-[9px] font-black uppercase tracking-widest rounded-full ${
-                    u.status === 'Active' ? 'bg-green-50 text-green-600 border border-green-100' : 'bg-red-50 text-red-600 border border-red-100'
+                <td className="px-6 py-5 whitespace-nowrap">
+                  <span className={`px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-full border ${
+                    u.status === 'Active' 
+                      ? 'bg-green-50 text-green-600 border-green-100' 
+                      : 'bg-red-50 text-red-600 border-red-100'
                   }`}>
                     {u.status}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-[11px] font-medium text-gray-400">
+                <td className="px-6 py-5 whitespace-nowrap text-[11px] font-medium text-gray-400">
                   {formatDate(u.lastLogin)}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right">
-                  <div className="flex items-center justify-end space-x-4">
+                <td className="px-6 py-5 whitespace-nowrap text-right">
+                  <div className="flex items-center justify-end space-x-5">
                     <button 
                       onClick={() => handleEditClick(u)}
-                      className="text-[#2d808e] text-[11px] font-black hover:underline uppercase tracking-tight"
+                      className="text-[#2d808e] text-[12px] font-black hover:underline uppercase tracking-tight"
                     >
                       Edit Access
                     </button>
@@ -153,7 +190,7 @@ const UserManagement: React.FC = () => {
                       onClick={() => {
                          if(window.confirm(`Delete user ${u.fullName}?`)) deleteUser(u.id);
                       }}
-                      className="text-red-500 text-[11px] font-black hover:underline uppercase tracking-tight disabled:opacity-20"
+                      className="text-red-500 text-[12px] font-black hover:underline uppercase tracking-tight disabled:opacity-20"
                     >
                       Delete
                     </button>
@@ -165,30 +202,29 @@ const UserManagement: React.FC = () => {
         </table>
       </div>
 
-      {/* Edit Access Modal - Exact match to image */}
       {(editingUser || isAdding) && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white w-full max-w-[1000px] rounded-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-white sticky top-0 z-10">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-[2px] p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-[1100px] rounded-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col my-auto">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-white sticky top-0 z-10">
               <h3 className="text-lg font-black text-gray-800 tracking-tight">
-                {isAdding ? 'New Access' : `Edit Access: ${editingUser?.fullName}`}
+                {isAdding ? 'New User Access' : `Edit Access: ${editingUser?.fullName}`}
               </h3>
-              <button onClick={() => { setEditingUser(null); setIsAdding(false); }} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => { setEditingUser(null); setIsAdding(false); }} className="text-gray-300 hover:text-gray-600 transition-colors">
                 <X size={20} />
               </button>
             </div>
 
-            <div className="p-8 space-y-10 overflow-y-auto max-h-[80vh] scrollbar-thin">
-              {/* User Identity Info */}
-              <div className="flex flex-col md:flex-row gap-8 items-start">
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+            <div className="p-8 space-y-12 overflow-y-auto max-h-[75vh] scrollbar-thin">
+              {/* Profile Setup */}
+              <div className="flex flex-col md:flex-row gap-10 items-start">
+                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 w-full">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Full Name</label>
                     <input 
                       type="text" 
                       value={formData.fullName || ''}
                       onChange={(e) => setFormData({...formData, fullName: e.target.value})}
-                      className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-medium" 
+                      className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-medium transition-all" 
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -197,22 +233,33 @@ const UserManagement: React.FC = () => {
                       type="text" 
                       value={formData.username || ''}
                       onChange={(e) => setFormData({...formData, username: e.target.value})}
-                      className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-medium" 
+                      className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-medium transition-all" 
                     />
                   </div>
+                  {isAdding && (
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Email Address</label>
+                      <input 
+                        type="email" 
+                        value={formData.email || ''}
+                        onChange={(e) => setFormData({...formData, email: e.target.value})}
+                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-medium transition-all" 
+                      />
+                    </div>
+                  )}
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Role Template</label>
                     <div className="relative">
                       <select 
                         value={formData.role}
                         onChange={(e) => setFormData({...formData, role: e.target.value as Role})}
-                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-medium appearance-none"
+                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-bold appearance-none transition-all"
                       >
                         <option value={Role.USER}>User</option>
                         <option value={Role.MANAGER}>Manager</option>
                         <option value={Role.ADMIN}>Admin</option>
                       </select>
-                      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
+                      <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
                     </div>
                   </div>
                   <div className="space-y-1.5">
@@ -220,85 +267,90 @@ const UserManagement: React.FC = () => {
                     <input 
                       type="password" 
                       placeholder="••••••••"
-                      className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-medium" 
+                      className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-medium transition-all" 
                     />
                   </div>
                 </div>
                 
-                {/* Avatar section matching image */}
-                <div className="w-[300px] bg-gray-50/50 rounded-xl border border-gray-100 p-8 flex flex-col items-center justify-center space-y-4">
+                {/* Avatar Section */}
+                <div className="w-full md:w-[280px] bg-[#fcfcfc] rounded-xl border border-gray-100 p-8 flex flex-col items-center justify-center space-y-4 shadow-inner">
                   <div className="relative">
-                    <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center shadow-inner border border-white">
-                      <UserIcon size={40} className="text-gray-400" />
+                    <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center shadow-inner border border-white overflow-hidden">
+                      <UserIcon size={44} className="text-gray-300" />
                     </div>
-                    <button className="absolute bottom-1 right-1 bg-[#2d808e] text-white p-1 rounded-full border-2 border-white shadow-sm">
-                      <Plus size={14} strokeWidth={3} />
+                    <button className="absolute bottom-0.5 right-0.5 bg-[#2d808e] text-white p-1.5 rounded-full border-2 border-white shadow-md hover:scale-110 transition-transform">
+                      <Plus size={14} strokeWidth={4} />
                     </button>
                   </div>
                   <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Avatar</span>
                 </div>
               </div>
 
-              {/* Granular Module Restrictions */}
-              <div className="space-y-6">
-                <div className="flex items-center space-x-3">
-                   <div className="w-1 h-5 bg-[#2d808e] rounded-full"></div>
-                   <h4 className="text-[12px] font-black text-gray-700 uppercase tracking-widest">Granular Module Restrictions</h4>
+              {/* Granular Section */}
+              <div className="space-y-8">
+                <div className="flex items-center space-x-3.5">
+                   <div className="w-1.5 h-6 bg-[#2d808e] rounded-full"></div>
+                   <h4 className="text-[13px] font-black text-gray-700 uppercase tracking-widest">Granular Module Restrictions</h4>
                 </div>
 
-                <div className="space-y-8">
-                  {/* System Base Section */}
-                  <div className="bg-gray-50/50 rounded-xl border border-gray-100 p-6 space-y-4">
-                    <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">System Base</h5>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <PermissionCard 
-                        label="A I Assistant" 
-                        moduleId="ai_assistant"
-                        permissions={formData.granularPermissions?.ai_assistant || {view: false, edit: false, dl: false}}
-                        onChange={handlePermissionChange}
-                      />
+                <div className="space-y-10">
+                  {/* Purchase Management */}
+                  <div className="space-y-4">
+                    <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-2.5">Purchase Management</h5>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <PermissionCard label="Requisition" moduleId="requisition" permissions={formData.granularPermissions?.requisition || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                      <PermissionCard label="Purchase Order" moduleId="purchase_order" permissions={formData.granularPermissions?.purchase_order || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                      <PermissionCard label="Supplier" moduleId="supplier" permissions={formData.granularPermissions?.supplier || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                      <PermissionCard label="Report" moduleId="purchase_report" permissions={formData.granularPermissions?.purchase_report || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
                     </div>
                   </div>
 
-                  {/* Production Section */}
-                  <div className="bg-gray-50/50 rounded-xl border border-gray-100 p-6 space-y-4">
-                    <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">Production</h5>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <PermissionCard 
-                        label="Rolled Out" 
-                        moduleId="rolled_out"
-                        permissions={formData.granularPermissions?.rolled_out || {view: false, edit: false, dl: false}}
-                        onChange={handlePermissionChange}
-                      />
-                      <PermissionCard 
-                        label="Process Damage" 
-                        moduleId="process_damage"
-                        permissions={formData.granularPermissions?.process_damage || {view: false, edit: false, dl: false}}
-                        onChange={handlePermissionChange}
-                      />
-                      <PermissionCard 
-                        label="Incoming Damage" 
-                        moduleId="incoming_damage"
-                        permissions={formData.granularPermissions?.incoming_damage || {view: false, edit: false, dl: false}}
-                        onChange={handlePermissionChange}
-                      />
+                  {/* Warehouse & Logistics */}
+                  <div className="space-y-4">
+                    <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-2.5">Warehouse & Logistics</h5>
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                      <PermissionCard label="Inventory" moduleId="inventory" permissions={formData.granularPermissions?.inventory || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                      <PermissionCard label="Receive (GRN)" moduleId="receive" permissions={formData.granularPermissions?.receive || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                      <PermissionCard label="Issue" moduleId="issue" permissions={formData.granularPermissions?.issue || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                      <PermissionCard label="Tnx-Report" moduleId="tnx_report" permissions={formData.granularPermissions?.tnx_report || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                      <PermissionCard label="MO-Report" moduleId="mo_report" permissions={formData.granularPermissions?.mo_report || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                    </div>
+                  </div>
+
+                  {/* Item Master Data */}
+                  <div className="space-y-4">
+                    <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-2.5">Item Master Data</h5>
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                      <PermissionCard label="Item List" moduleId="item_list" permissions={formData.granularPermissions?.item_list || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                      <PermissionCard label="Item UOM" moduleId="item_uom" permissions={formData.granularPermissions?.item_uom || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                      <PermissionCard label="Item Group" moduleId="item_group" permissions={formData.granularPermissions?.item_group || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                      <PermissionCard label="Item Type" moduleId="item_type" permissions={formData.granularPermissions?.item_type || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                      <PermissionCard label="Cost Center" moduleId="cost_center" permissions={formData.granularPermissions?.cost_center || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                    </div>
+                  </div>
+
+                  {/* System Administration */}
+                  <div className="space-y-4">
+                    <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-2.5">System Administration</h5>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <PermissionCard label="User Management" moduleId="user_management" permissions={formData.granularPermissions?.user_management || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Footer matching image */}
-            <div className="px-8 py-5 border-t border-gray-100 flex items-center justify-end space-x-6 bg-white sticky bottom-0 z-10">
+            {/* Modal Footer */}
+            <div className="px-8 py-6 border-t border-gray-100 flex items-center justify-end space-x-10 bg-white sticky bottom-0 z-10">
               <button 
                 onClick={() => { setEditingUser(null); setIsAdding(false); }}
-                className="text-[12px] font-black text-gray-500 hover:text-gray-800 uppercase tracking-widest"
+                className="text-[13px] font-black text-gray-400 hover:text-gray-800 uppercase tracking-widest transition-colors"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleCommitChanges}
-                className="flex items-center px-10 py-3 bg-[#2d808e] text-white text-[12px] font-black rounded shadow-md hover:bg-[#256b78] transition-all uppercase tracking-widest"
+                className="flex items-center px-12 py-3 bg-[#2d808e] text-white text-[13px] font-black rounded-lg shadow-lg hover:bg-[#256b78] transition-all uppercase tracking-widest active:scale-[0.98]"
               >
                 <Plus size={16} className="mr-3" strokeWidth={3} />
                 Commit Access Changes
