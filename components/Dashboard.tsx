@@ -28,7 +28,6 @@ import {
   LayoutGrid, 
   ChevronDown, 
   ChevronRight, 
-  LogOut, 
   User as UserIcon,
   Search,
   Menu,
@@ -148,13 +147,11 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
            ' ' + date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
   };
 
-  const displayName = user?.email?.split('@')[0].split('.').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ') || 'User';
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-[#2d808e] tracking-tight uppercase">Hi, {displayName}!</h1>
+          <h1 className="text-2xl font-black text-[#2d808e] tracking-tight uppercase">Dashboard Overview</h1>
           <p className="text-[11px] font-bold text-gray-400 mt-0.5">{formatDate(dateTime)}</p>
         </div>
         <div className="flex items-center space-x-2">
@@ -179,56 +176,54 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
         <KPICard label="Monthly PR(Qty)" value="32.1K" subValue="539" />
       </div>
 
-      {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
-        <div className="bg-white rounded shadow-sm border border-gray-100 overflow-hidden flex flex-col w-full max-w-md">
-          <div className="px-5 py-4 border-b border-gray-100 bg-[#fafbfc]">
-            <h3 className="text-sm font-black text-[#2d808e] uppercase tracking-tighter">PR Approval Queue</h3>
-          </div>
-          <div className="overflow-y-auto max-h-[400px] scrollbar-thin">
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-gray-50 sticky top-0 z-10">
-                <tr className="text-[10px] font-bold text-gray-500 uppercase">
-                  <th className="px-5 py-3 text-center">Date</th>
-                  <th className="px-5 py-3 text-center">Ref.No (PR)</th>
-                  <th className="px-5 py-3 text-right">Value</th>
-                </tr>
-              </thead>
-              <tbody className="text-[11px] font-medium">
-                {loading ? (
-                  <tr><td colSpan={3} className="py-10 text-center text-gray-400">Syncing...</td></tr>
-                ) : recentPrs.length > 0 ? (
-                  recentPrs.map((pr) => (
-                    <tr key={pr.id} className="border-b border-gray-50 hover:bg-cyan-50/10 transition-colors">
-                      <td className="px-5 py-3 text-center whitespace-nowrap text-gray-500">
-                        {new Date(pr.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
-                      </td>
-                      <td className="px-5 py-3 text-center">
-                        <button 
-                          onClick={() => onPreviewPr(pr)}
-                          className="text-[#2d808e] font-black hover:underline transition-all"
-                        >
-                          {pr.pr_no}
-                        </button>
-                      </td>
-                      <td className="px-5 py-3 text-right font-black text-gray-800">
-                        {pr.total_value ? Number(pr.total_value).toLocaleString() : '0'}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr><td colSpan={3} className="py-10 text-center text-gray-400 uppercase font-bold tracking-widest text-[9px]">No pending approvals</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+      <div className="bg-white rounded shadow-sm border border-gray-100 overflow-hidden flex flex-col w-full max-w-md">
+        <div className="px-5 py-4 border-b border-gray-100 bg-[#fafbfc]">
+          <h3 className="text-sm font-black text-[#2d808e] uppercase tracking-tighter">PR Approval Queue</h3>
         </div>
-      )}
+        <div className="overflow-y-auto max-h-[400px] scrollbar-thin">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-gray-50 sticky top-0 z-10">
+              <tr className="text-[10px] font-bold text-gray-500 uppercase">
+                <th className="px-5 py-3 text-center">Date</th>
+                <th className="px-5 py-3 text-center">Ref.No (PR)</th>
+                <th className="px-5 py-3 text-right">Value</th>
+              </tr>
+            </thead>
+            <tbody className="text-[11px] font-medium">
+              {loading ? (
+                <tr><td colSpan={3} className="py-10 text-center text-gray-400">Syncing...</td></tr>
+              ) : recentPrs.length > 0 ? (
+                recentPrs.map((pr) => (
+                  <tr key={pr.id} className="border-b border-gray-50 hover:bg-cyan-50/10 transition-colors">
+                    <td className="px-5 py-3 text-center whitespace-nowrap text-gray-500">
+                      {new Date(pr.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                    </td>
+                    <td className="px-5 py-3 text-center">
+                      <button 
+                        onClick={() => onPreviewPr(pr)}
+                        className="text-[#2d808e] font-black hover:underline transition-all"
+                      >
+                        {pr.pr_no}
+                      </button>
+                    </td>
+                    <td className="px-5 py-3 text-right font-black text-gray-800">
+                      {pr.total_value ? Number(pr.total_value).toLocaleString() : '0'}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr><td colSpan={3} className="py-10 text-center text-gray-400 uppercase font-bold tracking-widest text-[9px]">No pending approvals</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 };
 
 const Dashboard: React.FC = () => {
-  const { user, logout, hasPermission } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const activeTab = location.pathname.substring(1) || 'overview';
@@ -272,8 +267,6 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  if (!user) return <Navigate to="/login" replace />;
-
   return (
     <div className="flex h-screen bg-[#f1f3f4] overflow-hidden font-['Inter'] no-print">
       {isMobileMenuOpen && (
@@ -302,8 +295,8 @@ const Dashboard: React.FC = () => {
           </div>
           {(!isSidebarCollapsed || isMobileMenuOpen) && (
             <div className="text-center overflow-hidden w-full px-1">
-              <span className="text-[10px] font-bold text-[#2d808e] block truncate uppercase tracking-tight">{user.email.split('@')[0]}</span>
-              <span className="text-[7px] text-gray-400 font-bold uppercase tracking-widest">{user.role}</span>
+              <span className="text-[10px] font-bold text-[#2d808e] block truncate uppercase tracking-tight">System Admin</span>
+              <span className="text-[7px] text-gray-400 font-bold uppercase tracking-widest">Administrator</span>
             </div>
           )}
         </div>
@@ -340,17 +333,11 @@ const Dashboard: React.FC = () => {
             </div>
           </SidebarItem>
 
-          {hasPermission('manage_users') && (
-            <SidebarItem icon={<ShieldAlert />} label="Admin" hasSubmenu isCollapsed={isSidebarCollapsed && !isMobileMenuOpen} isOpen={openMenus.admin} onClick={() => toggleMenu('admin')}>
-              <div className="space-y-0.5">
-                <SubmenuItem icon={<UserIcon />} label="Users" active={activeTab === 'users'} onClick={() => handleNav('/users')} />
-              </div>
-            </SidebarItem>
-          )}
-        </div>
-
-        <div className="border-t border-gray-100 py-1.5">
-          <SidebarItem icon={<LogOut />} label="Logout" danger isCollapsed={isSidebarCollapsed && !isMobileMenuOpen} onClick={logout} />
+          <SidebarItem icon={<ShieldAlert />} label="Admin" hasSubmenu isCollapsed={isSidebarCollapsed && !isMobileMenuOpen} isOpen={openMenus.admin} onClick={() => toggleMenu('admin')}>
+            <div className="space-y-0.5">
+              <SubmenuItem icon={<UserIcon />} label="Users" active={activeTab === 'users'} onClick={() => handleNav('/users')} />
+            </div>
+          </SidebarItem>
         </div>
       </aside>
 
@@ -382,7 +369,7 @@ const Dashboard: React.FC = () => {
           <div className="max-w-[1600px] mx-auto w-full">
             <Routes>
               <Route path="/overview" element={<DashboardOverview onCheckStock={() => setIsStockStatusModalOpen(true)} onMoveOrder={() => setIsMoveOrderModalOpen(true)} onPreviewPr={(pr) => setPreviewPr(pr)} />} />
-              <Route path="/users" element={hasPermission('manage_users') ? <UserManagement /> : <Navigate to="/overview" />} />
+              <Route path="/users" element={<UserManagement />} />
               <Route path="/requisition" element={<PurchaseRequisition />} />
               <Route path="/purchase-order" element={<PurchaseOrder />} />
               <Route path="/supplier" element={<Supplier />} />
