@@ -1,7 +1,7 @@
-
-import React, { useState } from 'react';
-import { Home, FileSpreadsheet, Inbox, Filter, ChevronDown, Calendar } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Home, FileSpreadsheet, Inbox, Filter, ChevronDown, Loader2, Search } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { supabase } from '../lib/supabase';
 
 interface PurchaseReportEntry {
   sl: number;
@@ -20,14 +20,117 @@ interface PurchaseReportEntry {
 }
 
 const PurchaseReport: React.FC = () => {
-  const [filterDateStart, setFilterDateStart] = useState('2026-01-30');
-  const [filterDateEnd, setFilterDateEnd] = useState('2026-01-30');
-  const [itemType, setItemType] = useState('Items');
+  const today = new Date().toISOString().split('T')[0];
+  
+  // State for Filters
+  const [skuSearch, setSkuSearch] = useState('');
+  const [filterDateStart, setFilterDateStart] = useState(today);
+  const [filterDateEnd, setFilterDateEnd] = useState(today);
   const [tnxType, setTnxType] = useState('All');
   const [status, setStatus] = useState('All');
   const [docRef, setDocRef] = useState('');
   
-  const [reportData] = useState<PurchaseReportEntry[]>([]);
+  const [reportData, setReportData] = useState<PurchaseReportEntry[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchReport = async () => {
+    setLoading(true);
+    try {
+      let allData: PurchaseReportEntry[] = [];
+      let slCount = 1;
+
+      // Logic: If tnxType is 'All' or 'Purchase Requisition', fetch PRs
+      if (tnxType === 'All' || tnxType === 'Purchase Requisition') {
+        let query = supabase.from('requisitions').select('*');
+        
+        if (filterDateStart && filterDateEnd) {
+          query = query.gte('created_at', `${filterDateStart}T00:00:00`).lte('created_at', `${filterDateEnd}T23:59:59`);
+        }
+        if (status !== 'All') {
+          query = query.eq('status', status);
+        }
+        if (docRef) {
+          query = query.ilike('pr_no', `%${docRef}%`);
+        }
+
+        const { data: prData } = await query;
+        
+        if (prData) {
+          prData.forEach(pr => {
+            const items = pr.items || [];
+            items.forEach((item: any) => {
+              // Apply SKU filter locally if SKU search is active
+              if (skuSearch && !item.sku?.toLowerCase().includes(skuSearch.toLowerCase())) return;
+
+              allData.push({
+                sl: slCount++,
+                tnxDate: new Date(pr.created_at).toLocaleDateString(),
+                tnxType: 'Purchase Requisition',
+                docRef: pr.pr_no,
+                sku: item.sku || 'N/A',
+                name: item.name || 'N/A',
+                uom: item.uom || 'N/A',
+                unitPrice: Number(item.unitPrice) || 0,
+                qty: Number(item.reqQty) || 0,
+                tnxValue: (Number(item.reqQty) || 0) * (Number(item.unitPrice) || 0),
+                status: pr.status,
+                createdBy: pr.req_by_name || 'System',
+                updatedBy: 'System'
+              });
+            });
+          });
+        }
+      }
+
+      // Logic: If tnxType is 'All' or 'Purchase Order', fetch POs
+      if (tnxType === 'All' || tnxType === 'Purchase Order') {
+        let query = supabase.from('purchase_orders').select('*');
+        
+        if (filterDateStart && filterDateEnd) {
+          query = query.gte('created_at', `${filterDateStart}T00:00:00`).lte('created_at', `${filterDateEnd}T23:59:59`);
+        }
+        if (status !== 'All') {
+          query = query.eq('status', status);
+        }
+        if (docRef) {
+          query = query.ilike('po_no', `%${docRef}%`);
+        }
+
+        const { data: poData } = await query;
+        
+        if (poData) {
+          poData.forEach(po => {
+            const items = po.items || [];
+            items.forEach((item: any) => {
+              if (skuSearch && !item.sku?.toLowerCase().includes(skuSearch.toLowerCase())) return;
+
+              allData.push({
+                sl: slCount++,
+                tnxDate: new Date(po.created_at).toLocaleDateString(),
+                tnxType: 'Purchase Order',
+                docRef: po.po_no,
+                sku: item.sku || 'N/A',
+                name: item.name || 'N/A',
+                uom: item.uom || 'N/A',
+                unitPrice: Number(item.poPrice) || 0,
+                qty: Number(item.poQty) || 0,
+                tnxValue: (Number(item.poQty) || 0) * (Number(item.poPrice) || 0),
+                status: po.status,
+                createdBy: 'System',
+                updatedBy: 'System'
+              });
+            });
+          });
+        }
+      }
+
+      setReportData(allData);
+    } catch (err) {
+      console.error("Report fetch error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleExportExcel = () => {
     try {
@@ -51,20 +154,21 @@ const PurchaseReport: React.FC = () => {
           <span>PURCHASE-REPORT</span>
         </div>
 
-        {/* Filters - Responsive Grid/Flex */}
+        {/* Filters Area */}
         <div className="flex flex-wrap items-center gap-2 md:justify-end">
-          <div className="relative flex-1 min-w-[120px] md:flex-initial">
-            <select 
-              value={itemType}
-              onChange={(e) => setItemType(e.target.value)}
-              className="w-full appearance-none bg-white border border-gray-200 rounded px-3 py-1.5 text-[11px] text-gray-400 font-medium outline-none focus:border-[#2d808e] transition-all"
-            >
-              <option>Items</option>
-              <option>Consumables</option>
-            </select>
-            <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
+          {/* Field 1: SKU Search from Master */}
+          <div className="relative flex-1 min-w-[150px] md:flex-initial">
+             <input 
+              type="text" 
+              placeholder="Search Item SKU"
+              value={skuSearch}
+              onChange={(e) => setSkuSearch(e.target.value)}
+              className="w-full bg-white border border-gray-200 rounded px-3 py-1.5 text-[11px] text-gray-600 font-medium outline-none focus:border-[#2d808e] transition-all"
+            />
+            <Search size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
           </div>
 
+          {/* Field 2: Start Date */}
           <div className="relative flex-1 min-w-[130px] md:flex-initial">
             <input 
               type="date" 
@@ -74,6 +178,7 @@ const PurchaseReport: React.FC = () => {
             />
           </div>
 
+          {/* Field 3: End Date */}
           <div className="relative flex-1 min-w-[130px] md:flex-initial">
             <input 
               type="date" 
@@ -83,26 +188,52 @@ const PurchaseReport: React.FC = () => {
             />
           </div>
 
-          <div className="relative flex-1 min-w-[80px] md:flex-initial">
+          {/* Field 4: Dropdown (All, Purchase Requisition, Purchase Order) */}
+          <div className="relative flex-1 min-w-[150px] md:flex-initial">
             <select 
               value={tnxType}
               onChange={(e) => setTnxType(e.target.value)}
-              className="w-full appearance-none bg-white border border-gray-200 rounded px-3 py-1.5 text-[11px] text-gray-600 font-medium outline-none focus:border-[#2d808e] transition-all"
+              className="w-full appearance-none bg-white border border-gray-200 rounded px-3 py-1.5 text-[11px] text-gray-600 font-black outline-none focus:border-[#2d808e] transition-all"
             >
-              <option>All</option>
+              <option value="All">All</option>
+              <option value="Purchase Requisition">Purchase Requisition</option>
+              <option value="Purchase Order">Purchase Order</option>
             </select>
             <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
           </div>
 
+          {/* Field 5: Dropdown (All, In-Process, Checked, Approved, Hold, Closed) */}
+          <div className="relative flex-1 min-w-[120px] md:flex-initial">
+            <select 
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="w-full appearance-none bg-white border border-gray-200 rounded px-3 py-1.5 text-[11px] text-gray-600 font-medium outline-none focus:border-[#2d808e] transition-all"
+            >
+              <option value="All">All</option>
+              <option value="In-Process">In-Process</option>
+              <option value="Checked">Checked</option>
+              <option value="Approved">Approved</option>
+              <option value="Hold">Hold</option>
+              <option value="Closed">Closed</option>
+            </select>
+            <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
+          </div>
+
+          {/* Field 6: According to PR OR PO number */}
           <input 
             type="text" 
-            placeholder="PR/PO No."
+            placeholder="PR / PO Number"
             value={docRef}
             onChange={(e) => setDocRef(e.target.value)}
-            className="flex-1 md:flex-initial bg-white border border-gray-200 rounded px-3 py-1.5 text-[11px] text-gray-600 font-medium outline-none focus:border-[#2d808e] transition-all md:w-[110px]"
+            className="flex-1 md:flex-initial bg-white border border-gray-200 rounded px-3 py-1.5 text-[11px] text-gray-600 font-medium outline-none focus:border-[#2d808e] transition-all md:w-[130px]"
           />
 
-          <button className="bg-[#2d808e] text-white px-5 py-1.5 rounded text-[11px] font-bold shadow-sm hover:bg-[#256b78] transition-all whitespace-nowrap">
+          <button 
+            onClick={fetchReport}
+            disabled={loading}
+            className="bg-[#2d808e] text-white px-8 py-1.5 rounded text-[11px] font-black shadow-sm hover:bg-[#256b78] transition-all whitespace-nowrap flex items-center gap-2"
+          >
+            {loading && <Loader2 size={12} className="animate-spin" />}
             Find
           </button>
         </div>
@@ -125,18 +256,10 @@ const PurchaseReport: React.FC = () => {
               <tr className="text-[10px] font-bold text-gray-800 border-b border-gray-100 uppercase tracking-tighter">
                 <th className="px-4 py-4 text-center w-12 border-r border-gray-50">SL</th>
                 <th className="px-4 py-4 text-left border-r border-gray-50">Tnx. Date</th>
-                <th className="px-4 py-4 text-left border-r border-gray-50 relative group">
-                  Tnx. Type <Filter size={10} className="inline-block ml-1 text-gray-300" />
-                </th>
-                <th className="px-4 py-4 text-left border-r border-gray-50 relative group">
-                  Doc.Ref <Filter size={10} className="inline-block ml-1 text-gray-300" />
-                </th>
-                <th className="px-4 py-4 text-left border-r border-gray-50 relative group">
-                  SKU <Filter size={10} className="inline-block ml-1 text-gray-300" />
-                </th>
-                <th className="px-4 py-4 text-left border-r border-gray-50 relative group">
-                  Name <Filter size={10} className="inline-block ml-1 text-gray-300" />
-                </th>
+                <th className="px-4 py-4 text-left border-r border-gray-50">Tnx. Type</th>
+                <th className="px-4 py-4 text-left border-r border-gray-50">Doc.Ref</th>
+                <th className="px-4 py-4 text-left border-r border-gray-50">SKU</th>
+                <th className="px-4 py-4 text-left border-r border-gray-50">Name</th>
                 <th className="px-4 py-4 text-center border-r border-gray-50">UOM</th>
                 <th className="px-4 py-4 text-right border-r border-gray-50">Unit Price</th>
                 <th className="px-4 py-4 text-center border-r border-gray-50">Qty</th>
@@ -146,23 +269,38 @@ const PurchaseReport: React.FC = () => {
                 <th className="px-4 py-4 text-center">Updated By</th>
               </tr>
             </thead>
-            <tbody>
-              {reportData.length > 0 ? (
+            <tbody className="text-[11px] font-medium text-gray-600">
+              {loading ? (
+                <tr>
+                  <td colSpan={13} className="py-32 text-center text-gray-400">
+                    <div className="flex flex-col items-center justify-center space-y-4">
+                      <Loader2 className="animate-spin text-[#2d808e]" size={32} />
+                      <span className="font-black uppercase tracking-widest text-[10px]">Filtering Report Data...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : reportData.length > 0 ? (
                 reportData.map((row, idx) => (
                   <tr key={idx} className="border-b border-gray-50 text-[10px] hover:bg-gray-50/50">
-                    <td className="px-4 py-3 text-center">{idx + 1}</td>
-                    <td className="px-4 py-3">{row.tnxDate}</td>
-                    <td className="px-4 py-3">{row.tnxType}</td>
-                    <td className="px-4 py-3 text-blue-500 font-bold">{row.docRef}</td>
+                    <td className="px-4 py-3 text-center">{row.sl}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">{row.tnxDate}</td>
+                    <td className="px-4 py-3 font-bold text-[#2d808e]">{row.tnxType}</td>
+                    <td className="px-4 py-3 text-blue-500 font-black">{row.docRef}</td>
                     <td className="px-4 py-3">{row.sku}</td>
-                    <td className="px-4 py-3 font-bold uppercase">{row.name}</td>
+                    <td className="px-4 py-3 font-black uppercase text-gray-800">{row.name}</td>
                     <td className="px-4 py-3 text-center">{row.uom}</td>
                     <td className="px-4 py-3 text-right">{row.unitPrice.toFixed(2)}</td>
                     <td className="px-4 py-3 text-center font-bold">{row.qty}</td>
-                    <td className="px-4 py-3 text-right font-bold">{row.tnxValue.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-center">{row.status}</td>
-                    <td className="px-4 py-3 text-center whitespace-nowrap">{row.createdBy}</td>
-                    <td className="px-4 py-3 text-center whitespace-nowrap">{row.updatedBy}</td>
+                    <td className="px-4 py-3 text-right font-black text-gray-900">{row.tnxValue.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`px-2 py-0.5 rounded text-[9px] font-black border ${
+                        row.status === 'Approved' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-orange-50 text-orange-600 border-orange-100'
+                      }`}>
+                        {row.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-center whitespace-nowrap uppercase text-gray-400">{row.createdBy}</td>
+                    <td className="px-4 py-3 text-center whitespace-nowrap uppercase text-gray-400">{row.updatedBy}</td>
                   </tr>
                 ))
               ) : (
@@ -172,7 +310,7 @@ const PurchaseReport: React.FC = () => {
                       <div className="bg-gray-50/50 p-4 rounded-full mb-3">
                         <Inbox size={56} strokeWidth={1} className="text-gray-200" />
                       </div>
-                      <p className="text-[12px] font-medium text-gray-300">No data</p>
+                      <p className="text-[12px] font-black uppercase tracking-widest text-gray-300">Click Find to Load Records</p>
                     </div>
                   </td>
                 </tr>

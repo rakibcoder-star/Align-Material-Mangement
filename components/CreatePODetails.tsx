@@ -31,7 +31,7 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
       ...item,
       poQty: item.reqQty, 
       poPending: item.reqQty, 
-      poPrice: item.unitPrice || 0, // PO Price taken from PR price as requested
+      poPrice: item.unitPrice || 0, // REQUIREMENT: PO Price taken from PR price
       vatPercent: '', 
       remarks: '' 
     }))
@@ -47,11 +47,16 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
   const [poNote, setPoNote] = useState('');
   const [deliveryTerms, setDeliveryTerms] = useState(`1. Delivery has to be done within 03 working days after receiving PO by the supplier.
 2. Delivery has to be done as per specification of PO and quotation.
-3. Incase of failure of work within the given time, supplier will be penalized as per company policy.`);
-  const [deliveryLocation, setDeliveryLocation] = useState('Plot- 12/A & 12/B, Block-C, Kaliakoir Hi-Tech Park, Gazipur, Bangladesh, 1750.');
-  const [billSubmission, setBillSubmission] = useState('76/B, Khawaja Palace, Road-11 Banani, Dhaka, Bangladesh, 1213.');
-  const [documentsRequired, setDocumentsRequired] = useState(`1. Fully signed PO copy accept by supplier.\n2. Delivery challan with receiving sign.\n3. Mushok 6.3.\n4. Price quotation.`);
-  const [paymentTerms, setPaymentTerms] = useState(`1. 100% payment will be made within 30 working days.\n2. VAT and AIT applicable.`);
+3. Incase of failure of work within the given time, supplier will be penalized as per company policy.
+4. If any damage or problem occurs with the product, the supplier/seller will immediately replace/make arrangements with a new product.`);
+  const [deliveryLocation, setDeliveryLocation] = useState('Contact Person: ZZZ (+8801 222 222 22)\nPlot- 12/A & 12/B, Block-C, Kaliakoir Hi-Tech Park, Gazipur, Bangladesh, 1750.');
+  const [billSubmission, setBillSubmission] = useState('Contact Person: KKK (+880 111 222 333)\n76/B, Khawaja Palace, Road-11 Banani, Dhaka, Bangladesh, 1213.');
+  const [documentsRequired, setDocumentsRequired] = useState(`1. Fully signed PO copy accept by supplier.
+2. Delivery challan with receiving sign from inventory/warehouse officials.
+3. Mushok 6.3.
+4. Price quotation.`);
+  const [paymentTerms, setPaymentTerms] = useState(`1. 100% payment will be made within 30 working days of successful delivery of required .
+2. VAT and AIT applicable as per BD Govt. rules.`);
   const [paymentMethod, setPaymentMethod] = useState('');
   const [deliveryTarget, setDeliveryTarget] = useState('');
 
@@ -117,12 +122,9 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
     };
 
     try {
-      // 1. Create the Purchase Order
       const { error: poError } = await supabase.from('purchase_orders').insert([poPayload]);
       if (poError) throw poError;
       
-      // 2. IMPORTANT: Update source Requisitions to 'Ordered' status. 
-      // This ensures the /PURCHASE-ORDER/NEW data list will be empty for these items.
       const uniquePrNos = Array.from(new Set(items.map(i => i.prNo)));
       const { error: reqUpdateError } = await supabase
         .from('requisitions')
@@ -131,9 +133,9 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
       
       if (reqUpdateError) throw reqUpdateError;
 
-      alert(`PO ${poNo} created. Source requisitions moved to 'Ordered' status.`);
-      onSubmit(poPayload); // Callback to parent
-      navigate('/purchase-order'); 
+      alert(`PO ${poNo} successfully created.`);
+      onSubmit(poPayload);
+      navigate('/purchase-order');
     } catch (err: any) {
       alert("Error creating PO: " + err.message);
     } finally {
@@ -165,33 +167,35 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
 
       <div className="p-6 max-w-[1600px] mx-auto space-y-6">
         <div className="bg-white rounded border border-gray-100 overflow-hidden shadow-sm">
-          <table className="w-full text-[11px] text-left border-collapse">
+          <table className="w-full text-left border-collapse">
             <thead className="bg-[#fcfcfc]">
-              <tr className="font-bold text-gray-800 border-b border-gray-100 uppercase">
+              <tr className="font-bold text-gray-800 border-b border-gray-100 uppercase text-[11px]">
                 <th className="px-4 py-4 text-center w-32 border-r border-gray-50">SKU</th>
                 <th className="px-4 py-4 border-r border-gray-50">name</th>
                 <th className="px-4 py-4 border-r border-gray-50">Specification</th>
                 <th className="px-4 py-4 text-center border-r border-gray-50">Req.Qty</th>
+                <th className="px-4 py-4 text-center border-r border-gray-50">PO Pending</th>
                 <th className="px-4 py-4 text-center border-r border-gray-50">PO Qty</th>
-                <th className="px-4 py-4 text-center border-r border-gray-50 text-[#2d808e]">PO Price (from PR)</th>
+                <th className="px-4 py-4 text-center border-r border-gray-50 text-[#2d808e]">PO Price</th>
                 <th className="px-4 py-4 text-center border-r border-gray-50">% of VAT</th>
                 <th className="px-4 py-4 border-r border-gray-50">PO Remarks</th>
                 <th className="px-4 py-4 text-center">Action</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="text-[11px]">
               {items.map((item) => (
                 <tr key={item.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
                   <td className="px-4 py-3 text-center border-r border-gray-50">{item.sku}</td>
                   <td className="px-4 py-3 font-bold uppercase border-r border-gray-50 leading-tight">{item.name}</td>
-                  <td className="px-4 py-3 border-r border-gray-50">{item.specification}</td>
+                  <td className="px-4 py-3 border-r border-gray-50 text-[10px] text-gray-500 leading-tight">{item.specification}</td>
                   <td className="px-4 py-3 text-center border-r border-gray-50">{item.reqQty}</td>
+                  <td className="px-4 py-3 text-center border-r border-gray-50">{item.poPending}</td>
                   <td className="px-4 py-3 text-center border-r border-gray-50">
                     <input 
                       type="number" 
                       value={item.poQty}
                       onChange={(e) => updateItem(item.id, 'poQty', Number(e.target.value))}
-                      className="w-16 px-2 py-1 text-center border border-[#2d808e]/30 rounded outline-none font-bold"
+                      className="w-16 px-2 py-1 text-center border border-gray-200 rounded outline-none font-bold"
                     />
                   </td>
                   <td className="px-4 py-3 text-center border-r border-gray-50">
@@ -199,14 +203,14 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
                       type="number" 
                       value={item.poPrice}
                       onChange={(e) => updateItem(item.id, 'poPrice', Number(e.target.value))}
-                      className="w-24 px-2 py-1 text-center border border-[#2d808e]/30 rounded outline-none font-black text-[#2d808e]"
+                      className="w-24 px-2 py-1 text-center border border-gray-200 rounded outline-none font-bold"
                     />
                   </td>
                   <td className="px-4 py-3 text-center border-r border-gray-50">
                     <input 
                       type="text" 
                       value={item.vatPercent}
-                      placeholder="VAT%"
+                      placeholder=""
                       onChange={(e) => updateItem(item.id, 'vatPercent', e.target.value)}
                       className="w-12 px-2 py-1 text-center border border-gray-200 rounded outline-none"
                     />
@@ -230,13 +234,15 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
           </table>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+        {/* Form Layout Matching Image Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 pt-4">
+          {/* Column 1 */}
           <div className="space-y-6">
             <div className="space-y-1.5">
-              <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Supplier</label>
+              <label className="text-[12px] font-medium text-gray-500">Supplier</label>
               <div className="relative">
                 <select 
-                  className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded text-xs font-bold outline-none appearance-none"
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-xs text-gray-400 outline-none appearance-none"
                   onChange={(e) => {
                     const s = suppliers.find(sup => sup.id === e.target.value);
                     setSelectedSupplier(s);
@@ -251,68 +257,109 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Delivery Location</label>
+              <label className="text-[12px] font-medium text-gray-500">Delivery Location</label>
               <textarea 
                 value={deliveryLocation}
                 onChange={(e) => setDeliveryLocation(e.target.value)}
-                className="w-full h-24 px-3 py-2 border border-gray-200 rounded text-[11px] leading-relaxed outline-none focus:border-[#2d808e] resize-none"
+                className="w-full h-24 px-3 py-2 border border-gray-200 rounded text-[11px] outline-none resize-none"
               />
             </div>
-          </div>
-
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">PO Type</label>
-                <div className="relative">
-                  <select 
-                    value={poType}
-                    onChange={(e) => setPoType(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded text-xs font-bold outline-none appearance-none"
-                  >
-                    <option value="Local">Local</option>
-                    <option value="Import">Import</option>
-                  </select>
-                  <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Delivery Target</label>
-                <input 
-                  type="date"
-                  value={deliveryTarget}
-                  onChange={(e) => setDeliveryTarget(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded text-xs font-bold outline-none text-gray-600"
-                />
-              </div>
-            </div>
             <div className="space-y-1.5">
-              <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Payment Terms</label>
+              <label className="text-[12px] font-medium text-gray-500">Payment Terms</label>
               <textarea 
                 value={paymentTerms}
                 onChange={(e) => setPaymentTerms(e.target.value)}
-                className="w-full h-24 px-3 py-2 border border-gray-200 rounded text-[11px] outline-none focus:border-[#2d808e] resize-none"
+                className="w-full h-24 px-3 py-2 border border-gray-200 rounded text-[11px] outline-none resize-none"
               />
             </div>
           </div>
 
+          {/* Column 2 */}
           <div className="space-y-6">
             <div className="space-y-1.5">
-              <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Delivery Terms</label>
+              <label className="text-[12px] font-medium text-gray-500">PO Type</label>
+              <div className="relative">
+                <select 
+                  value={poType}
+                  onChange={(e) => setPoType(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-xs text-gray-400 outline-none appearance-none"
+                >
+                  <option value="Local">Local</option>
+                  <option value="Import">Import</option>
+                </select>
+                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-medium text-gray-500">Bill Submission</label>
               <textarea 
-                value={deliveryTerms}
-                onChange={(e) => setDeliveryTerms(e.target.value)}
-                className="w-full h-24 px-3 py-2 border border-gray-200 rounded text-[11px] leading-relaxed outline-none focus:border-[#2d808e] resize-none"
+                value={billSubmission}
+                onChange={(e) => setBillSubmission(e.target.value)}
+                className="w-full h-24 px-3 py-2 border border-gray-200 rounded text-[11px] outline-none resize-none"
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">PO Note</label>
+              <label className="text-[12px] font-medium text-gray-500">Supplier Payment Methode</label>
+              <textarea 
+                placeholder="Payment methode details..."
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                className="w-full h-24 px-3 py-2 border border-gray-200 rounded text-[11px] outline-none resize-none"
+              />
+            </div>
+          </div>
+
+          {/* Column 3 */}
+          <div className="space-y-6">
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-medium text-gray-500">PO Note</label>
               <textarea 
                 placeholder="Please enter PO Note..."
                 value={poNote}
                 onChange={(e) => setPoNote(e.target.value)}
-                className="w-full h-24 px-3 py-2 border border-gray-200 rounded text-[11px] outline-none focus:border-[#2d808e] resize-none"
+                className="w-full h-24 px-3 py-2 border border-gray-200 rounded text-[11px] outline-none resize-none"
               />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-medium text-gray-500">Documents Requied For Billing</label>
+              <textarea 
+                value={documentsRequired}
+                onChange={(e) => setDocumentsRequired(e.target.value)}
+                className="w-full h-24 px-3 py-2 border border-gray-200 rounded text-[11px] outline-none resize-none"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-medium text-gray-500">PO Currency</label>
+              <input 
+                type="text"
+                placeholder="BDT/USD/..."
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-200 rounded text-xs outline-none"
+              />
+            </div>
+          </div>
+
+          {/* Column 4 */}
+          <div className="space-y-6">
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-medium text-gray-500">Delivery Terms</label>
+              <textarea 
+                value={deliveryTerms}
+                onChange={(e) => setDeliveryTerms(e.target.value)}
+                className="w-full h-[180px] px-3 py-2 border border-gray-200 rounded text-[11px] outline-none resize-none"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-medium text-gray-500">Delivery Target</label>
+              <div className="relative">
+                <input 
+                  type="date"
+                  value={deliveryTarget}
+                  onChange={(e) => setDeliveryTarget(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded text-xs outline-none text-gray-400"
+                />
+              </div>
             </div>
           </div>
         </div>
