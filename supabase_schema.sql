@@ -46,6 +46,23 @@ CREATE TABLE IF NOT EXISTS suppliers (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- MIGRATION: Ensure missing columns exist in suppliers (Fixes Schema Cache Error)
+DO $$ 
+BEGIN 
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='suppliers' AND column_name='address_city') THEN
+        ALTER TABLE suppliers ADD COLUMN address_city TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='suppliers' AND column_name='address_street') THEN
+        ALTER TABLE suppliers ADD COLUMN address_street TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='suppliers' AND column_name='address_country') THEN
+        ALTER TABLE suppliers ADD COLUMN address_country TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='suppliers' AND column_name='address_postal') THEN
+        ALTER TABLE suppliers ADD COLUMN address_postal TEXT;
+    END IF;
+END $$;
+
 -- Items Table
 CREATE TABLE IF NOT EXISTS items (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -100,7 +117,6 @@ CREATE TABLE IF NOT EXISTS purchase_orders (
 );
 
 -- FUNCTION: Handle New User Signup
--- This automatically creates a profile record when a new user is created in Auth
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
