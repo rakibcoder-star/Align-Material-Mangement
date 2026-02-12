@@ -124,13 +124,10 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
     const prPayload = {
       pr_no: generatedPRNo,
       reference: prReference,
-      note: prNote,
       type: supplierType,
       status: 'Pending',
       req_by_name: requesterName,
       reqDpt: department,
-      contact: contactNumber,
-      email: emailAddress,
       total_value: totalValue,
       items: items 
     };
