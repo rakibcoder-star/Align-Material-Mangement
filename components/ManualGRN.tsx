@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Home, Plus, Trash2, Loader2, Save } from 'lucide-react';
+import { Home, Plus, MinusCircle, Loader2, Save } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface GRNItem {
@@ -21,12 +21,16 @@ interface ManualGRNProps {
 const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingSku, setLoadingSku] = useState<string | null>(null);
+  
   const [formData, setFormData] = useState({
     documentDate: new Date().toISOString().split('T')[0],
     receiveDate: new Date().toISOString().split('T')[0],
-    transactionType: 'Standard',
+    transactionType: '',
+    sourceType: '',
     sourceRef: '',
     headerText: '',
+    invoiceNo: '',
+    blMushokNo: ''
   });
 
   const [items, setItems] = useState<GRNItem[]>([
@@ -75,7 +79,7 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
 
     setIsSubmitting(true);
     try {
-      // MASTER LOGIC: Update stock for each item in DB
+      // Logic to update master inventory stock
       for (const item of items) {
         const qty = parseInt(item.recQty) || 0;
         const { error } = await supabase.rpc('update_item_stock', {
@@ -84,7 +88,8 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
         });
         if (error) throw error;
       }
-
+      
+      alert("Inventory successfully updated!");
       onSubmit({ ...formData, items });
     } catch (err: any) {
       alert("Error updating Master Stock: " + err.message);
@@ -94,86 +99,251 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
   };
 
   return (
-    <div className="flex flex-col space-y-4 pb-20">
-      <div className="flex items-center space-x-2 text-[11px] font-bold text-[#2d808e] uppercase tracking-wider">
-        <Home size={14} className="text-gray-400" />
-        <span className="text-gray-400">/</span>
-        <button onClick={onBack} className="hover:underline">RECEIVE</button>
-        <span className="text-gray-400">/</span>
-        <span>MANUAL-GRN</span>
+    <div className="flex flex-col space-y-6 font-sans antialiased text-gray-800">
+      {/* Breadcrumb Matching Image 2 */}
+      <div className="flex items-center space-x-2 text-[10px] font-bold text-[#2d808e] uppercase tracking-wider">
+        <Home size={12} className="text-gray-400" />
+        <span className="text-gray-300">/</span>
+        <button onClick={onBack} className="text-gray-400 hover:text-[#2d808e] transition-colors">RECEIVE</button>
+        <span className="text-gray-300">/</span>
+        <span className="text-gray-400">NEW</span>
       </div>
 
-      <div className="text-center">
-        <h1 className="text-xl md:text-2xl font-bold text-[#2d808e] tracking-tight uppercase">Goods Receive (Stock Addition)</h1>
+      <div className="text-center py-2">
+        <h1 className="text-[20px] font-black text-[#2d808e] tracking-tight">Goods Receive</h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded shadow-sm border border-gray-100 p-8 space-y-8 max-w-[1400px] mx-auto w-full">
+      <form onSubmit={handleSubmit} className="bg-white rounded shadow-sm border border-gray-100 p-8 space-y-10 max-w-[1600px] mx-auto w-full">
+        
+        {/* Row 1: Dates and Types */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-[#2d808e] uppercase">Doc. Date</label>
-            <input type="date" value={formData.documentDate} onChange={(e) => setFormData({...formData, documentDate: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded text-sm" />
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-[#2d808e] uppercase"><span className="text-red-500 mr-1">*</span>Document Date</label>
+            <div className="relative">
+              <input 
+                type="date" 
+                value={formData.documentDate} 
+                onChange={(e) => setFormData({...formData, documentDate: e.target.value})} 
+                className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none" 
+              />
+            </div>
           </div>
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-[#2d808e] uppercase">Source Ref</label>
-            <input type="text" placeholder="PO or Invoice Ref" value={formData.sourceRef} onChange={(e) => setFormData({...formData, sourceRef: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded text-sm" />
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-[#2d808e] uppercase"><span className="text-red-500 mr-1">*</span>Receive Date</label>
+            <div className="relative">
+              <input 
+                type="date" 
+                value={formData.receiveDate} 
+                onChange={(e) => setFormData({...formData, receiveDate: e.target.value})} 
+                className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none" 
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-[#2d808e] uppercase"><span className="text-red-500 mr-1">*</span>Transaction Type</label>
+            <select 
+              value={formData.transactionType}
+              onChange={(e) => setFormData({...formData, transactionType: e.target.value})}
+              className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] text-gray-400 outline-none appearance-none bg-white"
+            >
+              <option value="">Transaction Type</option>
+              <option value="Standard">Standard Receive</option>
+              <option value="Return">Return Receive</option>
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-[#2d808e] uppercase"><span className="text-red-500 mr-1">*</span>Source Type</label>
+            <select 
+              value={formData.sourceType}
+              onChange={(e) => setFormData({...formData, sourceType: e.target.value})}
+              className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] text-gray-400 outline-none appearance-none bg-white"
+            >
+              <option value="">Source Type</option>
+              <option value="PO">Purchase Order</option>
+              <option value="Local">Local Purchase</option>
+              <option value="Transfer">Stock Transfer</option>
+            </select>
           </div>
         </div>
 
+        {/* Row 2: References */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-black text-[#2d808e] uppercase">Source Referance</label>
+            <div className="relative">
+              <input 
+                type="text" 
+                maxLength={50}
+                placeholder="Source Ref."
+                value={formData.sourceRef} 
+                onChange={(e) => setFormData({...formData, sourceRef: e.target.value})} 
+                className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none placeholder-gray-300" 
+              />
+              <span className="absolute right-2 top-2.5 text-[8px] font-bold text-gray-300">{formData.sourceRef.length} / 50</span>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-black text-[#2d808e] uppercase">Header Text</label>
+            <div className="relative">
+              <input 
+                type="text" 
+                maxLength={50}
+                placeholder="Source Ref."
+                value={formData.headerText} 
+                onChange={(e) => setFormData({...formData, headerText: e.target.value})} 
+                className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none placeholder-gray-300" 
+              />
+              <span className="absolute right-2 top-2.5 text-[8px] font-bold text-gray-300">{formData.headerText.length} / 50</span>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-black text-[#2d808e] uppercase">Invoice No</label>
+            <div className="relative">
+              <input 
+                type="text" 
+                maxLength={50}
+                placeholder="Invoice Ref."
+                value={formData.invoiceNo} 
+                onChange={(e) => setFormData({...formData, invoiceNo: e.target.value})} 
+                className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none placeholder-gray-300" 
+              />
+              <span className="absolute right-2 top-2.5 text-[8px] font-bold text-gray-300">{formData.invoiceNo.length} / 50</span>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-black text-[#2d808e] uppercase">BL/MUSHOK No</label>
+            <div className="relative">
+              <input 
+                type="text" 
+                maxLength={50}
+                placeholder="BL/MUSHOK Ref."
+                value={formData.blMushokNo} 
+                onChange={(e) => setFormData({...formData, blMushokNo: e.target.value})} 
+                className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none placeholder-gray-300" 
+              />
+              <span className="absolute right-2 top-2.5 text-[8px] font-bold text-gray-300">{formData.blMushokNo.length} / 50</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Item Details Section */}
         <div className="space-y-4">
-          <h3 className="text-sm font-bold text-[#2d808e]">Item Entry (SKU Lookup)</h3>
+          <h3 className="text-[12px] font-black text-[#2d808e] uppercase tracking-tighter">Item Details</h3>
           <div className="overflow-x-auto">
-            <table className="min-w-full">
+            <table className="w-full border-collapse">
               <thead>
-                <tr className="text-[10px] font-bold text-gray-500 text-left uppercase">
-                  <th className="pb-3 px-1 w-32">SKU *</th>
-                  <th className="pb-3 px-1">Item Name</th>
-                  <th className="pb-3 px-1 w-20 text-center">UOM</th>
-                  <th className="pb-3 px-1 w-24 text-center">Unit Price</th>
-                  <th className="pb-3 px-1 w-24 text-center">Rec. Qty *</th>
-                  <th className="pb-3 px-1">Location</th>
-                  <th className="pb-3 w-8"></th>
+                <tr className="text-[10px] font-bold text-gray-800 text-left uppercase">
+                  <th className="pb-2 px-1 w-[350px]">Name</th>
+                  <th className="pb-2 px-1 w-[180px]">Part/SKU</th>
+                  <th className="pb-2 px-1 w-[100px]">UOM</th>
+                  <th className="pb-2 px-1 w-[120px]">Unit Price</th>
+                  <th className="pb-2 px-1 w-[100px]">Rec. Qty</th>
+                  <th className="pb-2 px-1 w-[180px]">Location</th>
+                  <th className="pb-2 px-1">Remarks</th>
+                  <th className="pb-2 w-8"></th>
                 </tr>
               </thead>
-              <tbody className="space-y-2">
+              <tbody className="space-y-0">
                 {items.map((item) => (
-                  <tr key={item.id}>
-                    <td className="py-1 px-1">
+                  <tr key={item.id} className="group border-b border-gray-50 last:border-0">
+                    <td className="py-2 px-1">
+                      <input 
+                        type="text" 
+                        placeholder="Item name"
+                        value={item.name}
+                        onChange={(e) => updateItem(item.id, 'name', e.target.value)}
+                        className="w-full px-3 py-1.5 border border-cyan-700/30 rounded text-[11px] outline-none placeholder-gray-200"
+                      />
+                    </td>
+                    <td className="py-2 px-1">
                       <div className="relative">
-                        <input type="text" className="w-full px-2 py-1.5 border border-[#2d808e]/30 rounded text-xs font-bold" value={item.sku} onChange={(e) => updateItem(item.id, 'sku', e.target.value)} onBlur={(e) => handleSkuLookup(item.id, e.target.value)} placeholder="SKU..." />
-                        {loadingSku === item.id && <Loader2 size={12} className="absolute right-1 top-2 animate-spin text-gray-400" />}
+                        <input 
+                          type="text" 
+                          placeholder="SKU/Code"
+                          value={item.sku}
+                          onChange={(e) => updateItem(item.id, 'sku', e.target.value)}
+                          onBlur={(e) => handleSkuLookup(item.id, e.target.value)}
+                          className="w-full px-3 py-1.5 border border-cyan-700/30 rounded text-[11px] outline-none placeholder-gray-200 bg-gray-50/30 font-bold"
+                        />
+                        {loadingSku === item.id && <Loader2 size={12} className="absolute right-1 top-2.5 animate-spin text-gray-400" />}
                       </div>
                     </td>
-                    <td className="py-1 px-1">
-                      <input type="text" className="w-full px-2 py-1.5 border border-gray-100 bg-gray-50 rounded text-xs font-bold" value={item.name} readOnly />
+                    <td className="py-2 px-1">
+                      <input 
+                        type="text" 
+                        placeholder="UOM"
+                        value={item.uom}
+                        onChange={(e) => updateItem(item.id, 'uom', e.target.value)}
+                        className="w-full px-3 py-1.5 border border-cyan-700/30 rounded text-[11px] outline-none placeholder-gray-200 text-center"
+                      />
                     </td>
-                    <td className="py-1 px-1">
-                      <input type="text" className="w-full px-2 py-1.5 border border-gray-100 bg-gray-50 rounded text-xs text-center" value={item.uom} readOnly />
+                    <td className="py-2 px-1">
+                      <input 
+                        type="text" 
+                        placeholder="Price"
+                        value={item.unitPrice}
+                        onChange={(e) => updateItem(item.id, 'unitPrice', e.target.value)}
+                        className="w-full px-3 py-1.5 border border-cyan-700/30 rounded text-[11px] outline-none placeholder-gray-200 text-center"
+                      />
                     </td>
-                    <td className="py-1 px-1">
-                      <input type="text" className="w-full px-2 py-1.5 border border-gray-100 rounded text-xs text-center" value={item.unitPrice} onChange={(e) => updateItem(item.id, 'unitPrice', e.target.value)} />
+                    <td className="py-2 px-1">
+                      <input 
+                        type="number" 
+                        placeholder="Rec. Qty"
+                        value={item.recQty}
+                        onChange={(e) => updateItem(item.id, 'recQty', e.target.value)}
+                        className="w-full px-3 py-1.5 border border-cyan-700/30 rounded text-[11px] outline-none placeholder-gray-200 text-center font-black"
+                      />
                     </td>
-                    <td className="py-1 px-1">
-                      <input type="number" className="w-full px-2 py-1.5 border border-[#2d808e]/30 rounded text-xs text-center font-black text-[#2d808e]" value={item.recQty} onChange={(e) => updateItem(item.id, 'recQty', e.target.value)} />
+                    <td className="py-2 px-1">
+                      <select 
+                        value={item.location}
+                        onChange={(e) => updateItem(item.id, 'location', e.target.value)}
+                        className="w-full px-3 py-1.5 border border-cyan-700/30 rounded text-[11px] outline-none text-gray-300 bg-white"
+                      >
+                        <option value="">Location</option>
+                        <option value="WH-01">Warehouse 01</option>
+                        <option value="WH-02">Warehouse 02</option>
+                      </select>
                     </td>
-                    <td className="py-1 px-1">
-                      <input type="text" className="w-full px-2 py-1.5 border border-gray-100 rounded text-xs" value={item.location} onChange={(e) => updateItem(item.id, 'location', e.target.value)} />
+                    <td className="py-2 px-1">
+                      <input 
+                        type="text" 
+                        placeholder="Remarks"
+                        value={item.remarks}
+                        onChange={(e) => updateItem(item.id, 'remarks', e.target.value)}
+                        className="w-full px-3 py-1.5 border border-cyan-700/30 rounded text-[11px] outline-none placeholder-gray-200"
+                      />
                     </td>
-                    <td className="py-1 px-1 text-center">
-                      <button onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
+                    <td className="py-2 px-1 text-center">
+                      <button onClick={() => removeItem(item.id)} className="text-gray-400 hover:text-red-500 transition-colors">
+                        <MinusCircle size={16} />
+                      </button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <button type="button" onClick={addItem} className="w-full py-2 bg-gray-50 text-[#2d808e] border border-[#2d808e]/20 flex items-center justify-center space-x-2 text-xs font-bold rounded hover:bg-white transition-all">
-            <Plus size={14} /> <span>Add New Item Row</span>
+          
+          <button 
+            type="button" 
+            onClick={addItem}
+            className="w-full py-1.5 bg-[#2d808e] text-white flex items-center justify-center space-x-2 text-[11px] font-black rounded hover:bg-[#256b78] transition-all uppercase"
+          >
+            <Plus size={14} strokeWidth={3} />
+            <span>Add Item</span>
           </button>
         </div>
 
-        <button type="submit" disabled={isSubmitting} className="w-full py-3 bg-[#2d808e] text-white text-sm font-black rounded shadow-lg hover:bg-[#256b78] transition-all flex items-center justify-center space-x-3 uppercase tracking-widest disabled:opacity-50">
-          {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-          <span>Commit Goods Receive to Master Stock</span>
+        {/* Footer Submit Bar Matching Image 2 */}
+        <button 
+          type="submit" 
+          disabled={isSubmitting}
+          className="w-full py-2 bg-[#2d808e] text-white text-[11px] font-black rounded hover:bg-[#256b78] transition-all flex items-center justify-center space-x-3 uppercase tracking-widest disabled:opacity-50"
+        >
+          {isSubmitting ? <Loader2 className="animate-spin" size={16} /> : null}
+          <span>Submit</span>
         </button>
       </form>
     </div>
