@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Home, Edit2, Inbox } from 'lucide-react';
+import { Home, Edit2, Trash2, Loader2 } from 'lucide-react';
 import NewPurchaseRequisition from './NewPurchaseRequisition';
 import PRPreviewModal from './PRPreviewModal';
 import { supabase } from '../lib/supabase';
@@ -40,6 +40,17 @@ const PurchaseRequisition: React.FC = () => {
     setView('new');
   };
 
+  const handleDelete = async (id: string, prNo: string) => {
+    if (window.confirm(`Are you sure you want to delete PR No: ${prNo}?`)) {
+      const { error } = await supabase.from('requisitions').delete().eq('id', id);
+      if (error) {
+        alert("Delete failed: " + error.message);
+      } else {
+        fetchRequisitions();
+      }
+    }
+  };
+
   const handlePrClick = (pr: any) => {
     setPreviewPr(pr);
   };
@@ -55,7 +66,7 @@ const PurchaseRequisition: React.FC = () => {
         <div className="flex items-center space-x-2 text-[10px] font-bold text-[#2d808e] uppercase tracking-wider">
           <Home size={14} className="text-gray-400" />
           <span className="text-gray-400">/</span>
-          <span className="text-[#2d808e] font-black uppercase">PURCHASE-REQUISITION</span>
+          <span className="text-[#2d808e] font-black uppercase tracking-tight">PURCHASE-REQUISITION</span>
         </div>
         <button 
           onClick={handleCreateNew}
@@ -78,16 +89,25 @@ const PurchaseRequisition: React.FC = () => {
                 <th className="px-6 py-5 text-center">REQ. QTY</th>
                 <th className="px-6 py-5 text-center">REQ. BY</th>
                 <th className="px-6 py-5 text-center">REQ. DEPT.</th>
-                <th className="px-6 py-5 text-center w-24">ACTION</th>
+                <th className="px-6 py-5 text-center w-32">ACTION</th>
               </tr>
             </thead>
             <tbody className="text-[11px] font-bold text-gray-600 uppercase tracking-tighter">
               {loading ? (
-                <tr><td colSpan={8} className="py-20 text-center text-gray-300">Syncing requisitions...</td></tr>
+                <tr>
+                  <td colSpan={8} className="py-20 text-center">
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <Loader2 className="animate-spin text-[#2d808e]" size={24} />
+                      <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Syncing Requisitions...</span>
+                    </div>
+                  </td>
+                </tr>
               ) : requisitions.map((item, index) => {
                 const prItems = item.items || [];
                 const firstSku = prItems.length > 0 ? prItems[0].sku : 'N/A';
                 const totalReqQty = prItems.reduce((acc: number, i: any) => acc + (Number(i.reqQty) || 0), 0);
+                
+                // Show the specific SKU from the first item. If multiple, show how many more.
                 const skuDisplay = prItems.length > 1 ? `${firstSku} (+${prItems.length - 1})` : firstSku;
 
                 return (
@@ -101,29 +121,39 @@ const PurchaseRequisition: React.FC = () => {
                         {item.pr_no}
                       </button>
                     </td>
-                    <td className="px-6 py-4 text-center text-gray-800 font-black">{skuDisplay}</td>
+                    <td className="px-6 py-4 text-center text-gray-800 font-black tracking-tight">{skuDisplay}</td>
                     <td className="px-6 py-4 text-center font-black text-gray-800">{item.reference || item.pr_no}</td>
                     <td className="px-6 py-4 text-center text-[#2d808e] font-black text-sm">{totalReqQty}</td>
                     <td className="px-6 py-4 text-center uppercase tracking-tighter text-gray-500">{item.req_by_name || 'USER'}</td>
                     <td className="px-6 py-4 text-center">
-                      <span className="px-3 py-1 bg-gray-100 text-gray-500 rounded text-[9px] font-black uppercase">
+                      <span className="px-3 py-1 bg-gray-100 text-gray-500 rounded text-[9px] font-black uppercase tracking-tight">
                         {item.reqDpt || 'LOCAL'}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <button 
-                        onClick={() => handleEdit(item)}
-                        className="p-1.5 text-gray-300 hover:text-[#2d808e] border border-gray-100 rounded transition-all"
-                      >
-                        <Edit2 size={12} />
-                      </button>
+                      <div className="flex items-center justify-center space-x-2">
+                        <button 
+                          onClick={() => handleEdit(item)}
+                          className="p-1.5 text-gray-300 hover:text-[#2d808e] border border-gray-100 rounded hover:bg-[#2d808e]/5 transition-all"
+                          title="Edit Requisition"
+                        >
+                          <Edit2 size={12} />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(item.id, item.pr_no)}
+                          className="p-1.5 text-gray-300 hover:text-red-500 border border-gray-100 rounded hover:bg-red-50 transition-all"
+                          title="Delete Requisition"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
               })}
               {!loading && requisitions.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="py-20 text-center text-gray-300 uppercase font-black tracking-widest">No data available</td>
+                  <td colSpan={8} className="py-20 text-center text-gray-300 uppercase font-black tracking-widest text-[9px]">No data available</td>
                 </tr>
               )}
             </tbody>
