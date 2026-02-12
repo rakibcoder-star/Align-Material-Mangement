@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Printer, FileSpreadsheet, FileText, CheckCircle2, Edit2, Loader2, Save } from 'lucide-react';
+import { X, Printer, FileSpreadsheet, FileText, CheckCircle2, Edit2, Loader2, Save, ThumbsUp } from 'lucide-react';
 import PRPrintTemplate from './PRPrintTemplate';
 import * as XLSX from 'xlsx';
 import { supabase } from '../lib/supabase';
@@ -14,13 +14,17 @@ const PRPreviewModal: React.FC<PRPreviewModalProps> = ({ pr: initialPr, onClose 
   const [justificationData, setJustificationData] = useState<any[]>([]);
   const [images, setImages] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
 
   useEffect(() => {
     // Reset internal state when initialPr changes
     setPr({ ...initialPr });
+    setImages(initialPr.images || []);
     
-    // Initialize justification data from PR items
-    if (initialPr.items) {
+    // Initialize justification data from saved field OR items
+    if (initialPr.justification && initialPr.justification.length > 0) {
+      setJustificationData(initialPr.justification);
+    } else if (initialPr.items) {
       setJustificationData(initialPr.items.map((item: any) => ({
         name: item.name || 'N/A',
         last6m: item.last6m || 0,
@@ -58,7 +62,6 @@ const PRPreviewModal: React.FC<PRPreviewModalProps> = ({ pr: initialPr, onClose 
     }];
     setPr({ ...pr, items: newItems });
     
-    // Also update justification table
     setJustificationData([...justificationData, {
       name: '',
       last6m: 0,
@@ -87,22 +90,14 @@ const PRPreviewModal: React.FC<PRPreviewModalProps> = ({ pr: initialPr, onClose 
     setJustificationData(updated);
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const handleSaveToDB = async () => {
+  const handleSaveToDB = async (statusOverride?: string) => {
     setIsSaving(true);
     try {
       const payload = {
         ...pr,
-        // We might want to store the justification data alongside or update the items structure
-        items: pr.items.map((item: any, idx: number) => ({
-          ...item,
-          ...justificationData[idx],
-          // Ensure we don't double up on name if it changed
-          name: pr.items[idx].name 
-        })),
+        images: images,
+        justification: justificationData,
+        status: statusOverride || pr.status || 'Pending',
         updated_at: new Date().toISOString()
       };
 
@@ -112,12 +107,18 @@ const PRPreviewModal: React.FC<PRPreviewModalProps> = ({ pr: initialPr, onClose 
 
       if (error) throw error;
       
-      alert("Changes saved to database successfully!");
-      onClose(); // Optional: close or stay
+      alert(statusOverride === 'Approved' ? "PR Approved successfully!" : "Changes saved to database successfully!");
+      onClose();
     } catch (err: any) {
       alert("Error saving changes: " + err.message);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleApprove = async () => {
+    if (window.confirm("Are you sure you want to Approve this Requisition?")) {
+      handleSaveToDB('Approved');
     }
   };
 
@@ -140,7 +141,6 @@ const PRPreviewModal: React.FC<PRPreviewModalProps> = ({ pr: initialPr, onClose 
     const worksheet = XLSX.utils.json_to_sheet(mainItems);
     XLSX.utils.book_append_sheet(workbook, worksheet, "Purchase Requisition");
     
-    // Add Justification Sheet
     const justificationExport = justificationData.map(row => ({
       'Item Name': row.name,
       'Last 6M Used': row.last6m,
@@ -168,31 +168,43 @@ const PRPreviewModal: React.FC<PRPreviewModalProps> = ({ pr: initialPr, onClose 
             </button>
             <div className="flex flex-col">
               <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Dynamic Document Editor</h2>
-              <p className="text-sm font-black text-gray-800 tracking-tight uppercase">PR NO: {pr.pr_no}</p>
+              <p className="text-sm font-black text-gray-800 tracking-tight uppercase">PR NO: {pr.pr_no} {pr.status === 'Approved' && <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-600 text-[9px] rounded-full">APPROVED</span>}</p>
             </div>
           </div>
           <div className="flex items-center space-x-3">
              <button 
-               onClick={handleSaveToDB}
+               onClick={() => handleSaveToDB()}
                disabled={isSaving}
                className="p-2.5 text-blue-500 hover:bg-blue-50 border border-blue-100 rounded-xl transition-all flex items-center gap-2" 
                title="Save Changes to Database"
              >
                {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-               <span className="text-[10px] font-black uppercase">Save DB</span>
+               <span className="text-[10px] font-black uppercase">SAVE DB</span>
              </button>
-             <button onClick={handlePrint} className="p-2.5 text-gray-600 hover:bg-gray-100 border border-gray-200 rounded-xl transition-all" title="Print to PDF">
+             
+             {pr.status !== 'Approved' && (
+               <button 
+                onClick={handleApprove}
+                disabled={isSaving}
+                className="p-2.5 text-emerald-600 hover:bg-emerald-50 border border-emerald-100 rounded-xl transition-all flex items-center gap-2"
+              >
+                <ThumbsUp size={18} />
+                <span className="text-[10px] font-black uppercase">Approve PR</span>
+              </button>
+             )}
+
+             <button onClick={() => window.print()} className="p-2.5 text-gray-600 hover:bg-gray-100 border border-gray-200 rounded-xl transition-all" title="Print to PDF">
                <Printer size={18} />
              </button>
              <button onClick={handleExportExcel} className="p-2.5 text-green-600 hover:bg-green-50 border border-green-100 rounded-xl transition-all" title="Export Excel">
                <FileSpreadsheet size={18} />
              </button>
-             <button onClick={handlePrint} className="p-2.5 text-red-600 hover:bg-red-50 border border-red-100 rounded-xl transition-all" title="Download PDF">
+             <button onClick={() => window.print()} className="p-2.5 text-red-600 hover:bg-red-50 border border-red-100 rounded-xl transition-all" title="Download PDF">
                <FileText size={18} />
              </button>
              <div className="h-8 w-px bg-gray-200 mx-2"></div>
              <button 
-               onClick={handleSaveToDB}
+               onClick={() => handleSaveToDB()}
                className="bg-[#2d808e] text-white px-8 py-2.5 rounded-xl text-xs font-black shadow-xl shadow-cyan-900/10 hover:bg-[#256b78] flex items-center space-x-3 uppercase tracking-widest active:scale-95 transition-all"
              >
                 <CheckCircle2 size={18} />

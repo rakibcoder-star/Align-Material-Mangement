@@ -129,7 +129,12 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
   useEffect(() => {
     const timer = setInterval(() => setDateTime(new Date()), 1000);
     const fetchDashboardData = async () => {
-      const { data } = await supabase.from('requisitions').select('*').order('created_at', { ascending: false }).limit(10);
+      const { data } = await supabase
+        .from('requisitions')
+        .select('*')
+        .eq('status', 'Pending')
+        .order('created_at', { ascending: false })
+        .limit(10);
       if (data) setRecentPrs(data);
       setLoading(false);
     };

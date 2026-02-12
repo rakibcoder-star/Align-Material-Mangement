@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Home, Filter, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Home, Filter, ChevronRight, Loader2 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 interface PendingPRItem {
   id: string;
@@ -21,18 +22,52 @@ interface NewPurchaseOrderProps {
 
 const NewPurchaseOrder: React.FC<NewPurchaseOrderProps> = ({ onBack, onSubmit }) => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [pendingItems, setPendingItems] = useState<PendingPRItem[]>([]);
+  const [loading, setLoading] = useState(true);
   
-  // Mock data matching the screenshot
-  const [pendingItems] = useState<PendingPRItem[]>([
-    { id: '1', prNo: '3000000015', sku: '3100000658', name: 'FILTER PRIMER BOOTH(W594XL594XH500,4P)', specification: '', reqQty: 72, poQty: 0, receivedQty: 0, reqBy: 'Md. Jahangir Alam', reqDept: 'Maintenance' },
-    { id: '2', prNo: '3000000014', sku: '3000011182', name: 'GLASS DOOR CLOSER SPRING HYDRAULIC TYPE', specification: 'Floor spring hydraulic type', reqQty: 6, poQty: 0, receivedQty: 0, reqBy: 'Motiur Rahman Riat', reqDept: 'Maintenance' },
-    { id: '3', prNo: '3000000014', sku: '3000011183', name: 'GLASS DOOR LOCK CENTER PATCH TYPE', specification: 'Center patch type lock', reqQty: 2, poQty: 0, receivedQty: 0, reqBy: 'Motiur Rahman Riat', reqDept: 'Maintenance' },
-    { id: '4', prNo: '3000000014', sku: '3000011184', name: 'GLASS DOOR LOCK ELECTROMAGNETIC DC12/24V', specification: '280Kg Holding Force Electromagnetic type DC12V/24V input voltage', reqQty: 1, poQty: 0, receivedQty: 0, reqBy: 'Motiur Rahman Riat', reqDept: 'Maintenance' },
-    { id: '5', prNo: '3000000014', sku: '3000011185', name: 'SELF DRILLIN 1.5 INCH, SCREW TYPE', specification: 'SCREW Type 1.5INCH', reqQty: 5, poQty: 0, receivedQty: 0, reqBy: 'Motiur Rahman Riat', reqDept: 'Maintenance' },
-    { id: '6', prNo: '3000000014', sku: '3400000223', name: 'SCREW ROOFING, 1 INCH', specification: 'Head Hexagonal, SCREW SIZE- 1 INCH', reqQty: 2, poQty: 0, receivedQty: 0, reqBy: 'Motiur Rahman Riat', reqDept: 'Maintenance' },
-    { id: '7', prNo: '3000000014', sku: '3000011186', name: 'ROOFING SCREW 0.5 INCH', specification: 'Head Hexagonal, SCREW SIZE- 0.5 INCH', reqQty: 1, poQty: 0, receivedQty: 0, reqBy: 'Motiur Rahman Riat', reqDept: 'Maintenance' },
-    { id: '8', prNo: '3000000013', sku: 'NA', name: 'sand paper blade(repair)', specification: '', reqQty: 4, poQty: 0, receivedQty: 0, reqBy: 'Md. Jahangir Alam', reqDept: 'Maintenance' },
-  ]);
+  useEffect(() => {
+    const fetchApprovedPrItems = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('requisitions')
+          .select('*')
+          .eq('status', 'Approved')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (data) {
+          // Flatten all items from all approved PRs
+          const flattened: PendingPRItem[] = [];
+          data.forEach(pr => {
+            const prItems = pr.items || [];
+            prItems.forEach((item: any, idx: number) => {
+              flattened.push({
+                id: `${pr.id}_${idx}`, // unique identifier for checkbox selection
+                prNo: pr.pr_no,
+                sku: item.sku || 'N/A',
+                name: item.name || 'N/A',
+                specification: item.specification || '',
+                reqQty: Number(item.reqQty) || 0,
+                poQty: 0, // In a full implementation, you'd calculate this from existing POs
+                receivedQty: 0,
+                reqBy: pr.req_by_name || 'N/A',
+                reqDept: pr.reqDpt || 'N/A'
+              });
+            });
+          });
+          setPendingItems(flattened);
+        }
+      } catch (err: any) {
+        console.error("Error fetching approved items:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchApprovedPrItems();
+  }, []);
 
   const toggleSelect = (id: string) => {
     const newSelected = new Set(selectedIds);
@@ -73,14 +108,14 @@ const NewPurchaseOrder: React.FC<NewPurchaseOrderProps> = ({ onBack, onSubmit })
       <div>
         <button 
           onClick={handleMakePO}
-          disabled={selectedIds.size === 0}
+          disabled={selectedIds.size === 0 || loading}
           className={`px-6 py-1.5 rounded text-[13px] font-bold transition-all shadow-sm ${
             selectedIds.size > 0 
               ? 'bg-[#2d808e] text-white hover:bg-[#256b78] active:scale-[0.98]' 
               : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
           }`}
         >
-          Make PO
+          {loading ? 'Syncing...' : 'Make PO'}
         </button>
       </div>
 
@@ -95,6 +130,7 @@ const NewPurchaseOrder: React.FC<NewPurchaseOrderProps> = ({ onBack, onSubmit })
                     type="checkbox" 
                     checked={selectedIds.size === pendingItems.length && pendingItems.length > 0}
                     onChange={toggleSelectAll}
+                    disabled={loading}
                     className="w-4 h-4 rounded border-gray-300 text-[#2d808e] focus:ring-[#2d808e]"
                    />
                 </th>
@@ -116,7 +152,16 @@ const NewPurchaseOrder: React.FC<NewPurchaseOrderProps> = ({ onBack, onSubmit })
               </tr>
             </thead>
             <tbody className="text-[11px] text-gray-600 font-medium">
-              {pendingItems.map((item) => (
+              {loading ? (
+                <tr>
+                  <td colSpan={10} className="py-20 text-center">
+                    <div className="flex flex-col items-center space-y-2">
+                      <Loader2 className="animate-spin text-[#2d808e]" size={24} />
+                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Fetching Approved PR items...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : pendingItems.map((item) => (
                 <tr key={item.id} className="hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0">
                   <td className="px-3 py-4 text-center">
                     <input 
@@ -141,6 +186,13 @@ const NewPurchaseOrder: React.FC<NewPurchaseOrderProps> = ({ onBack, onSubmit })
                   <td className="px-3 py-4 whitespace-nowrap">{item.reqDept}</td>
                 </tr>
               ))}
+              {!loading && pendingItems.length === 0 && (
+                <tr>
+                  <td colSpan={10} className="py-20 text-center text-gray-300 uppercase font-black tracking-widest text-[9px]">
+                    No approved PR items pending for Purchase Order
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
