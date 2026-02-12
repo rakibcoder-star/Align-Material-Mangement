@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { 
@@ -40,10 +41,25 @@ const PurchaseOrder: React.FC = () => {
   }, []);
 
   const handleExportExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(orders);
+    const flattenedForExport = orders.flatMap(po => 
+      (po.items || []).map((item: any) => ({
+        'PO No': po.po_no,
+        'PR No': item.prNo,
+        'SKU': item.sku,
+        'Name': item.name,
+        'PO Price': item.poPrice,
+        'PO Qty': item.poQty,
+        'PO Value': Number(item.poQty || 0) * Number(item.poPrice || 0),
+        'GRN Qty': item.receivedQty || 0,
+        'Req. By': item.reqBy,
+        'Supplier': po.supplier_name,
+        'Status': po.status
+      }))
+    );
+    const worksheet = XLSX.utils.json_to_sheet(flattenedForExport);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Purchase Orders");
-    XLSX.writeFile(workbook, "Purchase_Orders.xlsx");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Purchase Order Items");
+    XLSX.writeFile(workbook, "Purchase_Order_Items_Report.xlsx");
   };
 
   const handlePrint = (po: any) => {
@@ -63,6 +79,17 @@ const PurchaseOrder: React.FC = () => {
     return <CreatePODetails items={selectedPRItems} onCancel={() => setView('select-items')} onSubmit={() => { setView('list'); fetchOrders(); }} />;
   }
 
+  // Flatten the orders to show items individually as requested by the headers
+  const flattenedItems = orders.flatMap(po => 
+    (po.items || []).map((item: any) => ({
+      ...item,
+      po_no: po.po_no,
+      supplier_name: po.supplier_name,
+      po_status: po.status,
+      full_po_obj: po // keep for actions
+    }))
+  );
+
   return (
     <div className="flex flex-col space-y-4 font-sans">
       <div className="flex items-center justify-between">
@@ -71,51 +98,95 @@ const PurchaseOrder: React.FC = () => {
           <span className="text-gray-400">/</span>
           <span>Purchase-Order</span>
         </div>
-        <button 
-          onClick={() => setView('select-items')}
-          className="bg-[#2d808e] text-white px-8 py-2 rounded text-[12px] font-black shadow-lg shadow-cyan-900/10 hover:bg-[#256b78] transition-all uppercase tracking-widest"
-        >
-          New Purchase Order
-        </button>
+        <div className="flex items-center space-x-3">
+          <button 
+            onClick={handleExportExcel}
+            className="flex items-center space-x-2 border border-[#2d808e] text-[#2d808e] px-4 py-2 rounded text-[12px] font-black hover:bg-cyan-50 transition-all uppercase tracking-tight"
+          >
+            <FileSpreadsheet size={14} />
+            <span>Excel</span>
+          </button>
+          <button 
+            onClick={() => setView('select-items')}
+            className="bg-[#2d808e] text-white px-8 py-2 rounded text-[12px] font-black shadow-lg shadow-cyan-900/10 hover:bg-[#256b78] transition-all uppercase tracking-widest"
+          >
+            New Purchase Order
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded border border-gray-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[1200px]">
+          <table className="w-full text-left border-collapse min-w-[1600px]">
             <thead className="bg-[#fafbfc]">
               <tr className="text-[10px] font-black text-gray-700 uppercase tracking-widest border-b border-gray-100">
-                <th className="px-6 py-5 text-center w-16">SL</th>
-                <th className="px-6 py-5 text-center">PO No</th>
-                <th className="px-6 py-5">Supplier</th>
-                <th className="px-6 py-5 text-center">Type</th>
-                <th className="px-6 py-5 text-right">Value</th>
-                <th className="px-6 py-5 text-center">Currency</th>
-                <th className="px-6 py-5 text-center">Status</th>
-                <th className="px-6 py-5 text-center w-24">Action</th>
+                <th className="px-4 py-5 text-center w-12 border-r border-gray-50">SL</th>
+                <th className="px-4 py-5 text-center border-r border-gray-50">PO No</th>
+                <th className="px-4 py-5 text-center border-r border-gray-50">PR No</th>
+                <th className="px-4 py-5 text-center border-r border-gray-50">SKU</th>
+                <th className="px-4 py-5 border-r border-gray-50">Name</th>
+                <th className="px-4 py-5 text-right border-r border-gray-50">PO Price</th>
+                <th className="px-4 py-5 text-center border-r border-gray-50">PO Qty</th>
+                <th className="px-4 py-5 text-right border-r border-gray-50">PO Value</th>
+                <th className="px-4 py-5 text-center border-r border-gray-50">GRN Qty</th>
+                <th className="px-4 py-5 border-r border-gray-50">Req. By</th>
+                <th className="px-4 py-5 border-r border-gray-50">Supplier</th>
+                <th className="px-4 py-5 text-center w-24">Action</th>
               </tr>
             </thead>
-            <tbody className="text-[11px] font-bold text-gray-600">
+            <tbody className="text-[11px] font-bold text-gray-600 uppercase tracking-tighter">
               {loading ? (
-                <tr><td colSpan={8} className="py-20 text-center uppercase tracking-widest text-gray-400">Syncing orders...</td></tr>
-              ) : orders.map((po, index) => (
-                <tr key={po.id} className="hover:bg-gray-50 transition-colors border-b border-gray-50">
-                  <td className="px-6 py-4 text-center text-gray-400">{index + 1}</td>
-                  <td className="px-6 py-4 text-center font-black text-blue-500">{po.po_no}</td>
-                  <td className="px-6 py-4 uppercase">{po.supplier_name}</td>
-                  <td className="px-6 py-4 text-center">{po.type}</td>
-                  <td className="px-6 py-4 text-right font-black">{(po.total_value || 0).toLocaleString()}</td>
-                  <td className="px-6 py-4 text-center">{po.currency}</td>
-                  <td className="px-6 py-4 text-center">
-                    <span className="px-2 py-0.5 bg-green-50 text-green-600 rounded-full text-[9px] font-black uppercase border border-green-100">{po.status}</span>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <div className="flex items-center justify-center space-x-2">
-                      <button onClick={() => handlePrint(po)} className="p-1.5 text-gray-400 hover:text-blue-500 border border-gray-100 rounded transition-all"><Printer size={12} /></button>
-                      <button className="p-1.5 text-gray-400 hover:text-blue-500 border border-gray-100 rounded transition-all"><Edit2 size={12} /></button>
+                <tr>
+                  <td colSpan={12} className="py-20 text-center">
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <Loader2 className="animate-spin text-[#2d808e]" size={24} />
+                      <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Syncing PO Items...</span>
                     </div>
                   </td>
                 </tr>
-              ))}
+              ) : flattenedItems.length > 0 ? (
+                flattenedItems.map((item, index) => {
+                  const poValue = Number(item.poQty || 0) * Number(item.poPrice || 0);
+                  return (
+                    <tr key={index} className="hover:bg-gray-50 transition-colors border-b border-gray-50">
+                      <td className="px-4 py-4 text-center text-gray-400 border-r border-gray-50">{index + 1}</td>
+                      <td className="px-4 py-4 text-center font-black text-blue-500 border-r border-gray-50">{item.po_no}</td>
+                      <td className="px-4 py-4 text-center border-r border-gray-50">{item.prNo}</td>
+                      <td className="px-4 py-4 text-center border-r border-gray-50 text-gray-400">{item.sku}</td>
+                      <td className="px-4 py-4 border-r border-gray-50 leading-tight w-64">{item.name}</td>
+                      <td className="px-4 py-4 text-right border-r border-gray-50 font-black">{Number(item.poPrice || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                      <td className="px-4 py-4 text-center border-r border-gray-50">{item.poQty}</td>
+                      <td className="px-4 py-4 text-right border-r border-gray-50 font-black text-[#2d808e]">{poValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                      <td className="px-4 py-4 text-center border-r border-gray-50 text-orange-600 font-black">{item.receivedQty || 0}</td>
+                      <td className="px-4 py-4 border-r border-gray-50 text-gray-400 font-medium whitespace-nowrap">{item.reqBy}</td>
+                      <td className="px-4 py-4 border-r border-gray-50 leading-tight">{item.supplier_name}</td>
+                      <td className="px-4 py-4 text-center">
+                        <div className="flex items-center justify-center space-x-2">
+                          <button 
+                            onClick={() => handlePrint(item.full_po_obj)} 
+                            className="p-1.5 text-gray-400 hover:text-blue-500 border border-gray-100 rounded transition-all"
+                            title="Print PO"
+                          >
+                            <Printer size={12} />
+                          </button>
+                          <button 
+                            className="p-1.5 text-gray-400 hover:text-[#2d808e] border border-gray-100 rounded transition-all"
+                            title="Edit PO"
+                          >
+                            <Edit2 size={12} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={12} className="py-24 text-center text-gray-300 uppercase font-black tracking-[0.2em] text-[10px]">
+                    No Purchase Orders Found
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

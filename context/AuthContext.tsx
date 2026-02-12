@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User, Role, AuthState, ModulePermissions } from '../types';
 import { supabase } from '../lib/supabase';
@@ -34,24 +35,35 @@ const DEFAULT_GRANULAR: Record<string, ModulePermissions> = {
   user_management: { view: true, edit: true, dl: true }
 };
 
-const DEFAULT_ADMIN_USER: User = {
-  id: 'default-admin-id',
-  email: 'admin@align.com',
-  fullName: 'System Admin',
-  username: 'admin',
-  role: Role.ADMIN,
-  status: 'Active',
-  lastLogin: new Date().toISOString(),
-  permissions: ROLE_DEFAULT_PERMISSIONS[Role.ADMIN],
-  granularPermissions: DEFAULT_GRANULAR,
-  createdAt: new Date().toISOString()
-};
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [users, setUsers] = useState<User[]>([]);
-  // Set default user to bypass login for now
-  const [currentUser, setCurrentUser] = useState<User | null>(DEFAULT_ADMIN_USER);
-  const [loading, setLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const fetchProfile = useCallback(async (userId: string) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    
+    if (data && !error) {
+      return {
+        id: data.id,
+        email: data.email,
+        fullName: data.full_name,
+        username: data.username,
+        role: data.role as Role,
+        status: data.status as 'Active' | 'Inactive',
+        lastLogin: data.last_login,
+        permissions: data.permissions || [],
+        granularPermissions: data.granular_permissions || DEFAULT_GRANULAR,
+        createdAt: data.created_at
+      };
+    }
+    return null;
+  }, []);
 
   const fetchUsers = useCallback(async () => {
     const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
@@ -72,21 +84,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+    const initializeAuth = async () => {
+      setLoading(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        const profile = await fetchProfile(session.user.id);
+        if (profile) {
+          setCurrentUser(profile);
+          setIsAuthenticated(true);
+        }
+      }
+      
+      await fetchUsers();
+      setLoading(false);
+    };
 
-  const login = async (email: string, _password: string): Promise<boolean> => {
-    // Basic mock login for development
-    setCurrentUser(DEFAULT_ADMIN_USER);
+    initializeAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        const profile = await fetchProfile(session.user.id);
+        setCurrentUser(profile);
+        setIsAuthenticated(true);
+      } else if (event === 'SIGNED_OUT') {
+        setCurrentUser(null);
+        setIsAuthenticated(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [fetchProfile, fetchUsers]);
+
+  const login = async (email: string, password: string): Promise<boolean> => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      console.error("Login Error:", error.message);
+      return false;
+    }
     return true;
   };
 
-  const logout = () => {
-    // For now, logout doesn't do much since we force auth on refresh
-    setCurrentUser(null);
+  const logout = async () => {
+    await supabase.auth.signOut();
   };
 
   const addUser = async (userData: any) => {
+    // In a real app, you might use a service role to create the auth user
+    // For this implementation, we insert into profiles and assume auth is handled
     const { error } = await supabase.from('profiles').insert([{
       email: userData.email,
       full_name: userData.fullName,
@@ -121,14 +166,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const hasPermission = (permissionId: string) => {
-    // Grant all permissions while authorization is disabled
-    return true;
+    if (currentUser?.role === Role.ADMIN) return true;
+    return currentUser?.permissions.includes(permissionId) || false;
   };
 
   return (
     <AuthContext.Provider value={{ 
       user: currentUser, 
-      isAuthenticated: true, // Always true for now
+      isAuthenticated, 
       login, 
       logout, 
       addUser, 

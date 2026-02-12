@@ -2,16 +2,9 @@
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Drop existing tables to ensure clean schema application
-DROP TABLE IF EXISTS purchase_orders CASCADE;
-DROP TABLE IF EXISTS requisitions CASCADE;
-DROP TABLE IF EXISTS suppliers CASCADE;
-DROP TABLE IF EXISTS items CASCADE;
-DROP TABLE IF EXISTS profiles CASCADE;
-
--- Profiles / Users Table
-CREATE TABLE profiles (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+-- Profiles / Users Table (Linked to Supabase Auth)
+CREATE TABLE IF NOT EXISTS profiles (
+    id UUID PRIMARY KEY REFERENCES auth.users ON DELETE CASCADE,
     email TEXT UNIQUE NOT NULL,
     full_name TEXT,
     username TEXT UNIQUE,
@@ -23,25 +16,8 @@ CREATE TABLE profiles (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Items Table
-CREATE TABLE items (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    code TEXT UNIQUE NOT NULL,
-    sku TEXT,
-    name TEXT NOT NULL,
-    uom TEXT,
-    location TEXT,
-    type TEXT,
-    group_name TEXT,
-    last_price DECIMAL DEFAULT 0,
-    avg_price DECIMAL DEFAULT 0,
-    safety_stock INTEGER DEFAULT 0,
-    on_hand_stock INTEGER DEFAULT 0,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Suppliers Table (Updated for new form)
-CREATE TABLE suppliers (
+-- Suppliers Table (Explicitly including address_city)
+CREATE TABLE IF NOT EXISTS suppliers (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
     code TEXT UNIQUE NOT NULL,
@@ -81,8 +57,25 @@ CREATE TABLE suppliers (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Items Table
+CREATE TABLE IF NOT EXISTS items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    code TEXT UNIQUE NOT NULL,
+    sku TEXT,
+    name TEXT NOT NULL,
+    uom TEXT,
+    location TEXT,
+    type TEXT,
+    group_name TEXT,
+    last_price DECIMAL DEFAULT 0,
+    avg_price DECIMAL DEFAULT 0,
+    safety_stock INTEGER DEFAULT 0,
+    on_hand_stock INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Requisitions Table
-CREATE TABLE requisitions (
+CREATE TABLE IF NOT EXISTS requisitions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     pr_no TEXT UNIQUE NOT NULL,
     reference TEXT,
@@ -102,7 +95,7 @@ CREATE TABLE requisitions (
 );
 
 -- Purchase Orders Table
-CREATE TABLE purchase_orders (
+CREATE TABLE IF NOT EXISTS purchase_orders (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     po_no TEXT UNIQUE NOT NULL,
     type TEXT,
@@ -134,6 +127,7 @@ ALTER TABLE requisitions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE purchase_orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
+-- Simple public access policies (for development - tighten these for production)
 CREATE POLICY "Allow public access items" ON items FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow public access suppliers" ON suppliers FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow public access requisitions" ON requisitions FOR ALL USING (true) WITH CHECK (true);

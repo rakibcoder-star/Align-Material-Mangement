@@ -134,7 +134,6 @@ const Supplier: React.FC = () => {
   if (view === 'add') {
     return (
       <div className="flex flex-col space-y-6 max-w-[1000px] mx-auto animate-slide-up">
-        {/* Breadcrumb matching Image 2 */}
         <div className="flex items-center space-x-2 text-[10px] font-bold text-[#2d808e] uppercase tracking-wider">
           <Home size={14} className="text-gray-400" />
           <span className="text-gray-400">/</span>
@@ -148,7 +147,6 @@ const Supplier: React.FC = () => {
         </div>
 
         <form onSubmit={handleFormSubmit} className="bg-white rounded border border-gray-100 p-10 space-y-10 shadow-sm">
-          {/* Section 1: Top Mandatory Fields */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold text-[#2d808e] uppercase tracking-wider flex items-center">
@@ -199,7 +197,6 @@ const Supplier: React.FC = () => {
             </div>
           </div>
 
-          {/* Phone Numbers */}
           <div className="space-y-3">
             <h3 className="text-[12px] font-bold text-[#2d808e] uppercase tracking-widest border-b border-gray-50 pb-2">Phone Numbers</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -209,7 +206,6 @@ const Supplier: React.FC = () => {
             </div>
           </div>
 
-          {/* Email Address */}
           <div className="space-y-3">
             <h3 className="text-[12px] font-bold text-[#2d808e] uppercase tracking-widest border-b border-gray-50 pb-2">Email Address</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -219,7 +215,6 @@ const Supplier: React.FC = () => {
             </div>
           </div>
 
-          {/* Tax Information */}
           <div className="space-y-3">
             <h3 className="text-[12px] font-bold text-[#2d808e] uppercase tracking-widest border-b border-gray-50 pb-2">Tax Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -229,7 +224,6 @@ const Supplier: React.FC = () => {
             </div>
           </div>
 
-          {/* Office Address */}
           <div className="space-y-3">
             <h3 className="text-[12px] font-bold text-[#2d808e] uppercase tracking-widest border-b border-gray-50 pb-2">Office Address</h3>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -240,7 +234,6 @@ const Supplier: React.FC = () => {
             </div>
           </div>
 
-          {/* Payment Information */}
           <div className="space-y-3">
             <h3 className="text-[12px] font-bold text-[#2d808e] uppercase tracking-widest border-b border-gray-50 pb-2">Payment Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -253,7 +246,6 @@ const Supplier: React.FC = () => {
             </div>
           </div>
 
-          {/* Submit Button */}
           <button 
             type="submit" 
             disabled={isSubmitting}
@@ -269,7 +261,6 @@ const Supplier: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* List Header matching Image 1 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2 text-[10px] font-bold text-[#2d808e] uppercase tracking-wider">
           <Home size={14} className="text-gray-400" />
@@ -284,7 +275,6 @@ const Supplier: React.FC = () => {
         </button>
       </div>
 
-      {/* Tool Bar matching Image 1 */}
       <div className="flex items-center justify-between">
         <button className="border border-[#2d808e] text-[#2d808e] px-8 py-1.5 rounded text-[12px] font-bold hover:bg-gray-50 transition-all uppercase">
           Logs
@@ -305,7 +295,6 @@ const Supplier: React.FC = () => {
         </div>
       </div>
 
-      {/* Table Section matching Image 1 styling */}
       <div className="bg-white rounded border border-gray-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[1200px]">
