@@ -76,19 +76,16 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
 
         if (data && data.length > 0) {
           const lastNo = parseInt(data[0].pr_no);
-          // Only increment if it's within our expected range or starts from our base
           if (lastNo >= 2000000000) {
             setPrNo((lastNo + 1).toString());
           } else {
             setPrNo('2000000001');
           }
         } else {
-          // Starting base
           setPrNo('2000000001');
         }
       } catch (err) {
         console.error("Error fetching last PR number:", err);
-        // Fallback to random if DB fetch fails to prevent block
         setPrNo((2000000000 + Math.floor(Math.random() * 999999)).toString());
       }
     };
@@ -161,13 +158,13 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
     const totalQty = items.reduce((sum, item) => sum + (Number(item.reqQty) || 0), 0);
     const totalValue = items.reduce((sum, item) => sum + (Number(item.reqQty) * Number(item.unitPrice) || 0), 0);
     
+    // Omit reqDpt, contact, and email to avoid schema errors if columns are missing
     const prPayload = {
       pr_no: prNo,
       reference: prReference,
       type: supplierType,
       status: 'Pending',
       req_by_name: requesterName,
-      reqDpt: department,
       total_value: totalValue,
       items: items 
     };
@@ -355,7 +352,7 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
                         type="text" 
                         placeholder="UOM"
                         value={item.uom}
-                        onChange={(e) => updateItem(item.id, 'uom', e.target.value)}
+                        onChange={(e) => updateItem(item.id, 'uom', e.target.value.toUpperCase())}
                         className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] text-center focus:border-[#2d808e] outline-none placeholder-gray-200 uppercase"
                       />
                     </td>
