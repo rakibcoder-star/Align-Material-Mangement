@@ -1,7 +1,5 @@
 -- =========================================================
--- 1. FORCE REPAIR SCRIPT (Run this in Supabase SQL Editor)
--- This fixes the 'email_alternate' column missing error 
--- and refreshes the internal Supabase API cache.
+-- CRITICAL REPAIR SCRIPT: RUN THIS IN SUPABASE SQL EDITOR
 -- =========================================================
 
 -- Ensure the extension exists
@@ -18,13 +16,13 @@ CREATE TABLE IF NOT EXISTS suppliers (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- FORCE-ADD ALL MISSING COLUMNS (Addresses the schema cache error)
+-- FORCE-ADD ALL MISSING COLUMNS
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS phone_office TEXT;
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS phone_contact TEXT;
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS phone_alternate TEXT;
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS email_office TEXT;
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS email_contact TEXT;
-ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS email_alternate TEXT; -- THE CRITICAL FIX
+ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS email_alternate TEXT;
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS tax_name TEXT;
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS tax_bin TEXT;
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS tax_address TEXT;
@@ -39,11 +37,11 @@ ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS pay_branch_name TEXT;
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS pay_routing_number TEXT;
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS pay_swift_number TEXT;
 
--- REFRESH CACHE: This is the only way to clear the "Could not find column in schema cache" error
+-- FORCE CACHE RELOAD: This solves the "Could not find column in schema cache" error
 NOTIFY pgrst, 'reload schema';
 
 -- =========================================================
--- 2. FULL DATABASE STRUCTURE (Rest of tables)
+-- REMAINING SCHEMA TABLES
 -- =========================================================
 
 CREATE TABLE IF NOT EXISTS profiles (
@@ -108,23 +106,21 @@ CREATE TABLE IF NOT EXISTS purchase_orders (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE OR REPLACE FUNCTION update_item_stock(item_sku TEXT, qty_change INTEGER)
-RETURNS VOID AS $$
-BEGIN
-    UPDATE items
-    SET on_hand_stock = on_hand_stock + qty_change
-    WHERE sku = item_sku;
-END;
-$$ LANGUAGE plpgsql;
-
+-- Row Level Security
 ALTER TABLE items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE suppliers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE requisitions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE purchase_orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Allow all access" ON items FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all access" ON suppliers FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all access" ON requisitions FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all access" ON purchase_orders FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all access" ON profiles FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Allow all" ON items;
+DROP POLICY IF EXISTS "Allow all" ON suppliers;
+DROP POLICY IF EXISTS "Allow all" ON requisitions;
+DROP POLICY IF EXISTS "Allow all" ON purchase_orders;
+DROP POLICY IF EXISTS "Allow all" ON profiles;
+
+CREATE POLICY "Allow all" ON items FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all" ON suppliers FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all" ON requisitions FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all" ON purchase_orders FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all" ON profiles FOR ALL USING (true) WITH CHECK (true);

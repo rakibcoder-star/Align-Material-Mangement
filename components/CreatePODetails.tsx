@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Trash2, ChevronDown, Loader2, Calendar } from 'lucide-react';
+import { X, Trash2, ChevronDown, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 
@@ -13,7 +13,7 @@ interface SelectedItem {
   poPending: number;
   poQty: number;
   unitPrice: number; // Incoming from PR
-  poPrice: number;   // Displayed/Editable field
+  poPrice: number;   // Calculated field
   vatPercent: string;
   remarks: string;
 }
@@ -31,7 +31,7 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
       ...item,
       poQty: item.reqQty, 
       poPending: item.reqQty, 
-      poPrice: item.unitPrice || 0, // TAKE PRICE FROM PR DATA AS REQUESTED
+      poPrice: item.unitPrice || 0, // 1. PO Price taken from PR price
       vatPercent: '', 
       remarks: '' 
     }))
@@ -47,16 +47,11 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
   const [poNote, setPoNote] = useState('');
   const [deliveryTerms, setDeliveryTerms] = useState(`1. Delivery has to be done within 03 working days after receiving PO by the supplier.
 2. Delivery has to be done as per specification of PO and quotation.
-3. Incase of failure of work within the given time, supplier will be penalized as per company policy.
-4. If any damage or problem occurs with the product, the`);
-  const [deliveryLocation, setDeliveryLocation] = useState('Contact Person: ZZZ (+8801 222 222 22)\nPlot- 12/A & 12/B, Block-C, Kaliakoir Hi-Tech Park, Gazipur, Bangladesh, 1750.');
-  const [billSubmission, setBillSubmission] = useState('Contact Person: KKK (+880 111 222 333)\n76/B, Khawaja Palace, Road-11 Banani, Dhaka, Bangladesh, 1213.');
-  const [documentsRequired, setDocumentsRequired] = useState(`1. Fully signed PO copy accept by supplier.
-2. Delivery challan with receiving sign from inventory/warehouse officials.
-3. Mushok 6.3.
-4. Price quotation.`);
-  const [paymentTerms, setPaymentTerms] = useState(`1. 100% payment will be made within 30 working days of successful delivery of required .
-2. VAT and AIT applicable as per BD Govt. rules.`);
+3. Incase of failure of work within the given time, supplier will be penalized as per company policy.`);
+  const [deliveryLocation, setDeliveryLocation] = useState('Plot- 12/A & 12/B, Block-C, Kaliakoir Hi-Tech Park, Gazipur, Bangladesh, 1750.');
+  const [billSubmission, setBillSubmission] = useState('76/B, Khawaja Palace, Road-11 Banani, Dhaka, Bangladesh, 1213.');
+  const [documentsRequired, setDocumentsRequired] = useState(`1. Fully signed PO copy accept by supplier.\n2. Delivery challan with receiving sign.\n3. Mushok 6.3.\n4. Price quotation.`);
+  const [paymentTerms, setPaymentTerms] = useState(`1. 100% payment will be made within 30 working days.\n2. VAT and AIT applicable.`);
   const [paymentMethod, setPaymentMethod] = useState('');
   const [deliveryTarget, setDeliveryTarget] = useState('');
 
@@ -73,11 +68,7 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
 
       if (lastPO && lastPO.length > 0) {
         const lastVal = parseInt(lastPO[0].po_no);
-        if (lastVal >= 3000000000) {
-          setPoNo((lastVal + 1).toString());
-        } else {
-          setPoNo('3000000001');
-        }
+        setPoNo((lastVal + 1).toString());
       } else {
         setPoNo('3000000001');
       }
@@ -126,18 +117,18 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
       const { error: poError } = await supabase.from('purchase_orders').insert([poPayload]);
       if (poError) throw poError;
       
-      // 2. Update source Requisitions to 'Ordered' status so they leave the NEW list
+      // 2. Update source Requisitions to 'Ordered' status so they leave the 'NEW' list
       const uniquePrNos = Array.from(new Set(items.map(i => i.prNo)));
-      for (const prNo of uniquePrNos) {
-        await supabase
-          .from('requisitions')
-          .update({ status: 'Ordered' })
-          .eq('pr_no', prNo);
-      }
+      const { error: reqUpdateError } = await supabase
+        .from('requisitions')
+        .update({ status: 'Ordered' })
+        .in('pr_no', uniquePrNos);
+      
+      if (reqUpdateError) throw reqUpdateError;
 
-      alert(`PO ${poNo} successfully created. Source requisitions have been moved to 'Ordered' status.`);
+      alert(`PO ${poNo} successfully created. Source requisitions have been moved to 'Ordered' status and will no longer appear in the New list.`);
       onSubmit(poPayload);
-      navigate('/receive');
+      navigate('/purchase-order'); // Navigate back to the list
     } catch (err: any) {
       alert("Error creating PO: " + err.message);
     } finally {
@@ -176,9 +167,8 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
                 <th className="px-4 py-4 border-r border-gray-50">name</th>
                 <th className="px-4 py-4 border-r border-gray-50">Specification</th>
                 <th className="px-4 py-4 text-center border-r border-gray-50">Req.Qty</th>
-                <th className="px-4 py-4 text-center border-r border-gray-50">PO Pending</th>
                 <th className="px-4 py-4 text-center border-r border-gray-50">PO Qty</th>
-                <th className="px-4 py-4 text-center border-r border-gray-50 text-blue-600">PO Price (from PR)</th>
+                <th className="px-4 py-4 text-center border-r border-gray-50 text-[#2d808e]">PO Price (from PR)</th>
                 <th className="px-4 py-4 text-center border-r border-gray-50">% of VAT</th>
                 <th className="px-4 py-4 border-r border-gray-50">PO Remarks</th>
                 <th className="px-4 py-4 text-center">Action</th>
@@ -191,7 +181,6 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
                   <td className="px-4 py-3 font-bold uppercase border-r border-gray-50 leading-tight">{item.name}</td>
                   <td className="px-4 py-3 border-r border-gray-50">{item.specification}</td>
                   <td className="px-4 py-3 text-center border-r border-gray-50">{item.reqQty}</td>
-                  <td className="px-4 py-3 text-center border-r border-gray-50 text-blue-500 font-bold">{item.poPending}</td>
                   <td className="px-4 py-3 text-center border-r border-gray-50">
                     <input 
                       type="number" 
@@ -264,14 +253,6 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
                 className="w-full h-24 px-3 py-2 border border-gray-200 rounded text-[11px] leading-relaxed outline-none focus:border-[#2d808e] resize-none"
               />
             </div>
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Payment Terms</label>
-              <textarea 
-                value={paymentTerms}
-                onChange={(e) => setPaymentTerms(e.target.value)}
-                className="w-full h-24 px-3 py-2 border border-gray-200 rounded text-[11px] leading-relaxed outline-none focus:border-[#2d808e] resize-none"
-              />
-            </div>
           </div>
 
           <div className="space-y-6">
@@ -291,29 +272,20 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">PO Note</label>
-                <textarea 
-                  placeholder="Please enter PO Note..."
-                  value={poNote}
-                  onChange={(e) => setPoNote(e.target.value)}
-                  className="w-full h-10 px-3 py-2 border border-gray-200 rounded text-[11px] outline-none focus:border-[#2d808e] resize-none"
+                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Delivery Target</label>
+                <input 
+                  type="date"
+                  value={deliveryTarget}
+                  onChange={(e) => setDeliveryTarget(e.target.value)}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded text-xs font-bold outline-none text-gray-600"
                 />
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Bill Submission</label>
+              <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Payment Terms</label>
               <textarea 
-                value={billSubmission}
-                onChange={(e) => setBillSubmission(e.target.value)}
-                className="w-full h-24 px-3 py-2 border border-gray-200 rounded text-[11px] leading-relaxed outline-none focus:border-[#2d808e] resize-none"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Supplier Payment Method</label>
-              <textarea 
-                placeholder="Payment Method details..."
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
+                value={paymentTerms}
+                onChange={(e) => setPaymentTerms(e.target.value)}
                 className="w-full h-24 px-3 py-2 border border-gray-200 rounded text-[11px] outline-none focus:border-[#2d808e] resize-none"
               />
             </div>
@@ -329,39 +301,13 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Documents Required for Billing</label>
+              <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">PO Note</label>
               <textarea 
-                value={documentsRequired}
-                onChange={(e) => setDocumentsRequired(e.target.value)}
-                className="w-full h-24 px-3 py-2 border border-gray-200 rounded text-[11px] leading-relaxed outline-none focus:border-[#2d808e] resize-none"
+                placeholder="Please enter PO Note..."
+                value={poNote}
+                onChange={(e) => setPoNote(e.target.value)}
+                className="w-full h-24 px-3 py-2 border border-gray-200 rounded text-[11px] outline-none focus:border-[#2d808e] resize-none"
               />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">PO Currency</label>
-                <div className="relative">
-                  <select 
-                    value={currency}
-                    onChange={(e) => setCurrency(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded text-xs font-bold outline-none appearance-none text-[#2d808e]"
-                  >
-                    <option value="BDT">BDT</option>
-                    <option value="USD">USD</option>
-                  </select>
-                  <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Delivery Target</label>
-                <div className="relative">
-                  <input 
-                    type="date"
-                    value={deliveryTarget}
-                    onChange={(e) => setDeliveryTarget(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded text-xs font-bold outline-none text-gray-600"
-                  />
-                </div>
-              </div>
             </div>
           </div>
         </div>
