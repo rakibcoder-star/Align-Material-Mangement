@@ -227,7 +227,7 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
 };
 
 const Dashboard: React.FC = () => {
-  const { user, logout, hasPermission } = useAuth();
+  const { user, logout, hasPermission, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const activeTab = location.pathname.substring(1) || 'overview';
@@ -271,7 +271,10 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  if (!user) return null;
+  // Prevent blank screen if navigating to Dashboard without Auth
+  if (!isAuthenticated || !user) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <div className="flex h-screen bg-[#f1f3f4] overflow-hidden font-['Inter'] no-print">
