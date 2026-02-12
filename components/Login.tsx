@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { User, Lock, EyeOff, Eye, Loader2, AlertCircle, Database, CheckCircle } from 'lucide-react';
+import { User, Lock, EyeOff, Eye, Loader2, AlertCircle, Database, CheckCircle, ExternalLink } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
@@ -18,10 +17,15 @@ const Login: React.FC = () => {
   useEffect(() => {
     const checkConnection = async () => {
       try {
+        // Simple check to see if Supabase is reachable
         const { error } = await supabase.from('profiles').select('id').limit(1);
-        if (error && error.code !== 'PGRST116') throw error;
+        if (error && error.code === 'PGRST116') {
+           setDbStatus('connected'); // PGRST116 means connected but table empty or row not found
+           return;
+        }
+        if (error) throw error;
         setDbStatus('connected');
-      } catch (err) {
+      } catch (err: any) {
         console.error("DB Connection failed:", err);
         setDbStatus('error');
       }
@@ -47,9 +51,14 @@ const Login: React.FC = () => {
       const result = await login(email, password);
       if (!result.success) {
         let msg = result.message || "Invalid credentials";
+        
+        // Handle common Supabase Auth errors gracefully
         if (msg.includes("Email not confirmed")) {
           msg = "Login failed: Email not confirmed. Please check your Supabase Auth settings to disable 'Confirm Email'.";
+        } else if (msg.includes("Invalid login credentials")) {
+          msg = "Invalid email or password. Ensure this user exists in your Supabase Auth dashboard.";
         }
+        
         setErrorMsg(msg);
       }
     } catch (err) {
@@ -60,7 +69,7 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f0f2f5] font-sans">
+    <div className="min-h-screen flex items-center justify-center bg-[#f0f2f5] font-sans p-6">
       <div className="w-full max-w-[440px] bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] p-12 flex flex-col items-center animate-slide-up relative">
         
         {/* DB Status Badge */}
@@ -83,7 +92,14 @@ const Login: React.FC = () => {
             <AlertCircle size={18} className="shrink-0 mt-0.5" />
             <div className="flex flex-col">
               <span className="text-[11px] font-bold leading-tight">{errorMsg}</span>
-              <p className="text-[9px] mt-1 opacity-70">Tip: Create this user in your Supabase Auth dashboard first.</p>
+              <a 
+                href="https://supabase.com/dashboard/project/_/auth/users" 
+                target="_blank" 
+                rel="noreferrer"
+                className="text-[9px] mt-1 opacity-70 underline flex items-center"
+              >
+                Go to Supabase Auth Dashboard <ExternalLink size={8} className="ml-1" />
+              </a>
             </div>
           </div>
         )}
@@ -148,6 +164,7 @@ const Login: React.FC = () => {
 
         <div className="mt-12 text-center">
           <p className="text-[10px] text-gray-300 font-bold uppercase tracking-widest">Authorized Access Only</p>
+          <p className="text-[9px] text-gray-200 mt-2 italic max-w-[200px] mx-auto">Make sure to add users in your Supabase project before signing in.</p>
         </div>
       </div>
     </div>

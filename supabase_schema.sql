@@ -1,8 +1,51 @@
+-- =========================================================
+-- CRITICAL REPAIR SCRIPT: RUN THIS IN SUPABASE SQL EDITOR
+-- =========================================================
 
--- Enable UUID extension
+-- 1. Ensure the extensions exist
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Profiles / Users Table (Linked to Supabase Auth)
+-- 2. Create the table if it truly doesn't exist
+CREATE TABLE IF NOT EXISTS suppliers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT NOT NULL,
+    code TEXT UNIQUE NOT NULL,
+    tin TEXT NOT NULL,
+    type TEXT NOT NULL DEFAULT 'Local',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 3. FORCE-ADD ALL MISSING COLUMNS
+-- This handles cases where the table exists but is missing specific fields
+ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS phone_office TEXT;
+ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS phone_contact TEXT;
+ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS phone_alternate TEXT;
+ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS email_office TEXT;
+ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS email_contact TEXT;
+ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS email_alternate TEXT;
+ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS tax_name TEXT;
+ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS tax_bin TEXT;
+ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS tax_address TEXT;
+ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS address_street TEXT;
+ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS address_city TEXT;
+ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS address_country TEXT;
+ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS address_postal TEXT;
+ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS pay_acc_name TEXT;
+ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS pay_acc_number TEXT;
+ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS pay_bank_name TEXT;
+ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS pay_branch_name TEXT;
+ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS pay_routing_number TEXT;
+ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS pay_swift_number TEXT;
+
+-- 4. THE ULTIMATE FIX: FORCE CACHE RELOAD
+-- This tells Supabase/PostgREST to clear its internal schema cache immediately.
+NOTIFY pgrst, 'reload schema';
+
+-- =========================================================
+-- REMAINDER OF THE FULL SCHEMA
+-- =========================================================
+
 CREATE TABLE IF NOT EXISTS profiles (
     id UUID PRIMARY KEY REFERENCES auth.users ON DELETE CASCADE,
     email TEXT UNIQUE NOT NULL,
@@ -11,59 +54,10 @@ CREATE TABLE IF NOT EXISTS profiles (
     role TEXT DEFAULT 'USER',
     status TEXT DEFAULT 'Active',
     last_login TIMESTAMP WITH TIME ZONE,
-    permissions JSONB DEFAULT '[]'::jsonb,
     granular_permissions JSONB DEFAULT '{}'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Suppliers Table
-CREATE TABLE IF NOT EXISTS suppliers (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name TEXT NOT NULL,
-    code TEXT UNIQUE NOT NULL,
-    tin TEXT NOT NULL,
-    type TEXT NOT NULL DEFAULT 'Local',
-    phone_office TEXT,
-    phone_contact TEXT,
-    phone_alternate TEXT,
-    email_office TEXT,
-    email_contact TEXT,
-    email_alternate TEXT,
-    tax_name TEXT,
-    tax_bin TEXT,
-    tax_address TEXT,
-    address_street TEXT,
-    address_city TEXT,
-    address_country TEXT,
-    address_postal TEXT,
-    pay_acc_name TEXT,
-    pay_acc_number TEXT,
-    pay_bank_name TEXT,
-    pay_branch_name TEXT,
-    pay_routing_number TEXT,
-    pay_swift_number TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- MIGRATION: Ensure missing columns exist in suppliers (Fixes Schema Cache Error)
-DO $$ 
-BEGIN 
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='suppliers' AND column_name='address_city') THEN
-        ALTER TABLE suppliers ADD COLUMN address_city TEXT;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='suppliers' AND column_name='address_street') THEN
-        ALTER TABLE suppliers ADD COLUMN address_street TEXT;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='suppliers' AND column_name='address_country') THEN
-        ALTER TABLE suppliers ADD COLUMN address_country TEXT;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='suppliers' AND column_name='address_postal') THEN
-        ALTER TABLE suppliers ADD COLUMN address_postal TEXT;
-    END IF;
-END $$;
-
--- Items Table
 CREATE TABLE IF NOT EXISTS items (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     code TEXT UNIQUE NOT NULL,
@@ -80,7 +74,6 @@ CREATE TABLE IF NOT EXISTS items (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Requisitions Table
 CREATE TABLE IF NOT EXISTS requisitions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     pr_no TEXT UNIQUE NOT NULL,
@@ -100,7 +93,6 @@ CREATE TABLE IF NOT EXISTS requisitions (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Purchase Orders Table
 CREATE TABLE IF NOT EXISTS purchase_orders (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     po_no TEXT UNIQUE NOT NULL,
@@ -116,46 +108,6 @@ CREATE TABLE IF NOT EXISTS purchase_orders (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- FUNCTION: Handle New User Signup
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO public.profiles (id, email, full_name, role, status, granular_permissions)
-  VALUES (
-    NEW.id, 
-    NEW.email, 
-    COALESCE(NEW.raw_user_meta_data->>'full_name', split_part(NEW.email, '@', 1)),
-    'USER',
-    'Active',
-    '{
-      "requisition": {"view": true, "edit": true, "dl": true},
-      "purchase_order": {"view": true, "edit": true, "dl": true},
-      "supplier": {"view": true, "edit": true, "dl": true},
-      "purchase_report": {"view": true, "edit": true, "dl": true},
-      "inventory": {"view": true, "edit": true, "dl": true},
-      "receive": {"view": true, "edit": true, "dl": true},
-      "issue": {"view": true, "edit": true, "dl": true},
-      "tnx_report": {"view": true, "edit": true, "dl": true},
-      "mo_report": {"view": true, "edit": true, "dl": true},
-      "item_list": {"view": true, "edit": true, "dl": true},
-      "item_uom": {"view": true, "edit": true, "dl": true},
-      "item_group": {"view": true, "edit": true, "dl": true},
-      "item_type": {"view": true, "edit": true, "dl": true},
-      "cost_center": {"view": true, "edit": true, "dl": true},
-      "user_management": {"view": false, "edit": false, "dl": false}
-    }'::jsonb
-  );
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- TRIGGER: Run function on every new auth user
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
-
--- FUNCTION: Update Item Stock
 CREATE OR REPLACE FUNCTION update_item_stock(item_sku TEXT, qty_change INTEGER)
 RETURNS VOID AS $$
 BEGIN
@@ -172,9 +124,14 @@ ALTER TABLE requisitions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE purchase_orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
--- Simple public access policies (for development)
-CREATE POLICY "Allow public access items" ON items FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow public access suppliers" ON suppliers FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow public access requisitions" ON requisitions FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow public access po" ON purchase_orders FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow public access profiles" ON profiles FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Allow all" ON items;
+DROP POLICY IF EXISTS "Allow all" ON suppliers;
+DROP POLICY IF EXISTS "Allow all" ON requisitions;
+DROP POLICY IF EXISTS "Allow all" ON purchase_orders;
+DROP POLICY IF EXISTS "Allow all" ON profiles;
+
+CREATE POLICY "Allow all" ON items FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all" ON suppliers FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all" ON requisitions FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all" ON purchase_orders FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all" ON profiles FOR ALL USING (true) WITH CHECK (true);

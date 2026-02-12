@@ -1,6 +1,5 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, Role, AuthState, ModulePermissions } from '../types';
+import { User, Role, AuthState } from '../types';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<{ success: boolean, message?: string }>;
@@ -15,54 +14,39 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const DEFAULT_GRANULAR: Record<string, ModulePermissions> = {
-  requisition: { view: true, edit: true, dl: true },
-  purchase_order: { view: true, edit: true, dl: true },
-  supplier: { view: true, edit: true, dl: true },
-  purchase_report: { view: true, edit: true, dl: true },
-  inventory: { view: true, edit: true, dl: true },
-  receive: { view: true, edit: true, dl: true },
-  issue: { view: true, edit: true, dl: true },
-  tnx_report: { view: true, edit: true, dl: true },
-  mo_report: { view: true, edit: true, dl: true },
-  item_list: { view: true, edit: true, dl: true },
-  item_uom: { view: true, edit: true, dl: true },
-  item_group: { view: true, edit: true, dl: true },
-  item_type: { view: true, edit: true, dl: true },
-  cost_center: { view: true, edit: true, dl: true },
-  user_management: { view: true, edit: true, dl: true }
-};
-
-const GUEST_ADMIN: User = {
+const MOCK_ADMIN: User = {
   id: '00000000-0000-0000-0000-000000000000',
   email: 'admin@fairtechnology.com.bd',
-  fullName: 'System Administrator',
+  fullName: 'System Admin',
   username: 'admin',
   role: Role.ADMIN,
   status: 'Active',
   lastLogin: new Date().toISOString(),
   permissions: [],
-  granularPermissions: DEFAULT_GRANULAR,
+  granularPermissions: {},
   createdAt: new Date().toISOString()
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser] = useState<User>(GUEST_ADMIN);
-  const [isAuthenticated] = useState(true);
-  const [loading] = useState(false);
+  // Bypass authentication: always set as authenticated with mock admin
+  const [user, setUser] = useState<User | null>(MOCK_ADMIN);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [users, setUsers] = useState<User[]>([MOCK_ADMIN]);
 
   const login = async () => ({ success: true });
-  const logout = () => {};
+  const logout = () => {
+    setIsAuthenticated(false);
+    setUser(null);
+  };
   const addUser = async () => {};
   const updateUser = async () => {};
   const deleteUser = async () => {};
-  const users = [GUEST_ADMIN];
-
   const hasPermission = () => true;
 
   return (
     <AuthContext.Provider value={{ 
-      user: currentUser, 
+      user, 
       isAuthenticated, 
       login, 
       logout, 
