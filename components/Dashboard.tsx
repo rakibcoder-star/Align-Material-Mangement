@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -94,7 +93,7 @@ const SubmenuItem: React.FC<{
   icon: React.ReactNode;
   label: string;
   active?: boolean;
-  onClick?: ()void;
+  onClick?: () => void;
 }> = ({ icon, label, active, onClick }) => (
   <button
     onClick={onClick}
@@ -384,7 +383,6 @@ const Dashboard: React.FC = () => {
               <Route path="/overview" element={<DashboardOverview onCheckStock={() => setIsStockStatusModalOpen(true)} onMoveOrder={() => setIsMoveOrderModalOpen(true)} onPreviewPr={(pr) => setPreviewPr(pr)} />} />
               <Route path="/users" element={hasPermission('manage_users') ? <UserManagement /> : <Navigate to="/overview" />} />
               <Route path="/requisition" element={<PurchaseRequisition />} />
-              {/* Fix: Property 'orders' does not exist on PurchaseOrder */}
               <Route path="/purchase-order" element={<PurchaseOrder />} />
               <Route path="/supplier" element={<Supplier />} />
               <Route path="/purchase-report" element={<PurchaseReport />} />
