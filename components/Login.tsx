@@ -17,7 +17,7 @@ const Login: React.FC = () => {
     e.preventDefault();
     setError(null);
     if (!email || !password) {
-      setError("Please enter both email and password");
+      setError("Enter credentials to proceed");
       return;
     }
     setLoading(true);
@@ -26,72 +26,76 @@ const Login: React.FC = () => {
       if (success) {
         navigate('/overview');
       } else {
-        setError("Invalid credentials or account inactive.");
+        setError("Unauthorized access. Check email or status.");
       }
     } catch (err: any) {
-      setError(err.message || "Login failed. Please check your credentials.");
+      setError(err.message || "Authentication failed.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f8fafb] font-sans">
-      <div className="w-full max-w-[420px] px-6">
-        <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 p-10 animate-slide-up">
-          <div className="mb-10 text-center">
-            <div className="w-16 h-16 bg-[#2d808e]/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <ShieldCheck size={32} className="text-[#2d808e]" />
+    <div className="min-h-screen flex items-center justify-center bg-[#f8fafb] font-sans overflow-hidden">
+      {/* Decorative Background Elements */}
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#2d808e]/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-cyan-900/5 rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl"></div>
+
+      <div className="w-full max-w-[420px] px-6 relative z-10">
+        <div className="bg-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-gray-100 p-12 animate-slide-up">
+          <div className="mb-12 text-center">
+            <div className="w-20 h-20 bg-[#2d808e] rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-cyan-900/20 rotate-3 transition-transform hover:rotate-0 cursor-default">
+              <ShieldCheck size={40} className="text-white" strokeWidth={1.5} />
             </div>
-            <h1 className="text-3xl font-black text-gray-900 tracking-tighter mb-1 uppercase">Align</h1>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.4em]">Enterprise DMS</p>
+            <h1 className="text-4xl font-black text-gray-900 tracking-tighter mb-1 uppercase">Align</h1>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.5em] ml-1">Enterprise DMS</p>
           </div>
           
           {error && (
-            <div className="mb-6 p-3 bg-red-50 border border-red-100 rounded-lg text-[11px] font-bold text-red-600 text-center animate-in fade-in slide-in-from-top-1">
+            <div className="mb-8 p-3 bg-red-50 border border-red-100 rounded-xl text-[10px] font-black text-red-600 text-center animate-in fade-in slide-in-from-top-2 uppercase tracking-wider">
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Account Email</label>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Secure Email</label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-gray-400 transition-colors group-focus-within:text-[#2d808e]">
-                  <User size={16} />
+                  <User size={18} />
                 </div>
                 <input
                   type="email"
-                  placeholder="admin@align.com"
+                  placeholder="name@company.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:border-[#2d808e] focus:ring-4 focus:ring-cyan-500/5 outline-none text-sm font-medium transition-all"
+                  className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-[#2d808e] focus:ring-8 focus:ring-cyan-500/5 outline-none text-sm font-bold transition-all placeholder:text-gray-300"
                 />
               </div>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <div className="flex justify-between items-center ml-1">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Password</label>
-                <button type="button" className="text-[10px] font-bold text-[#2d808e] hover:underline uppercase tracking-tighter">Forgot?</button>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Access Key</label>
+                <button type="button" className="text-[10px] font-black text-[#2d808e] hover:underline uppercase tracking-tighter">Reset?</button>
               </div>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-gray-400 transition-colors group-focus-within:text-[#2d808e]">
-                  <Lock size={16} />
+                  <Lock size={18} />
                 </div>
                 <input
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-12 pr-12 py-3 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:border-[#2d808e] focus:ring-4 focus:ring-cyan-500/5 outline-none text-sm font-medium transition-all"
+                  className="w-full pl-12 pr-12 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-[#2d808e] focus:ring-8 focus:ring-cyan-500/5 outline-none text-sm font-bold transition-all placeholder:text-gray-300"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute inset-y-0 right-4 flex items-center text-gray-300 hover:text-[#2d808e] transition-colors"
                 >
-                  {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
+                  {showPassword ? <Eye size={20} /> : <EyeOff size={20} />}
                 </button>
               </div>
             </div>
@@ -99,16 +103,16 @@ const Login: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 mt-4 bg-[#2d808e] text-white font-black text-[11px] uppercase tracking-[0.2em] rounded-xl shadow-lg shadow-cyan-900/10 transition-all hover:bg-[#256b78] hover:shadow-xl active:scale-[0.98] disabled:opacity-70 flex items-center justify-center space-x-2"
+              className="w-full py-4 mt-6 bg-[#2d808e] text-white font-black text-[12px] uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-cyan-900/20 transition-all hover:bg-[#256b78] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 flex items-center justify-center space-x-3"
             >
-              {loading ? <Loader2 size={16} className="animate-spin" /> : null}
-              <span>{loading ? 'Authenticating' : 'Sign In'}</span>
+              {loading ? <Loader2 size={18} className="animate-spin" /> : null}
+              <span>{loading ? 'Verifying Access' : 'Sign In'}</span>
             </button>
           </form>
         </div>
         
-        <p className="mt-8 text-center text-[10px] font-bold text-gray-300 uppercase tracking-widest">
-          Secure Access Protocol v4.0
+        <p className="mt-12 text-center text-[10px] font-black text-gray-300 uppercase tracking-[0.4em]">
+          Secure Access Protocol v4.0.2
         </p>
       </div>
     </div>

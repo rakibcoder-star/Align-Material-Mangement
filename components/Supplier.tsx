@@ -86,8 +86,8 @@ const Supplier: React.FC = () => {
         tax_bin: formData.taxBin,
         tax_address: formData.taxAddress,
         addr_street: formData.officeStreet,
-        addr_city: formData.officeCity, // Mapping to fixed DB column
-        addr_country: formData.officeCountry,
+        addr_city: formData.officeCity, // Ensure this column exists in DB
+        addr_country: formData.officeCountry, // Ensure this column exists in DB
         addr_postal: formData.officePostal,
         pay_acc_name: formData.accName,
         pay_acc_no: formData.accNumber,
@@ -136,29 +136,28 @@ const Supplier: React.FC = () => {
         </div>
 
         <div className="text-center py-2">
-          <h1 className="text-[20px] font-black text-[#2d808e] tracking-tight">Add New Supplier</h1>
+          <h1 className="text-[20px] font-black text-[#2d808e] tracking-tight uppercase">Add New Supplier</h1>
         </div>
 
-        <form onSubmit={handleFormSubmit} className="bg-white rounded shadow-sm border border-gray-100 p-8 space-y-8 max-w-[1600px] mx-auto w-full">
+        <form onSubmit={handleFormSubmit} className="bg-white rounded shadow-sm border border-gray-100 p-8 space-y-8 max-w-[1600px] mx-auto w-full transition-all">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-[#2d808e] uppercase"><span className="text-red-500 mr-1">*</span>Supplier Name</label>
-              <div className="relative">
-                <input type="text" maxLength={50} placeholder="Supplier Name" value={formData.supplierName} onChange={e => setFormData({...formData, supplierName: e.target.value})} className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none" required />
-                <span className="absolute right-2 top-2.5 text-[8px] font-bold text-gray-300">{formData.supplierName.length} / 50</span>
+              <label className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter"><span className="text-red-500 mr-1">*</span>Supplier Name</label>
+              <div className="relative group">
+                <input type="text" maxLength={50} placeholder="Supplier Name" value={formData.supplierName} onChange={e => setFormData({...formData, supplierName: e.target.value})} className="w-full px-4 py-2 border border-cyan-700/20 rounded-lg text-[11px] font-bold outline-none focus:border-[#2d808e] transition-all" required />
+                <span className="absolute right-2 top-2.5 text-[8px] font-black text-gray-300">{formData.supplierName.length} / 50</span>
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-[#2d808e] uppercase"><span className="text-red-500 mr-1">*</span>TIN</label>
-              <div className="relative">
-                <input type="text" maxLength={50} placeholder="TIN No" value={formData.tin} onChange={e => setFormData({...formData, tin: e.target.value})} className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none" required />
-                <span className="absolute right-2 top-2.5 text-[8px] font-bold text-gray-300">{formData.tin.length} / 50</span>
+              <label className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter"><span className="text-red-500 mr-1">*</span>TIN</label>
+              <div className="relative group">
+                <input type="text" maxLength={50} placeholder="TIN No" value={formData.tin} onChange={e => setFormData({...formData, tin: e.target.value})} className="w-full px-4 py-2 border border-cyan-700/20 rounded-lg text-[11px] font-bold outline-none focus:border-[#2d808e] transition-all" required />
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-[#2d808e] uppercase"><span className="text-red-500 mr-1">*</span>Type</label>
+              <label className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter"><span className="text-red-500 mr-1">*</span>Type</label>
               <div className="relative">
-                <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none appearance-none bg-white text-gray-700" required>
+                <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} className="w-full px-4 py-2 border border-cyan-700/20 rounded-lg text-[11px] font-bold outline-none appearance-none bg-white text-gray-700 focus:border-[#2d808e] transition-all" required>
                   <option value="Local">Local</option>
                   <option value="Import">Import</option>
                 </select>
@@ -167,60 +166,51 @@ const Supplier: React.FC = () => {
             </div>
           </div>
 
-          <div className="space-y-3">
-            <h3 className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">Phone Numbers</h3>
+          <div className="space-y-4">
+            <h3 className="text-[11px] font-black text-[#2d808e] uppercase tracking-[0.2em] border-b border-gray-50 pb-2">Phone Numbers</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <input type="text" placeholder="Office Phone Number" value={formData.phoneOffice} onChange={e => setFormData({...formData, phoneOffice: e.target.value})} className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none" />
-              <input type="text" placeholder="Contact Phone Number" value={formData.phoneContact} onChange={e => setFormData({...formData, phoneContact: e.target.value})} className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none" />
-              <input type="text" placeholder="Alternate Phone Number" value={formData.phoneAlternate} onChange={e => setFormData({...formData, phoneAlternate: e.target.value})} className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none" />
+              <input type="text" placeholder="Office Phone Number" value={formData.phoneOffice} onChange={e => setFormData({...formData, phoneOffice: e.target.value})} className="w-full px-4 py-2 border border-cyan-700/20 rounded-lg text-[11px] font-bold outline-none focus:border-[#2d808e] transition-all" />
+              <input type="text" placeholder="Contact Phone Number" value={formData.phoneContact} onChange={e => setFormData({...formData, phoneContact: e.target.value})} className="w-full px-4 py-2 border border-cyan-700/20 rounded-lg text-[11px] font-bold outline-none focus:border-[#2d808e] transition-all" />
+              <input type="text" placeholder="Alternate Phone Number" value={formData.phoneAlternate} onChange={e => setFormData({...formData, phoneAlternate: e.target.value})} className="w-full px-4 py-2 border border-cyan-700/20 rounded-lg text-[11px] font-bold outline-none focus:border-[#2d808e] transition-all" />
             </div>
           </div>
 
-          <div className="space-y-3">
-            <h3 className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">Email Address</h3>
+          <div className="space-y-4">
+            <h3 className="text-[11px] font-black text-[#2d808e] uppercase tracking-[0.2em] border-b border-gray-50 pb-2">Email Address</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <input type="text" placeholder="Office mail address" value={formData.emailOffice} onChange={e => setFormData({...formData, emailOffice: e.target.value})} className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none" />
-              <input type="text" placeholder="Contact mail address" value={formData.emailContact} onChange={e => setFormData({...formData, emailContact: e.target.value})} className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none" />
-              <input type="text" placeholder="Alternate mail address" value={formData.emailAlternate} onChange={e => setFormData({...formData, emailAlternate: e.target.value})} className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none" />
+              <input type="text" placeholder="Office mail address" value={formData.emailOffice} onChange={e => setFormData({...formData, emailOffice: e.target.value})} className="w-full px-4 py-2 border border-cyan-700/20 rounded-lg text-[11px] font-bold outline-none focus:border-[#2d808e] transition-all" />
+              <input type="text" placeholder="Contact mail address" value={formData.emailContact} onChange={e => setFormData({...formData, emailContact: e.target.value})} className="w-full px-4 py-2 border border-cyan-700/20 rounded-lg text-[11px] font-bold outline-none focus:border-[#2d808e] transition-all" />
+              <input type="text" placeholder="Alternate mail address" value={formData.emailAlternate} onChange={e => setFormData({...formData, emailAlternate: e.target.value})} className="w-full px-4 py-2 border border-cyan-700/20 rounded-lg text-[11px] font-bold outline-none focus:border-[#2d808e] transition-all" />
             </div>
           </div>
 
-          <div className="space-y-3">
-            <h3 className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">Tax Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <input type="text" placeholder="Input Name" value={formData.taxName} onChange={e => setFormData({...formData, taxName: e.target.value})} className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none" />
-              <input type="text" placeholder="Input BIN" value={formData.taxBin} onChange={e => setFormData({...formData, taxBin: e.target.value})} className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none" />
-              <input type="text" placeholder="Input Address" value={formData.taxAddress} onChange={e => setFormData({...formData, taxAddress: e.target.value})} className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none" />
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <h3 className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">Office Address</h3>
+          <div className="space-y-4">
+            <h3 className="text-[11px] font-black text-[#2d808e] uppercase tracking-[0.2em] border-b border-gray-50 pb-2">Office Address</h3>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <input type="text" placeholder="Office street" value={formData.officeStreet} onChange={e => setFormData({...formData, officeStreet: e.target.value})} className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none" />
-              <input type="text" placeholder="Office city" value={formData.officeCity} onChange={e => setFormData({...formData, officeCity: e.target.value})} className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none" />
-              <input type="text" placeholder="Office country" value={formData.officeCountry} onChange={e => setFormData({...formData, officeCountry: e.target.value})} className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none" />
-              <input type="text" placeholder="Office postal" value={formData.officePostal} onChange={e => setFormData({...formData, officePostal: e.target.value})} className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none" />
+              <input type="text" placeholder="Office street" value={formData.officeStreet} onChange={e => setFormData({...formData, officeStreet: e.target.value})} className="w-full px-4 py-2 border border-cyan-700/20 rounded-lg text-[11px] font-bold outline-none focus:border-[#2d808e] transition-all" />
+              <input type="text" placeholder="Office city" value={formData.officeCity} onChange={e => setFormData({...formData, officeCity: e.target.value})} className="w-full px-4 py-2 border border-cyan-700/20 rounded-lg text-[11px] font-bold outline-none focus:border-[#2d808e] transition-all" />
+              <input type="text" placeholder="Office country" value={formData.officeCountry} onChange={e => setFormData({...formData, officeCountry: e.target.value})} className="w-full px-4 py-2 border border-cyan-700/20 rounded-lg text-[11px] font-bold outline-none focus:border-[#2d808e] transition-all" />
+              <input type="text" placeholder="Office postal" value={formData.officePostal} onChange={e => setFormData({...formData, officePostal: e.target.value})} className="w-full px-4 py-2 border border-cyan-700/20 rounded-lg text-[11px] font-bold outline-none focus:border-[#2d808e] transition-all" />
             </div>
           </div>
 
-          <div className="space-y-3">
-            <h3 className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">Payment Information</h3>
+          <div className="space-y-4">
+            <h3 className="text-[11px] font-black text-[#2d808e] uppercase tracking-[0.2em] border-b border-gray-50 pb-2">Payment Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <input type="text" placeholder="Account name" value={formData.accName} onChange={e => setFormData({...formData, accName: e.target.value})} className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none" />
-              <input type="text" placeholder="Account number" value={formData.accNumber} onChange={e => setFormData({...formData, accNumber: e.target.value})} className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none" />
-              <input type="text" placeholder="Bank name" value={formData.bankName} onChange={e => setFormData({...formData, bankName: e.target.value})} className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none" />
+              <input type="text" placeholder="Account name" value={formData.accName} onChange={e => setFormData({...formData, accName: e.target.value})} className="w-full px-4 py-2 border border-cyan-700/20 rounded-lg text-[11px] font-bold outline-none focus:border-[#2d808e] transition-all" />
+              <input type="text" placeholder="Account number" value={formData.accNumber} onChange={e => setFormData({...formData, accNumber: e.target.value})} className="w-full px-4 py-2 border border-cyan-700/20 rounded-lg text-[11px] font-bold outline-none focus:border-[#2d808e] transition-all" />
+              <input type="text" placeholder="Bank name" value={formData.bankName} onChange={e => setFormData({...formData, bankName: e.target.value})} className="w-full px-4 py-2 border border-cyan-700/20 rounded-lg text-[11px] font-bold outline-none focus:border-[#2d808e] transition-all" />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <input type="text" placeholder="Branch name" value={formData.branchName} onChange={e => setFormData({...formData, branchName: e.target.value})} className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none" />
-              <input type="text" placeholder="Routing number" value={formData.routingNumber} onChange={e => setFormData({...formData, routingNumber: e.target.value})} className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none" />
-              <input type="text" placeholder="Swift number" value={formData.swiftNumber} onChange={e => setFormData({...formData, swiftNumber: e.target.value})} className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+              <input type="text" placeholder="Branch name" value={formData.branchName} onChange={e => setFormData({...formData, branchName: e.target.value})} className="w-full px-4 py-2 border border-cyan-700/20 rounded-lg text-[11px] font-bold outline-none focus:border-[#2d808e] transition-all" />
+              <input type="text" placeholder="Routing number" value={formData.routingNumber} onChange={e => setFormData({...formData, routingNumber: e.target.value})} className="w-full px-4 py-2 border border-cyan-700/20 rounded-lg text-[11px] font-bold outline-none focus:border-[#2d808e] transition-all" />
+              <input type="text" placeholder="Swift number" value={formData.swiftNumber} onChange={e => setFormData({...formData, swiftNumber: e.target.value})} className="w-full px-4 py-2 border border-cyan-700/20 rounded-lg text-[11px] font-bold outline-none focus:border-[#2d808e] transition-all" />
             </div>
           </div>
 
-          <button type="submit" disabled={isSubmitting} className="w-full py-2.5 bg-[#2d808e] text-white text-[13px] font-black rounded hover:bg-[#256b78] transition-all uppercase tracking-widest flex items-center justify-center space-x-2 disabled:opacity-50">
-            {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : null}
-            <span>Add Supplier</span>
+          <button type="submit" disabled={isSubmitting} className="w-full py-3 bg-[#2d808e] text-white text-[13px] font-black rounded-xl shadow-xl shadow-cyan-900/10 hover:bg-[#256b78] transition-all uppercase tracking-[0.2em] flex items-center justify-center space-x-3 active:scale-[0.99] disabled:opacity-50">
+            {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : null}
+            <span>{isSubmitting ? 'Processing...' : 'Commit Supplier Entry'}</span>
           </button>
         </form>
       </div>
@@ -233,89 +223,87 @@ const Supplier: React.FC = () => {
         <div className="flex items-center space-x-2 text-[10px] font-bold text-[#2d808e] uppercase tracking-wider">
           <Home size={14} className="text-gray-400" />
           <span className="text-gray-300">/</span>
-          <span className="text-[#2d808e]">SUPPLIER</span>
+          <span className="text-[#2d808e] font-black">SUPPLIER</span>
         </div>
-        <button onClick={() => setView('add')} className="bg-[#2d808e] text-white px-6 py-1.5 rounded text-[11px] font-black shadow-sm hover:bg-[#256b78] transition-all uppercase tracking-widest">
+        <button onClick={() => setView('add')} className="bg-[#2d808e] text-white px-8 py-2 rounded-lg text-[11px] font-black shadow-lg shadow-cyan-900/10 hover:bg-[#256b78] transition-all uppercase tracking-widest">
           Add Supplier
         </button>
       </div>
 
       <div className="flex items-center justify-between">
-        <button className="border border-[#2d808e] text-[#2d808e] px-6 py-1 rounded text-[11px] font-black hover:bg-gray-50 transition-all uppercase tracking-widest">Logs</button>
+        <button className="border border-[#2d808e] text-[#2d808e] px-6 py-1.5 rounded text-[11px] font-black hover:bg-gray-50 transition-all uppercase tracking-widest">Logs</button>
         <div className="flex items-center">
           <div className="relative flex">
-            <input type="text" placeholder="Search by name" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-64 px-4 py-1.5 border border-gray-200 rounded-l outline-none text-[11px] text-gray-600 focus:border-[#2d808e]" />
-            <button className="bg-[#2d808e] text-white px-3 rounded-r flex items-center justify-center hover:bg-[#256b78]">
+            <input type="text" placeholder="Search by name" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-64 px-4 py-1.5 bg-white border border-gray-100 rounded-l-lg outline-none text-[11px] text-gray-600 focus:border-[#2d808e] transition-all shadow-sm" />
+            <button className="bg-[#2d808e] text-white px-4 rounded-r-lg flex items-center justify-center hover:bg-[#256b78] transition-all">
               <Search size={14} />
             </button>
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded shadow-sm border border-gray-100 overflow-hidden min-h-[500px]">
+      <div className="bg-white rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-gray-100 overflow-hidden min-h-[500px]">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[1200px]">
             <thead className="bg-[#fafbfc]">
               <tr className="text-[10px] font-black text-gray-700 uppercase tracking-tight border-b border-gray-100">
-                <th className="px-4 py-4 text-center w-12 border-r border-gray-50">SL</th>
-                <th className="px-4 py-4 text-center border-r border-gray-50">
+                <th className="px-6 py-5 text-center w-16 border-r border-gray-50">SL</th>
+                <th className="px-6 py-5 text-center border-r border-gray-50 w-32">
                   Code <Filter size={10} className="inline-block ml-1 text-gray-300" />
                 </th>
-                <th className="px-4 py-4 border-r border-gray-50">Name</th>
-                <th className="px-4 py-4 border-r border-gray-50">Email</th>
-                <th className="px-4 py-4 border-r border-gray-50">Phone</th>
-                <th className="px-4 py-4 text-center border-r border-gray-50">Type</th>
-                <th className="px-4 py-4 text-center">Action</th>
+                <th className="px-6 py-5 border-r border-gray-50">Name</th>
+                <th className="px-6 py-5 border-r border-gray-50">Email</th>
+                <th className="px-6 py-5 border-r border-gray-50">Phone</th>
+                <th className="px-6 py-5 text-center border-r border-gray-50 w-24">Type</th>
+                <th className="px-6 py-5 text-center w-24">Action</th>
               </tr>
             </thead>
-            <tbody className="text-[10px] font-bold text-gray-600 uppercase">
+            <tbody className="text-[11px] font-bold text-gray-600 uppercase tracking-tighter">
               {loading ? (
-                <tr><td colSpan={7} className="py-20 text-center text-gray-400"><Loader2 className="animate-spin inline mr-2" /> Syncing with Server...</td></tr>
+                <tr><td colSpan={7} className="py-32 text-center text-gray-400 uppercase tracking-[0.2em] font-black"><Loader2 className="animate-spin inline mr-3" /> Syncing Global Records...</td></tr>
               ) : filteredSuppliers.length > 0 ? filteredSuppliers.map((s, idx) => (
                 <tr key={s.id} className="hover:bg-gray-50/50 transition-colors border-b border-gray-50">
-                  <td className="px-4 py-6 text-center text-gray-400">{idx + 1}</td>
-                  <td className="px-4 py-6 text-center font-black text-gray-700">{s.code}</td>
-                  <td className="px-4 py-6 font-black text-gray-800 leading-tight w-48">{s.name}</td>
-                  <td className="px-4 py-6 space-y-1 lowercase text-gray-500 font-medium">
-                    <p><span className="font-bold uppercase text-[8px] text-gray-400">Office:</span> {s.email_office || 'N/A'}</p>
-                    <p><span className="font-bold uppercase text-[8px] text-gray-400">Contact:</span> {s.email_contact || 'N/A'}</p>
-                    <p><span className="font-bold uppercase text-[8px] text-gray-400">Alternate:</span> {s.email_alternate || 'N/A'}</p>
+                  <td className="px-6 py-5 text-center text-gray-400">{idx + 1}</td>
+                  <td className="px-6 py-5 text-center font-black text-gray-800">{s.code}</td>
+                  <td className="px-6 py-5 font-black text-[#2d808e] leading-tight w-64">{s.name}</td>
+                  <td className="px-6 py-5 space-y-1 lowercase text-gray-400 font-medium">
+                    <p><span className="font-black uppercase text-[8px] text-gray-300">Office:</span> {s.email_office || 'N/A'}</p>
+                    <p><span className="font-black uppercase text-[8px] text-gray-300">Contact:</span> {s.email_contact || 'N/A'}</p>
                   </td>
-                  <td className="px-4 py-6 space-y-1 text-gray-500 font-medium">
-                    <p><span className="font-bold uppercase text-[8px] text-gray-400">Office:</span> {s.phone_office || 'N/A'}</p>
-                    <p><span className="font-bold uppercase text-[8px] text-gray-400">Contact:</span> {s.phone_contact || 'N/A'}</p>
-                    <p><span className="font-bold uppercase text-[8px] text-gray-400">Alternate:</span> {s.phone_alternate || 'N/A'}</p>
+                  <td className="px-6 py-5 space-y-1 text-gray-400 font-medium">
+                    <p><span className="font-black uppercase text-[8px] text-gray-300">Office:</span> {s.phone_office || 'N/A'}</p>
+                    <p><span className="font-black uppercase text-[8px] text-gray-300">Contact:</span> {s.phone_contact || 'N/A'}</p>
                   </td>
-                  <td className="px-4 py-6 text-center">
-                    <span className="px-2 py-0.5 border border-gray-100 rounded text-gray-500 font-black">{s.type}</span>
+                  <td className="px-6 py-5 text-center">
+                    <span className="px-3 py-1 bg-gray-50 border border-gray-100 rounded-lg text-gray-500 font-black text-[9px]">{s.type}</span>
                   </td>
-                  <td className="px-4 py-6 text-center">
-                    <button className="p-1.5 text-blue-500 hover:bg-blue-50 border border-blue-100 rounded-md transition-all">
-                      <Edit2 size={12} />
+                  <td className="px-6 py-5 text-center">
+                    <button className="p-2 text-[#2d808e] hover:bg-cyan-50 border border-cyan-100 rounded-lg transition-all shadow-sm">
+                      <Edit2 size={14} />
                     </button>
                   </td>
                 </tr>
               )) : (
-                <tr><td colSpan={7} className="py-20 text-center text-gray-300 font-black uppercase tracking-widest">No Suppliers Found</td></tr>
+                <tr><td colSpan={7} className="py-32 text-center text-gray-300 font-black uppercase tracking-[0.2em]">No Database Records Found</td></tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
 
-      <div className="flex items-center justify-end space-x-4 pt-2">
+      <div className="flex items-center justify-end space-x-4 pt-4">
         <div className="flex items-center space-x-1">
-          <button className="p-1 text-gray-300"><ChevronLeft size={16} /></button>
-          <button className="w-7 h-7 flex items-center justify-center text-[11px] font-black rounded border border-[#2d808e] bg-white text-[#2d808e]">1</button>
-          <button className="p-1 text-gray-300"><ChevronRight size={16} /></button>
+          <button className="p-1.5 text-gray-300 hover:text-[#2d808e]"><ChevronLeft size={18} /></button>
+          <button className="w-8 h-8 flex items-center justify-center text-[11px] font-black rounded-lg border border-[#2d808e] bg-white text-[#2d808e] shadow-sm">1</button>
+          <button className="p-1.5 text-gray-300 hover:text-[#2d808e]"><ChevronRight size={18} /></button>
         </div>
-        <div className="relative group">
-          <select className="appearance-none bg-white border border-gray-200 rounded px-4 py-1 text-[11px] font-bold text-gray-500 pr-8 outline-none cursor-pointer" defaultValue="10 / page">
+        <div className="relative">
+          <select className="appearance-none bg-white border border-gray-200 rounded-lg px-4 py-1.5 text-[11px] font-black text-gray-500 pr-10 outline-none cursor-pointer shadow-sm focus:border-[#2d808e]" defaultValue="10 / page">
             <option>10 / page</option>
             <option>20 / page</option>
             <option>50 / page</option>
           </select>
-          <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
+          <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
         </div>
       </div>
     </div>

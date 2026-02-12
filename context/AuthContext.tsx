@@ -66,10 +66,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    // Logic: Find user in the local storage list
+    // Simple verification against local user list
     const foundUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
     
-    // For mock purposes, we allow any password for admin or any added user
     if (foundUser && foundUser.status === 'Active') {
       const updatedUser = { ...foundUser, lastLogin: new Date().toISOString() };
       setCurrentUser(updatedUser);
