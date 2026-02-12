@@ -32,6 +32,7 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
   ]);
   
   // Header Fields
+  const [prNo, setPrNo] = useState(initialData?.pr_no || '');
   const [prReference, setPrReference] = useState(initialData?.reference || '');
   const [supplierType, setSupplierType] = useState(initialData?.type || '');
   const [prNote, setPrNote] = useState(initialData?.note || '');
@@ -58,6 +59,42 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
       }
     ]
   );
+
+  // Fetch the next sequential PR number
+  useEffect(() => {
+    const fetchNextPrNo = async () => {
+      if (initialData?.pr_no) return; // If editing, keep the existing number
+
+      try {
+        const { data, error } = await supabase
+          .from('requisitions')
+          .select('pr_no')
+          .order('pr_no', { ascending: false })
+          .limit(1);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          const lastNo = parseInt(data[0].pr_no);
+          // Only increment if it's within our expected range or starts from our base
+          if (lastNo >= 2000000000) {
+            setPrNo((lastNo + 1).toString());
+          } else {
+            setPrNo('2000000001');
+          }
+        } else {
+          // Starting base
+          setPrNo('2000000001');
+        }
+      } catch (err) {
+        console.error("Error fetching last PR number:", err);
+        // Fallback to random if DB fetch fails to prevent block
+        setPrNo((2000000000 + Math.floor(Math.random() * 999999)).toString());
+      }
+    };
+
+    fetchNextPrNo();
+  }, [initialData]);
 
   const handleSkuLookup = async (id: string, sku: string) => {
     if (!sku) return;
@@ -116,13 +153,16 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
       return;
     }
     
+    if (!prNo) {
+      alert('PR Number is generating, please wait...');
+      return;
+    }
+    
     const totalQty = items.reduce((sum, item) => sum + (Number(item.reqQty) || 0), 0);
     const totalValue = items.reduce((sum, item) => sum + (Number(item.reqQty) * Number(item.unitPrice) || 0), 0);
     
-    const generatedPRNo = initialData?.pr_no || (3000000000 + Math.floor(Math.random() * 999999)).toString();
-
     const prPayload = {
-      pr_no: generatedPRNo,
+      pr_no: prNo,
       reference: prReference,
       type: supplierType,
       status: 'Pending',
@@ -154,7 +194,16 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-8 space-y-8">
         {/* Top Header Fields */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="space-y-2">
+            <label className="text-[11px] font-bold text-[#2d808e] uppercase tracking-wider">PR Number</label>
+            <input 
+              type="text" 
+              value={prNo} 
+              readOnly
+              className="w-full px-3 py-2 bg-gray-50 border border-cyan-700/10 rounded text-[12px] font-black text-[#2d808e] outline-none cursor-not-allowed" 
+            />
+          </div>
           <div className="space-y-2">
             <label className="text-[11px] font-bold text-[#2d808e] uppercase tracking-wider">PR Referance</label>
             <div className="relative">
@@ -195,7 +244,7 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
                 value={prNote} 
                 onChange={(e) => setPrNote(e.target.value)} 
                 className="w-full px-3 py-2 border border-cyan-700/30 rounded focus:border-[#2d808e] outline-none text-[12px] font-medium placeholder-gray-300" 
-                placeholder="PR Referance" 
+                placeholder="PR Note" 
               />
               <span className="absolute right-3 top-2.5 text-[10px] text-gray-300 font-bold">{prNote.length} / 50</span>
             </div>
