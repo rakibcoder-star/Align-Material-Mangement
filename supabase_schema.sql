@@ -1,11 +1,13 @@
 -- =========================================================
--- CRITICAL REPAIR SCRIPT: RUN THIS IN SUPABASE SQL EDITOR
+-- 1. FORCE REPAIR SCRIPT (Run this in Supabase SQL Editor)
+-- This fixes the 'email_alternate' column missing error 
+-- and refreshes the internal Supabase API cache.
 -- =========================================================
 
--- 1. Ensure the extensions exist
+-- Ensure the extension exists
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- 2. Create the table if it truly doesn't exist
+-- Ensure the table exists
 CREATE TABLE IF NOT EXISTS suppliers (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
@@ -16,14 +18,13 @@ CREATE TABLE IF NOT EXISTS suppliers (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 3. FORCE-ADD ALL MISSING COLUMNS
--- This handles cases where the table exists but is missing specific fields
+-- FORCE-ADD ALL MISSING COLUMNS (Addresses the schema cache error)
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS phone_office TEXT;
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS phone_contact TEXT;
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS phone_alternate TEXT;
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS email_office TEXT;
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS email_contact TEXT;
-ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS email_alternate TEXT;
+ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS email_alternate TEXT; -- THE CRITICAL FIX
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS tax_name TEXT;
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS tax_bin TEXT;
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS tax_address TEXT;
@@ -38,19 +39,18 @@ ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS pay_branch_name TEXT;
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS pay_routing_number TEXT;
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS pay_swift_number TEXT;
 
--- 4. THE ULTIMATE FIX: FORCE CACHE RELOAD
--- This tells Supabase/PostgREST to clear its internal schema cache immediately.
+-- REFRESH CACHE: This is the only way to clear the "Could not find column in schema cache" error
 NOTIFY pgrst, 'reload schema';
 
 -- =========================================================
--- REMAINDER OF THE FULL SCHEMA
+-- 2. FULL DATABASE STRUCTURE (Rest of tables)
 -- =========================================================
 
 CREATE TABLE IF NOT EXISTS profiles (
     id UUID PRIMARY KEY REFERENCES auth.users ON DELETE CASCADE,
     email TEXT UNIQUE NOT NULL,
     full_name TEXT,
-    username TEXT UNIQUE,
+    username TEXT,
     role TEXT DEFAULT 'USER',
     status TEXT DEFAULT 'Active',
     last_login TIMESTAMP WITH TIME ZONE,
@@ -117,21 +117,14 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Set up Row Level Security (RLS)
 ALTER TABLE items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE suppliers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE requisitions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE purchase_orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "Allow all" ON items;
-DROP POLICY IF EXISTS "Allow all" ON suppliers;
-DROP POLICY IF EXISTS "Allow all" ON requisitions;
-DROP POLICY IF EXISTS "Allow all" ON purchase_orders;
-DROP POLICY IF EXISTS "Allow all" ON profiles;
-
-CREATE POLICY "Allow all" ON items FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all" ON suppliers FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all" ON requisitions FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all" ON purchase_orders FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all" ON profiles FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all access" ON items FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all access" ON suppliers FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all access" ON requisitions FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all access" ON purchase_orders FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all access" ON profiles FOR ALL USING (true) WITH CHECK (true);

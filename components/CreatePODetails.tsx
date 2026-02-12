@@ -12,7 +12,8 @@ interface SelectedItem {
   reqQty: number;
   poPending: number;
   poQty: number;
-  poPrice: number;
+  unitPrice: number; // Incoming from PR
+  poPrice: number;   // Displayed/Editable field
   vatPercent: string;
   remarks: string;
 }
@@ -28,11 +29,11 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
   const [items, setItems] = useState<SelectedItem[]>(
     initialItems.map(item => ({
       ...item,
-      poQty: item.reqQty, // Default PO Qty to Req Qty
-      poPending: item.reqQty, // Assuming initial pending is full req qty
-      poPrice: item.poPrice || 0, // Taken from PR unit price
-      vatPercent: '', // User to fill
-      remarks: '' // User to fill
+      poQty: item.reqQty, 
+      poPending: item.reqQty, 
+      poPrice: item.unitPrice || 0, // TAKE PRICE FROM PR DATA AS REQUESTED
+      vatPercent: '', 
+      remarks: '' 
     }))
   );
 
@@ -43,7 +44,6 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
   const [currency, setCurrency] = useState('BDT');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Field States matching the Image
   const [poNote, setPoNote] = useState('');
   const [deliveryTerms, setDeliveryTerms] = useState(`1. Delivery has to be done within 03 working days after receiving PO by the supplier.
 2. Delivery has to be done as per specification of PO and quotation.
@@ -62,11 +62,9 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
 
   useEffect(() => {
     const initData = async () => {
-      // 1. Fetch real suppliers
       const { data: supplierData } = await supabase.from('suppliers').select('*').order('name');
       if (supplierData) setSuppliers(supplierData);
 
-      // 2. Generate Next PO No (3000000000 series)
       const { data: lastPO } = await supabase
         .from('purchase_orders')
         .select('po_no')
@@ -124,14 +122,24 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
     };
 
     try {
-      const { error } = await supabase.from('purchase_orders').insert([poPayload]);
-      if (error) throw error;
+      // 1. Create the Purchase Order
+      const { error: poError } = await supabase.from('purchase_orders').insert([poPayload]);
+      if (poError) throw poError;
       
-      alert(`PO ${poNo} successfully created and sent to Warehouse.`);
+      // 2. Update source Requisitions to 'Ordered' status so they leave the NEW list
+      const uniquePrNos = Array.from(new Set(items.map(i => i.prNo)));
+      for (const prNo of uniquePrNos) {
+        await supabase
+          .from('requisitions')
+          .update({ status: 'Ordered' })
+          .eq('pr_no', prNo);
+      }
+
+      alert(`PO ${poNo} successfully created. Source requisitions have been moved to 'Ordered' status.`);
       onSubmit(poPayload);
       navigate('/receive');
     } catch (err: any) {
-      alert("Error: " + err.message);
+      alert("Error creating PO: " + err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -139,13 +147,12 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
 
   return (
     <div className="bg-white min-h-screen font-sans antialiased text-gray-800">
-      {/* Header Bar */}
       <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100 sticky top-0 bg-white z-50">
         <div className="flex items-center space-x-3">
           <button onClick={onCancel} className="p-1 hover:bg-gray-50 rounded">
             <X size={20} className="text-gray-400" />
           </button>
-          <h1 className="text-[18px] font-black tracking-tight text-gray-800">Make a Purchase Order(PO)</h1>
+          <h1 className="text-[18px] font-black tracking-tight text-gray-800 uppercase">Make a Purchase Order(PO)</h1>
         </div>
         <div className="flex items-center space-x-4">
           <button onClick={onCancel} className="px-10 py-2 text-[13px] font-bold border border-gray-200 rounded text-gray-500 hover:bg-gray-50 transition-all">Cancel</button>
@@ -161,18 +168,17 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
       </div>
 
       <div className="p-6 max-w-[1600px] mx-auto space-y-6">
-        {/* Table Section */}
         <div className="bg-white rounded border border-gray-100 overflow-hidden shadow-sm">
           <table className="w-full text-[11px] text-left border-collapse">
             <thead className="bg-[#fcfcfc]">
-              <tr className="font-bold text-gray-800 border-b border-gray-100">
+              <tr className="font-bold text-gray-800 border-b border-gray-100 uppercase">
                 <th className="px-4 py-4 text-center w-32 border-r border-gray-50">SKU</th>
                 <th className="px-4 py-4 border-r border-gray-50">name</th>
                 <th className="px-4 py-4 border-r border-gray-50">Specification</th>
                 <th className="px-4 py-4 text-center border-r border-gray-50">Req.Qty</th>
                 <th className="px-4 py-4 text-center border-r border-gray-50">PO Pending</th>
                 <th className="px-4 py-4 text-center border-r border-gray-50">PO Qty</th>
-                <th className="px-4 py-4 text-center border-r border-gray-50">PO Price</th>
+                <th className="px-4 py-4 text-center border-r border-gray-50 text-blue-600">PO Price (from PR)</th>
                 <th className="px-4 py-4 text-center border-r border-gray-50">% of VAT</th>
                 <th className="px-4 py-4 border-r border-gray-50">PO Remarks</th>
                 <th className="px-4 py-4 text-center">Action</th>
@@ -199,7 +205,7 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
                       type="number" 
                       value={item.poPrice}
                       onChange={(e) => updateItem(item.id, 'poPrice', Number(e.target.value))}
-                      className="w-20 px-2 py-1 text-center border border-[#2d808e]/30 rounded outline-none font-bold text-[#2d808e]"
+                      className="w-24 px-2 py-1 text-center border border-[#2d808e]/30 rounded outline-none font-black text-[#2d808e]"
                     />
                   </td>
                   <td className="px-4 py-3 text-center border-r border-gray-50">
@@ -230,9 +236,7 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
           </table>
         </div>
 
-        {/* Form Fields Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
-          {/* Column 1 */}
           <div className="space-y-6">
             <div className="space-y-1.5">
               <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Supplier</label>
@@ -252,7 +256,6 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
                 <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
               </div>
             </div>
-
             <div className="space-y-1.5">
               <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Delivery Location</label>
               <textarea 
@@ -261,7 +264,6 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
                 className="w-full h-24 px-3 py-2 border border-gray-200 rounded text-[11px] leading-relaxed outline-none focus:border-[#2d808e] resize-none"
               />
             </div>
-
             <div className="space-y-1.5">
               <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Payment Terms</label>
               <textarea 
@@ -272,7 +274,6 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
             </div>
           </div>
 
-          {/* Column 2 */}
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -299,7 +300,6 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
                 />
               </div>
             </div>
-
             <div className="space-y-1.5">
               <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Bill Submission</label>
               <textarea 
@@ -308,7 +308,6 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
                 className="w-full h-24 px-3 py-2 border border-gray-200 rounded text-[11px] leading-relaxed outline-none focus:border-[#2d808e] resize-none"
               />
             </div>
-
             <div className="space-y-1.5">
               <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Supplier Payment Method</label>
               <textarea 
@@ -320,7 +319,6 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
             </div>
           </div>
 
-          {/* Column 3 */}
           <div className="space-y-6">
             <div className="space-y-1.5">
               <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Delivery Terms</label>
@@ -330,7 +328,6 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
                 className="w-full h-24 px-3 py-2 border border-gray-200 rounded text-[11px] leading-relaxed outline-none focus:border-[#2d808e] resize-none"
               />
             </div>
-
             <div className="space-y-1.5">
               <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Documents Required for Billing</label>
               <textarea 
@@ -339,7 +336,6 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
                 className="w-full h-24 px-3 py-2 border border-gray-200 rounded text-[11px] leading-relaxed outline-none focus:border-[#2d808e] resize-none"
               />
             </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">PO Currency</label>
