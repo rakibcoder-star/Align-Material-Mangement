@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Home, Search, Edit2, Filter, ChevronLeft, ChevronRight, ChevronDown, X, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -9,11 +10,11 @@ const Supplier: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Form Data State
+  // Comprehensive Form Data State matching all image fields
   const [formData, setFormData] = useState<any>({
     supplierName: '',
     tin: '',
-    type: '',
+    type: 'Local',
     phoneOffice: '',
     phoneContact: '',
     phoneAlternate: '',
@@ -37,7 +38,11 @@ const Supplier: React.FC = () => {
 
   const fetchSuppliers = async () => {
     setLoading(true);
-    const { data, error } = await supabase.from('suppliers').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabase
+      .from('suppliers')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
     if (data && !error) setSuppliers(data);
     setLoading(false);
   };
@@ -51,46 +56,78 @@ const Supplier: React.FC = () => {
     if (!formData.supplierName) return alert("Supplier Name is required");
     
     setIsSubmitting(true);
-    const payload = {
-      name: formData.supplierName,
-      code: `200000000${suppliers.length + 1}`, // Simple sequential mock
-      tin: formData.tin,
-      type: formData.type || 'Local',
-      phone_office: formData.phoneOffice,
-      phone_contact: formData.phoneContact,
-      phone_alternate: formData.phoneAlternate,
-      email_office: formData.emailOffice,
-      email_contact: formData.emailContact,
-      email_alternate: formData.emailAlternate,
-      tax_name: formData.taxName,
-      tax_bin: formData.taxBin,
-      tax_address: formData.taxAddress,
-      addr_street: formData.officeStreet,
-      addr_city: formData.officeCity,
-      addr_country: formData.officeCountry,
-      addr_postal: formData.officePostal,
-      pay_acc_name: formData.accName,
-      pay_acc_no: formData.accNumber,
-      pay_bank: formData.bankName,
-      pay_branch: formData.branchName,
-      pay_routing: formData.routingNumber,
-      pay_swift: formData.swiftNumber
-    };
+    
+    try {
+      // 1. Generate unique code for new supplier (2000000000 series)
+      const { data: lastSupplier } = await supabase
+        .from('suppliers')
+        .select('code')
+        .order('code', { ascending: false })
+        .limit(1);
 
-    const { error } = await supabase.from('suppliers').insert([payload]);
-    if (!error) {
+      let nextCode = '2000000001';
+      if (lastSupplier && lastSupplier.length > 0) {
+        const lastVal = parseInt(lastSupplier[0].code);
+        if (!isNaN(lastVal)) {
+          nextCode = (lastVal + 1).toString();
+        }
+      }
+
+      // 2. Map every single field to database columns
+      const payload = {
+        name: formData.supplierName,
+        code: nextCode,
+        tin: formData.tin,
+        type: formData.type || 'Local',
+        
+        // Phone Numbers
+        phone_office: formData.phoneOffice,
+        phone_contact: formData.phoneContact,
+        phone_alternate: formData.phoneAlternate,
+        
+        // Email Address
+        email_office: formData.emailOffice,
+        email_contact: formData.emailContact,
+        email_alternate: formData.emailAlternate,
+        
+        // Tax Information
+        tax_name: formData.taxName,
+        tax_bin: formData.taxBin,
+        tax_address: formData.taxAddress,
+        
+        // Office Address
+        addr_street: formData.officeStreet,
+        addr_city: formData.officeCity,
+        addr_country: formData.officeCountry,
+        addr_postal: formData.officePostal,
+        
+        // Payment Information
+        pay_acc_name: formData.accName,
+        pay_acc_no: formData.accNumber,
+        pay_bank: formData.bankName,
+        pay_branch: formData.branchName,
+        pay_routing: formData.routingNumber,
+        pay_swift: formData.swiftNumber
+      };
+
+      const { error } = await supabase.from('suppliers').insert([payload]);
+      
+      if (error) throw error;
+
+      alert(`Supplier ${formData.supplierName} added successfully to Database!`);
       setView('list');
       fetchSuppliers();
       resetForm();
-    } else {
-      alert("Error: " + error.message);
+    } catch (err: any) {
+      alert("Error Saving Supplier: " + err.message);
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   const resetForm = () => {
     setFormData({
-      supplierName: '', tin: '', type: '', phoneOffice: '', phoneContact: '', phoneAlternate: '',
+      supplierName: '', tin: '', type: 'Local', phoneOffice: '', phoneContact: '', phoneAlternate: '',
       emailOffice: '', emailContact: '', emailAlternate: '', taxName: '', taxBin: '', taxAddress: '',
       officeStreet: '', officeCity: '', officeCountry: '', officePostal: '',
       accName: '', accNumber: '', bankName: '', branchName: '', routingNumber: '', swiftNumber: ''
@@ -99,7 +136,7 @@ const Supplier: React.FC = () => {
 
   const filteredSuppliers = suppliers.filter(s => 
     s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    s.code.toLowerCase().includes(searchTerm.toLowerCase())
+    (s.code && s.code.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   if (view === 'add') {
@@ -108,7 +145,7 @@ const Supplier: React.FC = () => {
         <div className="flex items-center space-x-2 text-[10px] font-bold text-[#2d808e] uppercase tracking-wider">
           <Home size={12} className="text-gray-400" />
           <span className="text-gray-300">/</span>
-          <button onClick={() => setView('list')} className="text-gray-400 hover:text-[#2d808e] transition-colors">SUPPLIER</button>
+          <button onClick={() => setView('list')} className="text-gray-400 hover:text-[#2d808e] transition-colors uppercase">SUPPLIER</button>
         </div>
 
         <div className="text-center py-2">
@@ -121,22 +158,21 @@ const Supplier: React.FC = () => {
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold text-[#2d808e] uppercase"><span className="text-red-500 mr-1">*</span>Supplier Name</label>
               <div className="relative">
-                <input type="text" maxLength={50} placeholder="Supplier Name" value={formData.supplierName} onChange={e => setFormData({...formData, supplierName: e.target.value})} className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none" />
+                <input type="text" maxLength={50} placeholder="Supplier Name" value={formData.supplierName} onChange={e => setFormData({...formData, supplierName: e.target.value})} className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none" required />
                 <span className="absolute right-2 top-2.5 text-[8px] font-bold text-gray-300">{formData.supplierName.length} / 50</span>
               </div>
             </div>
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold text-[#2d808e] uppercase"><span className="text-red-500 mr-1">*</span>TIN</label>
               <div className="relative">
-                <input type="text" maxLength={50} placeholder="TIN No" value={formData.tin} onChange={e => setFormData({...formData, tin: e.target.value})} className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none" />
+                <input type="text" maxLength={50} placeholder="TIN No" value={formData.tin} onChange={e => setFormData({...formData, tin: e.target.value})} className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none" required />
                 <span className="absolute right-2 top-2.5 text-[8px] font-bold text-gray-300">{formData.tin.length} / 50</span>
               </div>
             </div>
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold text-[#2d808e] uppercase"><span className="text-red-500 mr-1">*</span>Type</label>
               <div className="relative">
-                <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none appearance-none bg-white text-gray-400">
-                  <option value="">Supplier Type</option>
+                <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none appearance-none bg-white text-gray-700" required>
                   <option value="Local">Local</option>
                   <option value="Import">Import</option>
                 </select>
@@ -201,8 +237,8 @@ const Supplier: React.FC = () => {
             </div>
           </div>
 
-          <button type="submit" disabled={isSubmitting} className="w-full py-2.5 bg-[#2d808e] text-white text-[13px] font-black rounded hover:bg-[#256b78] transition-all uppercase tracking-widest flex items-center justify-center space-x-2">
-            {isSubmitting && <Loader2 size={16} className="animate-spin" />}
+          <button type="submit" disabled={isSubmitting} className="w-full py-2.5 bg-[#2d808e] text-white text-[13px] font-black rounded hover:bg-[#256b78] transition-all uppercase tracking-widest flex items-center justify-center space-x-2 disabled:opacity-50">
+            {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : null}
             <span>Add Supplier</span>
           </button>
         </form>
@@ -235,7 +271,7 @@ const Supplier: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded shadow-sm border border-gray-100 overflow-hidden min-h-[500px]">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[1200px]">
             <thead className="bg-[#fafbfc]">
@@ -253,8 +289,8 @@ const Supplier: React.FC = () => {
             </thead>
             <tbody className="text-[10px] font-bold text-gray-600 uppercase">
               {loading ? (
-                <tr><td colSpan={7} className="py-20 text-center text-gray-400">Loading suppliers...</td></tr>
-              ) : filteredSuppliers.map((s, idx) => (
+                <tr><td colSpan={7} className="py-20 text-center text-gray-400"><Loader2 className="animate-spin inline mr-2" /> Syncing with Server...</td></tr>
+              ) : filteredSuppliers.length > 0 ? filteredSuppliers.map((s, idx) => (
                 <tr key={s.id} className="hover:bg-gray-50/50 transition-colors border-b border-gray-50">
                   <td className="px-4 py-6 text-center text-gray-400">{idx + 1}</td>
                   <td className="px-4 py-6 text-center font-black text-gray-700">{s.code}</td>
@@ -278,7 +314,9 @@ const Supplier: React.FC = () => {
                     </button>
                   </td>
                 </tr>
-              ))}
+              )) : (
+                <tr><td colSpan={7} className="py-20 text-center text-gray-300 font-black uppercase tracking-widest">No Suppliers Found</td></tr>
+              )}
             </tbody>
           </table>
         </div>
