@@ -22,7 +22,7 @@ ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS phone_contact TEXT;
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS phone_alternate TEXT;
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS email_office TEXT;
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS email_contact TEXT;
-ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS email_alternate TEXT;
+ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS email_alternate TEXT; -- THE CRITICAL FIX
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS tax_name TEXT;
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS tax_bin TEXT;
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS tax_address TEXT;
@@ -41,7 +41,7 @@ ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS pay_swift_number TEXT;
 NOTIFY pgrst, 'reload schema';
 
 -- =========================================================
--- REMAINING SCHEMA TABLES
+-- FULL SYSTEM SCHEMA
 -- =========================================================
 
 CREATE TABLE IF NOT EXISTS profiles (

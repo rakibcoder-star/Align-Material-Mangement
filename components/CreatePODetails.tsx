@@ -13,7 +13,7 @@ interface SelectedItem {
   poPending: number;
   poQty: number;
   unitPrice: number; // Incoming from PR
-  poPrice: number;   // Calculated field
+  poPrice: number;   // Form field
   vatPercent: string;
   remarks: string;
 }
@@ -31,7 +31,7 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
       ...item,
       poQty: item.reqQty, 
       poPending: item.reqQty, 
-      poPrice: item.unitPrice || 0, // 1. PO Price taken from PR price
+      poPrice: item.unitPrice || 0, // PO Price taken from PR price as requested
       vatPercent: '', 
       remarks: '' 
     }))
@@ -68,7 +68,11 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
 
       if (lastPO && lastPO.length > 0) {
         const lastVal = parseInt(lastPO[0].po_no);
-        setPoNo((lastVal + 1).toString());
+        if (!isNaN(lastVal) && lastVal >= 3000000000) {
+          setPoNo((lastVal + 1).toString());
+        } else {
+          setPoNo('3000000001');
+        }
       } else {
         setPoNo('3000000001');
       }
@@ -117,7 +121,8 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
       const { error: poError } = await supabase.from('purchase_orders').insert([poPayload]);
       if (poError) throw poError;
       
-      // 2. Update source Requisitions to 'Ordered' status so they leave the 'NEW' list
+      // 2. IMPORTANT: Update source Requisitions to 'Ordered' status. 
+      // This ensures the /PURCHASE-ORDER/NEW data list will be empty for these items.
       const uniquePrNos = Array.from(new Set(items.map(i => i.prNo)));
       const { error: reqUpdateError } = await supabase
         .from('requisitions')
@@ -126,9 +131,9 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
       
       if (reqUpdateError) throw reqUpdateError;
 
-      alert(`PO ${poNo} successfully created. Source requisitions have been moved to 'Ordered' status and will no longer appear in the New list.`);
-      onSubmit(poPayload);
-      navigate('/purchase-order'); // Navigate back to the list
+      alert(`PO ${poNo} created. Source requisitions moved to 'Ordered' status.`);
+      onSubmit(poPayload); // Callback to parent
+      navigate('/purchase-order'); 
     } catch (err: any) {
       alert("Error creating PO: " + err.message);
     } finally {
