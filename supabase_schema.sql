@@ -2,6 +2,12 @@
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Drop existing tables to ensure clean schema application
+DROP TABLE IF EXISTS purchase_orders CASCADE;
+DROP TABLE IF EXISTS requisitions CASCADE;
+DROP TABLE IF EXISTS suppliers CASCADE;
+DROP TABLE IF EXISTS items CASCADE;
+
 -- Items Table
 CREATE TABLE items (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -35,10 +41,10 @@ CREATE TABLE suppliers (
     tax_name TEXT,
     tax_bin TEXT,
     tax_address TEXT,
-    addr_street TEXT,
-    addr_city TEXT,
-    addr_country TEXT,
-    addr_postal TEXT,
+    address_street TEXT,
+    address_city TEXT,
+    address_country TEXT,
+    address_postal TEXT,
     pay_acc_name TEXT,
     pay_acc_no TEXT,
     pay_bank TEXT,
@@ -95,13 +101,12 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Set up Row Level Security (RLS) - Basic public access for development
--- (In production, you would restrict these based on auth.uid())
 ALTER TABLE items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE suppliers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE requisitions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE purchase_orders ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Allow public access" ON items FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow public access" ON suppliers FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow public access" ON requisitions FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow public access" ON purchase_orders FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow public access items" ON items FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow public access suppliers" ON suppliers FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow public access requisitions" ON requisitions FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow public access po" ON purchase_orders FOR ALL USING (true) WITH CHECK (true);

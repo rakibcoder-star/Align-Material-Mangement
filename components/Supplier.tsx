@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Home, Search, Edit2, Filter, ChevronDown, X, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -77,7 +78,7 @@ const Supplier: React.FC = () => {
         }
       }
 
-      // 2. Prepare Payload (Strictly matching the SQL schema)
+      // 2. Prepare Payload
       const payload = {
         name: formData.supplierName,
         code: nextCode,
@@ -96,10 +97,10 @@ const Supplier: React.FC = () => {
         tax_bin: formData.taxBin,
         tax_address: formData.taxAddress,
         
-        addr_street: formData.officeStreet, // Maps form field 'officeStreet' to DB column 'addr_street'
-        addr_city: formData.officeCity,
-        addr_country: formData.officeCountry,
-        addr_postal: formData.officePostal,
+        address_street: formData.officeStreet, // Fixed column name
+        address_city: formData.officeCity,
+        address_country: formData.officeCountry,
+        address_postal: formData.officePostal,
         
         pay_acc_name: formData.accName,
         pay_acc_no: formData.accNumber,
@@ -112,10 +113,8 @@ const Supplier: React.FC = () => {
       const { error } = await supabase.from('suppliers').insert([payload]);
       
       if (error) {
-        if (error.message.includes('schema cache') || error.message.includes('addr_street')) {
-          throw new Error("The database column 'addr_street' is not recognized. Please run the SQL schema and click 'Reload PostgREST schema' in Supabase Settings -> API.");
-        }
-        throw error;
+        console.error("Supabase Detailed Error:", error);
+        throw new Error(error.message);
       }
 
       alert(`Supplier ${formData.supplierName} added successfully!`);
@@ -123,7 +122,7 @@ const Supplier: React.FC = () => {
       fetchSuppliers();
       resetForm();
     } catch (err: any) {
-      alert("Error Saving Supplier: " + err.message);
+      alert("Database Error: " + err.message + "\n\nMake sure to run the latest supabase_schema.sql in your Supabase SQL Editor.");
     } finally {
       setIsSubmitting(false);
     }
