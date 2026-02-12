@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -271,7 +272,7 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  if (!user) return null;
+  if (!user) return <Navigate to="/login" replace />;
 
   return (
     <div className="flex h-screen bg-[#f1f3f4] overflow-hidden font-['Inter'] no-print">

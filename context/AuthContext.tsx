@@ -2,10 +2,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User, Role, AuthState, ModulePermissions } from '../types';
 import { supabase } from '../lib/supabase';
-import { ROLE_DEFAULT_PERMISSIONS } from '../constants';
 
 interface AuthContextType extends AuthState {
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{ success: boolean, message?: string }>;
   logout: () => void;
   addUser: (userData: any) => Promise<void>;
   updateUser: (userId: string, updates: Partial<User>) => Promise<void>;
@@ -42,25 +41,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = useCallback(async (userId: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    
-    if (data && !error) {
-      return {
-        id: data.id,
-        email: data.email,
-        fullName: data.full_name,
-        username: data.username,
-        role: data.role as Role,
-        status: data.status as 'Active' | 'Inactive',
-        lastLogin: data.last_login,
-        permissions: data.permissions || [],
-        granularPermissions: data.granular_permissions || DEFAULT_GRANULAR,
-        createdAt: data.created_at
-      };
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (data && !error) {
+        return {
+          id: data.id,
+          email: data.email,
+          fullName: data.full_name,
+          username: data.username,
+          role: data.role as Role,
+          status: data.status as 'Active' | 'Inactive',
+          lastLogin: data.last_login,
+          permissions: data.permissions || [],
+          granularPermissions: data.granular_permissions || DEFAULT_GRANULAR,
+          createdAt: data.created_at
+        };
+      }
+      
+      // Fallback: If auth exists but profile doesn't (rare with triggers), return basic data
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        return {
+          id: authUser.id,
+          email: authUser.email || '',
+          fullName: authUser.email?.split('@')[0] || 'User',
+          username: authUser.email?.split('@')[0] || 'user',
+          role: Role.USER,
+          status: 'Active' as const,
+          lastLogin: new Date().toISOString(),
+          permissions: [],
+          granularPermissions: DEFAULT_GRANULAR,
+          createdAt: new Date().toISOString()
+        };
+      }
+    } catch (e) {
+      console.error("Profile fetch error:", e);
     }
     return null;
   }, []);
@@ -116,13 +136,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, [fetchProfile, fetchUsers]);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const login = async (email: string, password: string): Promise<{ success: boolean, message?: string }> => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       console.error("Login Error:", error.message);
-      return false;
+      return { success: false, message: error.message };
     }
-    return true;
+    return { success: true };
   };
 
   const logout = async () => {
@@ -130,20 +150,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const addUser = async (userData: any) => {
-    // In a real app, you might use a service role to create the auth user
-    // For this implementation, we insert into profiles and assume auth is handled
-    const { error } = await supabase.from('profiles').insert([{
+    // 1. Create the user in Supabase Auth
+    // Note: In a real admin scenario, you might use the Admin API (auth.admin.createUser)
+    // but that requires a service role key. For this platform, we use signUp.
+    const { data: authData, error: authError } = await supabase.auth.signUp({
       email: userData.email,
-      full_name: userData.fullName,
-      username: userData.username,
-      role: userData.role || Role.USER,
-      status: 'Active',
-      granular_permissions: userData.granularPermissions || DEFAULT_GRANULAR,
-      created_at: new Date().toISOString()
-    }]);
+      password: userData.password || 'TemporaryPassword123!',
+      options: {
+        data: {
+          full_name: userData.fullName,
+          username: userData.username
+        }
+      }
+    });
+
+    if (authError) throw authError;
+
+    // 2. The trigger in PostgreSQL will handle creating the profile record.
+    // However, if we want to override defaults immediately:
+    if (authData.user) {
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          role: userData.role || Role.USER,
+          granular_permissions: userData.granularPermissions || DEFAULT_GRANULAR
+        })
+        .eq('id', authData.user.id);
+      
+      if (profileError) console.error("Could not set custom permissions:", profileError.message);
+    }
     
-    if (!error) await fetchUsers();
-    else throw error;
+    await fetchUsers();
   };
 
   const updateUser = async (userId: string, updates: Partial<User>) => {
@@ -160,6 +197,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const deleteUser = async (userId: string) => {
+    // Note: This only deletes the profile. To delete the Auth user, you need Admin API.
     const { error } = await supabase.from('profiles').delete().eq('id', userId);
     if (!error) await fetchUsers();
     else throw error;
@@ -167,7 +205,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const hasPermission = (permissionId: string) => {
     if (currentUser?.role === Role.ADMIN) return true;
-    return currentUser?.permissions.includes(permissionId) || false;
+    // Check granular permissions for the module
+    const perms = currentUser?.granularPermissions?.[permissionId];
+    return perms?.view || false;
   };
 
   return (

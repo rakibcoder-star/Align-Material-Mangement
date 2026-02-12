@@ -16,43 +16,32 @@ CREATE TABLE IF NOT EXISTS profiles (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Suppliers Table (Explicitly including address_city)
+-- Suppliers Table
 CREATE TABLE IF NOT EXISTS suppliers (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
     code TEXT UNIQUE NOT NULL,
     tin TEXT NOT NULL,
     type TEXT NOT NULL DEFAULT 'Local',
-    
-    -- Phone Numbers
     phone_office TEXT,
     phone_contact TEXT,
     phone_alternate TEXT,
-    
-    -- Email Addresses
     email_office TEXT,
     email_contact TEXT,
     email_alternate TEXT,
-    
-    -- Tax Information
     tax_name TEXT,
     tax_bin TEXT,
     tax_address TEXT,
-    
-    -- Office Address
     address_street TEXT,
     address_city TEXT,
     address_country TEXT,
     address_postal TEXT,
-    
-    -- Payment Information
     pay_acc_name TEXT,
     pay_acc_number TEXT,
     pay_bank_name TEXT,
     pay_branch_name TEXT,
     pay_routing_number TEXT,
     pay_swift_number TEXT,
-    
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -110,7 +99,47 @@ CREATE TABLE IF NOT EXISTS purchase_orders (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Stock Update Function
+-- FUNCTION: Handle New User Signup
+-- This automatically creates a profile record when a new user is created in Auth
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, full_name, role, status, granular_permissions)
+  VALUES (
+    NEW.id, 
+    NEW.email, 
+    COALESCE(NEW.raw_user_meta_data->>'full_name', split_part(NEW.email, '@', 1)),
+    'USER',
+    'Active',
+    '{
+      "requisition": {"view": true, "edit": true, "dl": true},
+      "purchase_order": {"view": true, "edit": true, "dl": true},
+      "supplier": {"view": true, "edit": true, "dl": true},
+      "purchase_report": {"view": true, "edit": true, "dl": true},
+      "inventory": {"view": true, "edit": true, "dl": true},
+      "receive": {"view": true, "edit": true, "dl": true},
+      "issue": {"view": true, "edit": true, "dl": true},
+      "tnx_report": {"view": true, "edit": true, "dl": true},
+      "mo_report": {"view": true, "edit": true, "dl": true},
+      "item_list": {"view": true, "edit": true, "dl": true},
+      "item_uom": {"view": true, "edit": true, "dl": true},
+      "item_group": {"view": true, "edit": true, "dl": true},
+      "item_type": {"view": true, "edit": true, "dl": true},
+      "cost_center": {"view": true, "edit": true, "dl": true},
+      "user_management": {"view": false, "edit": false, "dl": false}
+    }'::jsonb
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- TRIGGER: Run function on every new auth user
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
+-- FUNCTION: Update Item Stock
 CREATE OR REPLACE FUNCTION update_item_stock(item_sku TEXT, qty_change INTEGER)
 RETURNS VOID AS $$
 BEGIN
@@ -127,7 +156,7 @@ ALTER TABLE requisitions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE purchase_orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
--- Simple public access policies (for development - tighten these for production)
+-- Simple public access policies (for development)
 CREATE POLICY "Allow public access items" ON items FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow public access suppliers" ON suppliers FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow public access requisitions" ON requisitions FOR ALL USING (true) WITH CHECK (true);

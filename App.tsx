@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -5,7 +6,7 @@ import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 
 const AppRoutes: React.FC = () => {
-  const { loading } = useAuth();
+  const { loading, isAuthenticated } = useAuth();
   
   if (loading) {
     return (
@@ -17,8 +18,8 @@ const AppRoutes: React.FC = () => {
 
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/*" element={<Dashboard />} />
+      <Route path="/login" element={isAuthenticated ? <Navigate to="/overview" replace /> : <Login />} />
+      <Route path="/*" element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" replace />} />
     </Routes>
   );
 };
