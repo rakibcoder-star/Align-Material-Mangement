@@ -3,6 +3,7 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Drop existing tables to ensure clean schema application
+-- NOTE: This will delete existing data. Use ALTER TABLE instead if you want to keep data.
 DROP TABLE IF EXISTS purchase_orders CASCADE;
 DROP TABLE IF EXISTS requisitions CASCADE;
 DROP TABLE IF EXISTS suppliers CASCADE;
@@ -100,7 +101,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Set up Row Level Security (RLS) - Basic public access for development
+-- Set up Row Level Security (RLS)
 ALTER TABLE items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE suppliers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE requisitions ENABLE ROW LEVEL SECURITY;
