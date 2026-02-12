@@ -5,26 +5,20 @@ import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 
 const AppRoutes: React.FC = () => {
-  const { loading, isAuthenticated } = useAuth();
+  const { loading } = useAuth();
   
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f1f3f4]">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="w-10 h-10 border-4 border-[#2d808e] border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Initializing Secure DMS</p>
-        </div>
+        <div className="w-8 h-8 border-4 border-[#2d808e] border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
     <Routes>
-      <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/overview" replace />} />
-      <Route 
-        path="/*" 
-        element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" replace />} 
-      />
+      <Route path="/login" element={<Login />} />
+      <Route path="/*" element={<Dashboard />} />
     </Routes>
   );
 };
