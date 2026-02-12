@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import UserManagement from './UserManagement';
 import MoveOrderModal from './MoveOrderModal';
 import StockStatusModal from './StockStatusModal';
+import PRPreviewModal from './PRPreviewModal';
 import PurchaseRequisition from './PurchaseRequisition';
 import PurchaseOrder from './PurchaseOrder';
 import Supplier from './Supplier';
@@ -119,7 +120,7 @@ const KPICard: React.FC<{ label: string; value: string; subValue?: string }> = (
   </div>
 );
 
-const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () => void }> = ({ onCheckStock, onMoveOrder }) => {
+const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () => void; onPreviewPr: (pr: any) => void }> = ({ onCheckStock, onMoveOrder, onPreviewPr }) => {
   const { user } = useAuth();
   const [dateTime, setDateTime] = useState(new Date());
   const [recentPrs, setRecentPrs] = useState<any[]>([]);
@@ -196,7 +197,10 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
                         {new Date(pr.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
                       </td>
                       <td className="px-5 py-3 text-center">
-                        <button className="text-[#2d808e] font-black hover:underline transition-all">
+                        <button 
+                          onClick={() => onPreviewPr(pr)}
+                          className="text-[#2d808e] font-black hover:underline transition-all"
+                        >
                           {pr.pr_no}
                         </button>
                       </td>
@@ -227,6 +231,7 @@ const Dashboard: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMoveOrderModalOpen, setIsMoveOrderModalOpen] = useState(false);
   const [isStockStatusModalOpen, setIsStockStatusModalOpen] = useState(false);
+  const [previewPr, setPreviewPr] = useState<any>(null);
   
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
     purchase: location.pathname.includes('requisition') || location.pathname.includes('purchase-order') || location.pathname.includes('supplier') || location.pathname.includes('purchase-report'),
@@ -370,7 +375,7 @@ const Dashboard: React.FC = () => {
         <main className="flex-1 overflow-y-auto p-3 md:p-6 bg-[#f1f3f4] pb-10">
           <div className="max-w-[1600px] mx-auto w-full">
             <Routes>
-              <Route path="/overview" element={<DashboardOverview onCheckStock={() => setIsStockStatusModalOpen(true)} onMoveOrder={() => setIsMoveOrderModalOpen(true)} />} />
+              <Route path="/overview" element={<DashboardOverview onCheckStock={() => setIsStockStatusModalOpen(true)} onMoveOrder={() => setIsMoveOrderModalOpen(true)} onPreviewPr={(pr) => setPreviewPr(pr)} />} />
               <Route path="/users" element={hasPermission('manage_users') ? <UserManagement /> : <Navigate to="/overview" />} />
               <Route path="/requisition" element={<PurchaseRequisition />} />
               <Route path="/purchase-order" element={<PurchaseOrder orders={[]} />} />
@@ -402,6 +407,7 @@ const Dashboard: React.FC = () => {
 
       <MoveOrderModal isOpen={isMoveOrderModalOpen} onClose={() => setIsMoveOrderModalOpen(false)} />
       <StockStatusModal isOpen={isStockStatusModalOpen} onClose={() => setIsStockStatusModalOpen(false)} />
+      {previewPr && <PRPreviewModal pr={previewPr} onClose={() => setPreviewPr(null)} />}
     </div>
   );
 };

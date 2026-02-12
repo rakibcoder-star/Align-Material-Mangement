@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Home, Edit2 } from 'lucide-react';
+import { Home, Edit2, Inbox } from 'lucide-react';
 import NewPurchaseRequisition from './NewPurchaseRequisition';
+import PRPreviewModal from './PRPreviewModal';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
@@ -9,28 +10,18 @@ const PurchaseRequisition: React.FC = () => {
   const [view, setView] = useState<'list' | 'new'>('list');
   const [requisitions, setRequisitions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [previewPr, setPreviewPr] = useState<any>(null);
   const [editingPr, setEditingPr] = useState<any>(null);
-  const [filterMonth, setFilterMonth] = useState(new Date().toISOString().slice(0, 7));
 
   const fetchRequisitions = async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('requisitions')
-      .select(`*`)
+      .select('*')
       .order('created_at', { ascending: false });
     
     if (data && !error) {
-      setRequisitions(data.map(r => ({
-        ...r,
-        PR: r.pr_no,
-        sku: 'MULTI', 
-        name: r.reference || 'Item List Attached',
-        reqQty: 'Multi',
-        reqBy: 'User',
-        reqDept: r.type === 'foreign' ? 'IMPORTS' : 'LOCAL',
-        createdAt: r.created_at,
-        status: r.status
-      })));
+      setRequisitions(data);
     }
     setLoading(false);
   };
@@ -38,10 +29,6 @@ const PurchaseRequisition: React.FC = () => {
   useEffect(() => {
     fetchRequisitions();
   }, []);
-
-  const filteredData = useMemo(() => {
-    return requisitions.filter(item => item.createdAt.startsWith(filterMonth));
-  }, [filterMonth, requisitions]);
 
   const handleCreateNew = () => {
     setEditingPr(null);
@@ -53,98 +40,91 @@ const PurchaseRequisition: React.FC = () => {
     setView('new');
   };
 
-  const handleSubmitNew = async (newPR: any) => {
-    // MASTER LOGIC: Avoid FK constraint error if using mock ID
-    const isMockUser = user?.id === '00000000-0000-0000-0000-000000000000';
-    
-    const { error: prError } = await supabase
-      .from('requisitions')
-      .insert([{
-        pr_no: newPR.PR, // This is the 2000000000+ number
-        reference: newPR.PR, // User wants Ref.No to show the serial
-        note: newPR.note,
-        type: newPR.type,
-        status: 'In-Process',
-        req_by_id: isMockUser ? null : user?.id, // Fix for FK constraint error
-        total_value: newPR.value
-      }]);
-
-    if (prError) {
-      alert("Error saving requisition: " + prError.message);
-      return;
-    }
-
-    await fetchRequisitions();
-    setView('list');
+  const handlePrClick = (pr: any) => {
+    setPreviewPr(pr);
   };
 
   if (view === 'new') {
-    return <NewPurchaseRequisition onBack={() => setView('list')} onSubmit={handleSubmitNew} initialData={editingPr} />;
+    return <NewPurchaseRequisition onBack={() => setView('list')} onSubmit={() => { setView('list'); fetchRequisitions(); }} initialData={editingPr} />;
   }
 
   return (
-    <div className="flex flex-col space-y-4">
+    <div className="flex flex-col space-y-4 font-sans max-w-[1600px] mx-auto w-full">
+      {/* Breadcrumb & Action */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2 text-[11px] font-bold text-[#2d808e] uppercase tracking-wider">
+        <div className="flex items-center space-x-2 text-[10px] font-bold text-[#2d808e] uppercase tracking-wider">
           <Home size={14} className="text-gray-400" />
           <span className="text-gray-400">/</span>
-          <span>Purchase-Requisition</span>
+          <span className="text-[#2d808e] font-black uppercase">PURCHASE-REQUISITION</span>
         </div>
         <button 
           onClick={handleCreateNew}
-          className="bg-[#2d808e] text-white px-6 py-1.5 rounded text-[13px] font-bold shadow-sm hover:bg-[#256b78]"
+          className="bg-[#2d808e] text-white px-6 py-2 rounded text-[12px] font-black shadow-lg shadow-cyan-900/10 hover:bg-[#256b78] transition-all uppercase tracking-widest"
         >
           New Requisition
         </button>
       </div>
 
-      <div className="bg-white rounded shadow-sm border border-gray-100 overflow-x-auto scrollbar-thin">
-        {loading ? (
-          <div className="p-20 text-center text-gray-400">Loading requisitions...</div>
-        ) : (
-          <table className="w-full text-left border-collapse min-w-[1200px]">
-            <thead className="bg-[#fafbfc] sticky top-0 z-10">
-              <tr className="text-[11px] font-bold text-gray-700 uppercase border-b border-gray-100">
-                <th className="px-4 py-4 text-center w-12">SL</th>
-                <th className="px-4 py-4 text-center">PR No</th>
-                <th className="px-4 py-4 text-center">SKU</th>
-                <th className="px-4 py-4">Ref.No</th>
-                <th className="px-4 py-4 text-center">Req. Qty</th>
-                <th className="px-4 py-4 text-center">Req. By</th>
-                <th className="px-4 py-4 text-center">Req. Dept.</th>
-                <th className="px-4 py-4 text-center w-24">Action</th>
+      {/* Main Table Container */}
+      <div className="bg-white rounded border border-gray-100 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto scrollbar-thin">
+          <table className="w-full text-left border-collapse min-w-[1000px]">
+            <thead className="bg-[#fcfcfc]">
+              <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                <th className="px-6 py-5 text-center w-16">SL</th>
+                <th className="px-6 py-5 text-center">PR NO</th>
+                <th className="px-6 py-5 text-center">SKU</th>
+                <th className="px-6 py-5 text-center">REF.NO</th>
+                <th className="px-6 py-5 text-center">REQ. QTY</th>
+                <th className="px-6 py-5 text-center">REQ. BY</th>
+                <th className="px-6 py-5 text-center">REQ. DEPT.</th>
+                <th className="px-6 py-5 text-center w-24">ACTION</th>
               </tr>
             </thead>
-            <tbody className="text-[11px] text-gray-600 font-medium">
-              {filteredData.map((item, index) => (
-                <tr key={item.id} className="hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors">
-                  <td className="px-4 py-3.5 text-center">{index + 1}</td>
-                  <td className="px-4 py-3.5 text-center text-blue-500 font-bold">{item.PR}</td>
-                  <td className="px-4 py-3.5 text-center text-gray-500">{item.sku}</td>
-                  <td className="px-4 py-3.5 font-bold">{item.PR}</td>
-                  <td className="px-4 py-3.5 text-center font-bold">MULTI</td>
-                  <td className="px-4 py-3.5 text-center">MMT-USER</td>
-                  <td className="px-4 py-3.5 text-center">
-                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-gray-100 text-gray-600">
-                      {item.reqDept}
+            <tbody className="text-[11px] font-bold text-gray-600 uppercase tracking-tighter">
+              {loading ? (
+                <tr><td colSpan={8} className="py-20 text-center text-gray-300">Syncing requisitions...</td></tr>
+              ) : requisitions.map((item, index) => (
+                <tr key={item.id} className="hover:bg-gray-50/50 border-b border-gray-50 transition-colors group">
+                  <td className="px-6 py-4 text-center text-gray-400">{index + 1}</td>
+                  <td className="px-6 py-4 text-center">
+                    <button 
+                      onClick={() => handlePrClick(item)}
+                      className="text-blue-500 font-black hover:underline transition-all"
+                    >
+                      {item.pr_no}
+                    </button>
+                  </td>
+                  <td className="px-6 py-4 text-center text-gray-400 font-medium">MULTI</td>
+                  <td className="px-6 py-4 text-center font-black text-gray-800">{item.pr_no}</td>
+                  <td className="px-6 py-4 text-center text-gray-400">MULTI</td>
+                  <td className="px-6 py-4 text-center uppercase tracking-tighter text-gray-500">MMT-USER</td>
+                  <td className="px-6 py-4 text-center">
+                    <span className="px-3 py-1 bg-gray-100 text-gray-500 rounded text-[9px] font-black uppercase">
+                      {item.type === 'foreign' ? 'FOREIGN' : 'LOCAL'}
                     </span>
                   </td>
-                  <td className="px-4 py-3.5 text-center">
-                    <button onClick={() => handleEdit(item)} className="p-1.5 text-gray-400 hover:text-blue-500 border border-gray-100 rounded transition-all">
+                  <td className="px-6 py-4 text-center">
+                    <button 
+                      onClick={() => handleEdit(item)}
+                      className="p-1.5 text-gray-300 hover:text-[#2d808e] border border-gray-100 rounded transition-all"
+                    >
                       <Edit2 size={12} />
                     </button>
                   </td>
                 </tr>
               ))}
-              {filteredData.length === 0 && (
+              {!loading && requisitions.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="py-20 text-center text-gray-300 uppercase font-black tracking-widest">No requisitions found.</td>
+                  <td colSpan={8} className="py-20 text-center text-gray-300 uppercase font-black tracking-widest">No data available</td>
                 </tr>
               )}
             </tbody>
           </table>
-        )}
+        </div>
       </div>
+
+      {previewPr && <PRPreviewModal pr={previewPr} onClose={() => setPreviewPr(null)} />}
     </div>
   );
 };
