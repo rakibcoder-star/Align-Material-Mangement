@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Home, Search, Edit2, Filter, ChevronLeft, ChevronRight, ChevronDown, X, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -10,7 +9,7 @@ const Supplier: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Comprehensive Form Data State matching all image fields
+  // Form Data State
   const [formData, setFormData] = useState<any>({
     supplierName: '',
     tin: '',
@@ -58,7 +57,6 @@ const Supplier: React.FC = () => {
     setIsSubmitting(true);
     
     try {
-      // 1. Generate unique code for new supplier (2000000000 series)
       const { data: lastSupplier } = await supabase
         .from('suppliers')
         .select('code')
@@ -73,35 +71,24 @@ const Supplier: React.FC = () => {
         }
       }
 
-      // 2. Map every single field to database columns
       const payload = {
         name: formData.supplierName,
         code: nextCode,
         tin: formData.tin,
         type: formData.type || 'Local',
-        
-        // Phone Numbers
         phone_office: formData.phoneOffice,
         phone_contact: formData.phoneContact,
         phone_alternate: formData.phoneAlternate,
-        
-        // Email Address
         email_office: formData.emailOffice,
         email_contact: formData.emailContact,
         email_alternate: formData.emailAlternate,
-        
-        // Tax Information
         tax_name: formData.taxName,
         tax_bin: formData.taxBin,
         tax_address: formData.taxAddress,
-        
-        // Office Address
         addr_street: formData.officeStreet,
-        addr_city: formData.officeCity,
+        addr_city: formData.officeCity, // Mapping to fixed DB column
         addr_country: formData.officeCountry,
         addr_postal: formData.officePostal,
-        
-        // Payment Information
         pay_acc_name: formData.accName,
         pay_acc_no: formData.accNumber,
         pay_bank: formData.bankName,
@@ -114,7 +101,7 @@ const Supplier: React.FC = () => {
       
       if (error) throw error;
 
-      alert(`Supplier ${formData.supplierName} added successfully to Database!`);
+      alert(`Supplier ${formData.supplierName} added successfully!`);
       setView('list');
       fetchSuppliers();
       resetForm();
@@ -135,8 +122,8 @@ const Supplier: React.FC = () => {
   };
 
   const filteredSuppliers = suppliers.filter(s => 
-    s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (s.code && s.code.toLowerCase().includes(searchTerm.toLowerCase()))
+    (s.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (s.code || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (view === 'add') {
@@ -153,7 +140,6 @@ const Supplier: React.FC = () => {
         </div>
 
         <form onSubmit={handleFormSubmit} className="bg-white rounded shadow-sm border border-gray-100 p-8 space-y-8 max-w-[1600px] mx-auto w-full">
-          {/* Main Info */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold text-[#2d808e] uppercase"><span className="text-red-500 mr-1">*</span>Supplier Name</label>
@@ -181,7 +167,6 @@ const Supplier: React.FC = () => {
             </div>
           </div>
 
-          {/* Phone Numbers */}
           <div className="space-y-3">
             <h3 className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">Phone Numbers</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -191,7 +176,6 @@ const Supplier: React.FC = () => {
             </div>
           </div>
 
-          {/* Email Address */}
           <div className="space-y-3">
             <h3 className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">Email Address</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -201,7 +185,6 @@ const Supplier: React.FC = () => {
             </div>
           </div>
 
-          {/* Tax Information */}
           <div className="space-y-3">
             <h3 className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">Tax Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -211,7 +194,6 @@ const Supplier: React.FC = () => {
             </div>
           </div>
 
-          {/* Office Address */}
           <div className="space-y-3">
             <h3 className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">Office Address</h3>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -222,7 +204,6 @@ const Supplier: React.FC = () => {
             </div>
           </div>
 
-          {/* Payment Information */}
           <div className="space-y-3">
             <h3 className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">Payment Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -329,7 +310,7 @@ const Supplier: React.FC = () => {
           <button className="p-1 text-gray-300"><ChevronRight size={16} /></button>
         </div>
         <div className="relative group">
-          <select className="appearance-none bg-white border border-gray-200 rounded px-4 py-1 text-[11px] font-bold text-gray-500 pr-8 outline-none cursor-pointer">
+          <select className="appearance-none bg-white border border-gray-200 rounded px-4 py-1 text-[11px] font-bold text-gray-500 pr-8 outline-none cursor-pointer" defaultValue="10 / page">
             <option>10 / page</option>
             <option>20 / page</option>
             <option>50 / page</option>

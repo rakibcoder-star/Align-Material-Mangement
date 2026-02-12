@@ -1,7 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User, Role, AuthState, ModulePermissions } from '../types';
-import { supabase } from '../lib/supabase';
-import { ROLE_DEFAULT_PERMISSIONS } from '../constants';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<boolean>;
@@ -34,101 +32,100 @@ const DEFAULT_GRANULAR: Record<string, ModulePermissions> = {
   user_management: { view: true, edit: true, dl: true }
 };
 
-const DEFAULT_ADMIN_USER: User = {
-  id: 'default-admin-id',
+const MOCK_ADMIN: User = {
+  id: 'admin-1',
   email: 'admin@align.com',
-  fullName: 'System Admin',
+  fullName: 'System Administrator',
   username: 'admin',
   role: Role.ADMIN,
   status: 'Active',
   lastLogin: new Date().toISOString(),
-  permissions: ROLE_DEFAULT_PERMISSIONS[Role.ADMIN],
+  permissions: ['view_dashboard', 'manage_users'],
   granularPermissions: DEFAULT_GRANULAR,
   createdAt: new Date().toISOString()
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [users, setUsers] = useState<User[]>([]);
-  // Set default user to bypass login for now
-  const [currentUser, setCurrentUser] = useState<User | null>(DEFAULT_ADMIN_USER);
-  const [loading, setLoading] = useState(false);
-
-  const fetchUsers = useCallback(async () => {
-    const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-    if (data && !error) {
-      setUsers(data.map(u => ({
-        id: u.id,
-        email: u.email,
-        fullName: u.full_name || u.email.split('@')[0],
-        username: u.username || u.email.split('@')[0],
-        role: u.role as Role,
-        status: (u.status || 'Active') as 'Active' | 'Inactive',
-        lastLogin: u.last_login || u.created_at,
-        permissions: u.permissions || [],
-        granularPermissions: u.granular_permissions || DEFAULT_GRANULAR,
-        createdAt: u.created_at
-      })));
-    }
-  }, []);
+  const [users, setUsers] = useState<User[]>([MOCK_ADMIN]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+    const savedUser = localStorage.getItem('align_user');
+    const savedUsers = localStorage.getItem('align_users_list');
+    
+    if (savedUsers) {
+      setUsers(JSON.parse(savedUsers));
+    } else {
+      localStorage.setItem('align_users_list', JSON.stringify([MOCK_ADMIN]));
+    }
+    
+    if (savedUser) setCurrentUser(JSON.parse(savedUser));
+    
+    setLoading(false);
+  }, []);
 
-  const login = async (email: string, _password: string): Promise<boolean> => {
-    // Basic mock login for development
-    setCurrentUser(DEFAULT_ADMIN_USER);
-    return true;
+  const login = async (email: string, password: string): Promise<boolean> => {
+    // Logic: Find user in the local storage list
+    const foundUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    
+    // For mock purposes, we allow any password for admin or any added user
+    if (foundUser && foundUser.status === 'Active') {
+      const updatedUser = { ...foundUser, lastLogin: new Date().toISOString() };
+      setCurrentUser(updatedUser);
+      localStorage.setItem('align_user', JSON.stringify(updatedUser));
+      return true;
+    }
+    return false;
   };
 
   const logout = () => {
-    // For now, logout doesn't do much since we force auth on refresh
     setCurrentUser(null);
+    localStorage.removeItem('align_user');
   };
 
   const addUser = async (userData: any) => {
-    const { error } = await supabase.from('profiles').insert([{
+    const newUser: User = {
+      id: Math.random().toString(36).substr(2, 9),
       email: userData.email,
-      full_name: userData.fullName,
-      username: userData.username,
+      fullName: userData.fullName || userData.email.split('@')[0],
+      username: userData.username || userData.email.split('@')[0],
       role: userData.role || Role.USER,
       status: 'Active',
-      granular_permissions: userData.granularPermissions || DEFAULT_GRANULAR,
-      created_at: new Date().toISOString()
-    }]);
-    
-    if (!error) await fetchUsers();
-    else throw error;
+      lastLogin: '',
+      permissions: [],
+      granularPermissions: userData.granularPermissions || DEFAULT_GRANULAR,
+      createdAt: new Date().toISOString()
+    };
+    const newList = [...users, newUser];
+    setUsers(newList);
+    localStorage.setItem('align_users_list', JSON.stringify(newList));
   };
 
   const updateUser = async (userId: string, updates: Partial<User>) => {
-    const dbUpdates: any = {};
-    if (updates.fullName) dbUpdates.full_name = updates.fullName;
-    if (updates.username) dbUpdates.username = updates.username;
-    if (updates.role) dbUpdates.role = updates.role;
-    if (updates.status) dbUpdates.status = updates.status;
-    if (updates.granularPermissions) dbUpdates.granular_permissions = updates.granularPermissions;
-
-    const { error } = await supabase.from('profiles').update(dbUpdates).eq('id', userId);
-    if (!error) await fetchUsers();
-    else throw error;
+    const newList = users.map(u => u.id === userId ? { ...u, ...updates } : u);
+    setUsers(newList);
+    localStorage.setItem('align_users_list', JSON.stringify(newList));
+    if (currentUser?.id === userId) {
+      setCurrentUser({ ...currentUser, ...updates });
+    }
   };
 
   const deleteUser = async (userId: string) => {
-    const { error } = await supabase.from('profiles').delete().eq('id', userId);
-    if (!error) await fetchUsers();
-    else throw error;
+    const newList = users.filter(u => u.id !== userId);
+    setUsers(newList);
+    localStorage.setItem('align_users_list', JSON.stringify(newList));
   };
 
   const hasPermission = (permissionId: string) => {
-    // Grant all permissions while authorization is disabled
-    return true;
+    if (currentUser?.role === Role.ADMIN) return true;
+    return currentUser?.permissions.includes(permissionId) || false;
   };
 
   return (
     <AuthContext.Provider value={{ 
       user: currentUser, 
-      isAuthenticated: true, // Always true for now
+      isAuthenticated: !!currentUser,
       login, 
       logout, 
       addUser, 
