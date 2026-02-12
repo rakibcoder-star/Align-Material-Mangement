@@ -5,7 +5,7 @@ import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 
 const AppRoutes: React.FC = () => {
-  const { isAuthenticated, loading } = useAuth();
+  const { loading } = useAuth();
   
   if (loading) {
     return (
@@ -17,14 +17,8 @@ const AppRoutes: React.FC = () => {
 
   return (
     <Routes>
-      <Route 
-        path="/login" 
-        element={!isAuthenticated ? <Login /> : <Navigate to="/overview" replace />} 
-      />
-      <Route 
-        path="/*" 
-        element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" replace />} 
-      />
+      <Route path="/login" element={<Login />} />
+      <Route path="/*" element={<Dashboard />} />
     </Routes>
   );
 };

@@ -17,31 +17,41 @@ interface AuthContextType extends AuthState {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const DEFAULT_GRANULAR: Record<string, ModulePermissions> = {
-  // Purchase
-  requisition: { view: true, edit: false, dl: false },
-  purchase_order: { view: true, edit: false, dl: false },
-  supplier: { view: true, edit: false, dl: false },
-  purchase_report: { view: true, edit: false, dl: false },
-  // Warehouse
-  inventory: { view: true, edit: false, dl: false },
-  receive: { view: true, edit: false, dl: false },
-  issue: { view: true, edit: false, dl: false },
-  tnx_report: { view: true, edit: false, dl: false },
-  mo_report: { view: true, edit: false, dl: false },
-  // Item Master
-  item_list: { view: true, edit: false, dl: false },
-  item_uom: { view: true, edit: false, dl: false },
-  item_group: { view: true, edit: false, dl: false },
-  item_type: { view: true, edit: false, dl: false },
-  cost_center: { view: true, edit: false, dl: false },
-  // Admin
-  user_management: { view: false, edit: false, dl: false }
+  requisition: { view: true, edit: true, dl: true },
+  purchase_order: { view: true, edit: true, dl: true },
+  supplier: { view: true, edit: true, dl: true },
+  purchase_report: { view: true, edit: true, dl: true },
+  inventory: { view: true, edit: true, dl: true },
+  receive: { view: true, edit: true, dl: true },
+  issue: { view: true, edit: true, dl: true },
+  tnx_report: { view: true, edit: true, dl: true },
+  mo_report: { view: true, edit: true, dl: true },
+  item_list: { view: true, edit: true, dl: true },
+  item_uom: { view: true, edit: true, dl: true },
+  item_group: { view: true, edit: true, dl: true },
+  item_type: { view: true, edit: true, dl: true },
+  cost_center: { view: true, edit: true, dl: true },
+  user_management: { view: true, edit: true, dl: true }
+};
+
+const DEFAULT_ADMIN_USER: User = {
+  id: 'default-admin-id',
+  email: 'admin@align.com',
+  fullName: 'System Admin',
+  username: 'admin',
+  role: Role.ADMIN,
+  status: 'Active',
+  lastLogin: new Date().toISOString(),
+  permissions: ROLE_DEFAULT_PERMISSIONS[Role.ADMIN],
+  granularPermissions: DEFAULT_GRANULAR,
+  createdAt: new Date().toISOString()
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [users, setUsers] = useState<User[]>([]);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Set default user to bypass login for now
+  const [currentUser, setCurrentUser] = useState<User | null>(DEFAULT_ADMIN_USER);
+  const [loading, setLoading] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
@@ -62,72 +72,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   useEffect(() => {
-    const initAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-
-        if (profile) {
-          setCurrentUser({
-            id: profile.id,
-            email: profile.email,
-            fullName: profile.full_name,
-            username: profile.username,
-            role: profile.role as Role,
-            status: profile.status || 'Active',
-            lastLogin: profile.last_login || profile.created_at,
-            permissions: profile.permissions,
-            granularPermissions: profile.granular_permissions || DEFAULT_GRANULAR,
-            createdAt: profile.created_at
-          });
-        }
-        await fetchUsers();
-      }
-      setLoading(false);
-    };
-    initAuth();
+    fetchUsers();
   }, [fetchUsers]);
 
   const login = async (email: string, _password: string): Promise<boolean> => {
-    const mockId = '00000000-0000-0000-0000-000000000000';
-    const profile: User = {
-      id: mockId,
-      email: email || 'rakib@prodex.com',
-      fullName: 'RAKIB',
-      username: 'rakib',
-      role: Role.ADMIN,
-      status: 'Active',
-      lastLogin: new Date().toISOString(),
-      permissions: ROLE_DEFAULT_PERMISSIONS[Role.ADMIN],
-      granularPermissions: DEFAULT_GRANULAR,
-      createdAt: new Date().toISOString()
-    };
-    
-    setCurrentUser(profile);
+    // Basic mock login for development
+    setCurrentUser(DEFAULT_ADMIN_USER);
     return true;
   };
 
-  const logout = async () => {
-    await supabase.auth.signOut();
+  const logout = () => {
+    // For now, logout doesn't do much since we force auth on refresh
     setCurrentUser(null);
   };
 
   const addUser = async (userData: any) => {
     const { error } = await supabase.from('profiles').insert([{
-      id: uuidv4(),
       email: userData.email,
-      full_name: userData.fullName || userData.email.split('@')[0],
-      username: userData.username || userData.email.split('@')[0],
+      full_name: userData.fullName,
+      username: userData.username,
       role: userData.role || Role.USER,
       status: 'Active',
       granular_permissions: userData.granularPermissions || DEFAULT_GRANULAR,
-      created_at: new Date().toISOString(),
-      last_login: new Date().toISOString()
-    }]).select();
+      created_at: new Date().toISOString()
+    }]);
     
     if (!error) await fetchUsers();
     else throw error;
@@ -153,22 +121,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const hasPermission = (permissionId: string) => {
-    if (!currentUser) return false;
-    if (currentUser.role === Role.ADMIN) return true;
-    return currentUser.permissions.includes(permissionId);
+    // Grant all permissions while authorization is disabled
+    return true;
   };
-
-  function uuidv4() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
-  }
 
   return (
     <AuthContext.Provider value={{ 
       user: currentUser, 
-      isAuthenticated: !!currentUser, 
+      isAuthenticated: true, // Always true for now
       login, 
       logout, 
       addUser, 
@@ -178,7 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       hasPermission,
       loading
     }}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
