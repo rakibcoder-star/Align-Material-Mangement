@@ -84,36 +84,43 @@ const PurchaseRequisition: React.FC = () => {
             <tbody className="text-[11px] font-bold text-gray-600 uppercase tracking-tighter">
               {loading ? (
                 <tr><td colSpan={8} className="py-20 text-center text-gray-300">Syncing requisitions...</td></tr>
-              ) : requisitions.map((item, index) => (
-                <tr key={item.id} className="hover:bg-gray-50/50 border-b border-gray-50 transition-colors group">
-                  <td className="px-6 py-4 text-center text-gray-400">{index + 1}</td>
-                  <td className="px-6 py-4 text-center">
-                    <button 
-                      onClick={() => handlePrClick(item)}
-                      className="text-blue-500 font-black hover:underline transition-all"
-                    >
-                      {item.pr_no}
-                    </button>
-                  </td>
-                  <td className="px-6 py-4 text-center text-gray-400 font-medium">MULTI</td>
-                  <td className="px-6 py-4 text-center font-black text-gray-800">{item.pr_no}</td>
-                  <td className="px-6 py-4 text-center text-gray-400">MULTI</td>
-                  <td className="px-6 py-4 text-center uppercase tracking-tighter text-gray-500">MMT-USER</td>
-                  <td className="px-6 py-4 text-center">
-                    <span className="px-3 py-1 bg-gray-100 text-gray-500 rounded text-[9px] font-black uppercase">
-                      {item.type === 'foreign' ? 'FOREIGN' : 'LOCAL'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <button 
-                      onClick={() => handleEdit(item)}
-                      className="p-1.5 text-gray-300 hover:text-[#2d808e] border border-gray-100 rounded transition-all"
-                    >
-                      <Edit2 size={12} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              ) : requisitions.map((item, index) => {
+                const prItems = item.items || [];
+                const firstSku = prItems.length > 0 ? prItems[0].sku : 'N/A';
+                const totalReqQty = prItems.reduce((acc: number, i: any) => acc + (Number(i.reqQty) || 0), 0);
+                const skuDisplay = prItems.length > 1 ? `${firstSku} (+${prItems.length - 1})` : firstSku;
+
+                return (
+                  <tr key={item.id} className="hover:bg-gray-50/50 border-b border-gray-50 transition-colors group">
+                    <td className="px-6 py-4 text-center text-gray-400">{index + 1}</td>
+                    <td className="px-6 py-4 text-center">
+                      <button 
+                        onClick={() => handlePrClick(item)}
+                        className="text-blue-500 font-black hover:underline transition-all"
+                      >
+                        {item.pr_no}
+                      </button>
+                    </td>
+                    <td className="px-6 py-4 text-center text-gray-800 font-black">{skuDisplay}</td>
+                    <td className="px-6 py-4 text-center font-black text-gray-800">{item.reference || item.pr_no}</td>
+                    <td className="px-6 py-4 text-center text-[#2d808e] font-black text-sm">{totalReqQty}</td>
+                    <td className="px-6 py-4 text-center uppercase tracking-tighter text-gray-500">{item.req_by_name || 'USER'}</td>
+                    <td className="px-6 py-4 text-center">
+                      <span className="px-3 py-1 bg-gray-100 text-gray-500 rounded text-[9px] font-black uppercase">
+                        {item.reqDpt || 'LOCAL'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <button 
+                        onClick={() => handleEdit(item)}
+                        className="p-1.5 text-gray-300 hover:text-[#2d808e] border border-gray-100 rounded transition-all"
+                      >
+                        <Edit2 size={12} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
               {!loading && requisitions.length === 0 && (
                 <tr>
                   <td colSpan={8} className="py-20 text-center text-gray-300 uppercase font-black tracking-widest">No data available</td>

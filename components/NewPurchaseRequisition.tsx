@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Home, Plus, ChevronDown, Trash2, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, ChevronDown, Loader2, MinusCircle, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
@@ -25,15 +25,22 @@ interface NewPurchaseRequisitionProps {
 const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack, onSubmit, initialData }) => {
   const { user } = useAuth();
   const [loadingSku, setLoadingSku] = useState<string | null>(null);
-  const [prReference, setPrReference] = useState(initialData?.reference || '');
-  const [prNote, setPrNote] = useState(initialData?.note || '');
-  const [supplierType, setSupplierType] = useState(initialData?.type || '');
+  const [costCenters] = useState<string[]>([
+    'Maintenance', 'Security', 'Safety', 'QC', 'PDI', 'Paint Shop', 
+    'Outbound Logistic', 'MMT', 'Medical', 'IT', 'HR', 'Finance', 
+    'Civil', 'Audit', 'Assembly', 'Admin'
+  ]);
   
-  const displayName = user?.email?.split('@')[0].split('.').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ') || 'User';
-  const [requesterName, setRequesterName] = useState(initialData?.req_by_name || initialData?.reqBy || displayName);
-  const [contactNumber, setContactNumber] = useState(initialData?.contact || '+880 1322 858992');
-  const [emailAddress, setEmailAddress] = useState(initialData?.email || user?.email || 'user@fairtechnology.com.bd');
-  const [costCenter, setCostCenter] = useState(initialData?.reqDpt || 'Maintenance');
+  // Header Fields
+  const [prReference, setPrReference] = useState(initialData?.reference || '');
+  const [supplierType, setSupplierType] = useState(initialData?.type || '');
+  const [prNote, setPrNote] = useState(initialData?.note || '');
+  
+  // Requester Details
+  const [requesterName, setRequesterName] = useState(initialData?.req_by_name || 'Md Azizul Hakim');
+  const [contactNumber, setContactNumber] = useState(initialData?.contact || '+880 1777 702323');
+  const [emailAddress, setEmailAddress] = useState(initialData?.email || 'azizul.hakim@fairtechnology.com.bd');
+  const [department, setDepartment] = useState(initialData?.reqDpt || 'Maintenance');
 
   const [items, setItems] = useState<RequisitionItem[]>(
     initialData?.items || [
@@ -66,7 +73,7 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
         ...item,
         name: data.name,
         uom: data.uom,
-        unitPrice: String(data.last_price || '0.00'),
+        unitPrice: String(data.last_price || '0'),
         onHand: String(data.on_hand_stock || '0'),
         specification: data.type || '',
         brand: data.brand || '',
@@ -95,9 +102,7 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
 
   const removeItem = (id: string) => {
     if (items.length > 1) {
-      if (window.confirm('Remove this item?')) {
-        setItems(items.filter((item) => item.id !== id));
-      }
+      setItems(items.filter((item) => item.id !== id));
     }
   };
 
@@ -114,7 +119,6 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
     const totalQty = items.reduce((sum, item) => sum + (Number(item.reqQty) || 0), 0);
     const totalValue = items.reduce((sum, item) => sum + (Number(item.reqQty) * Number(item.unitPrice) || 0), 0);
     
-    // Generate PR Number if it doesn't exist
     const generatedPRNo = initialData?.pr_no || (3000000000 + Math.floor(Math.random() * 999999)).toString();
 
     const prPayload = {
@@ -122,13 +126,13 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
       reference: prReference,
       note: prNote,
       type: supplierType,
-      status: 'Checked',
+      status: 'Pending',
       req_by_name: requesterName,
-      reqDpt: costCenter,
+      reqDpt: department,
       contact: contactNumber,
       email: emailAddress,
       total_value: totalValue,
-      items: items // Store full item array in JSONB or related table
+      items: items 
     };
 
     const { error } = await supabase.from('requisitions').upsert([prPayload]);
@@ -141,113 +145,238 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
   };
 
   return (
-    <div className="flex flex-col space-y-4 md:space-y-6">
-      <div className="flex items-center space-x-2 text-[10px] md:text-[11px] font-bold text-[#2d808e] uppercase tracking-wider">
-        <Home size={14} className="text-gray-400" />
-        <span className="text-gray-400">/</span>
-        <button onClick={onBack} className="hover:underline text-gray-400 truncate">Purchase-Requisition</button>
-        <span className="text-gray-400">/</span>
-        <span>{initialData ? 'EDIT' : 'NEW'}</span>
+    <div className="flex flex-col space-y-6 font-sans max-w-[1500px] mx-auto">
+      {/* Page Header */}
+      <div className="flex items-center justify-between px-2">
+        <button onClick={onBack} className="text-gray-400 hover:text-[#2d808e] transition-colors">
+          <X size={20} />
+        </button>
+        <h1 className="text-xl font-bold text-[#2d808e] tracking-tight">New Purchase Requisition</h1>
+        <div className="w-10"></div>
       </div>
 
-      <div className="text-center">
-        <h1 className="text-xl md:text-2xl font-black text-[#2d808e] tracking-tight uppercase">New Purchase Requisition</h1>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4 md:p-8 space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="space-y-1.5">
-            <label className="text-xs font-black text-[#2d808e] uppercase tracking-tighter">PR Referance</label>
-            <input type="text" value={prReference} onChange={(e) => setPrReference(e.target.value)} className="w-full px-3 py-2 border border-[#2d808e]/40 rounded text-sm font-bold outline-none focus:border-[#2d808e]" placeholder="e.g. Water Dispenser Repair" />
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-8 space-y-8">
+        {/* Top Header Fields */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="space-y-2">
+            <label className="text-[11px] font-bold text-[#2d808e] uppercase tracking-wider">PR Referance</label>
+            <div className="relative">
+              <input 
+                type="text" 
+                maxLength={30}
+                value={prReference} 
+                onChange={(e) => setPrReference(e.target.value)} 
+                className="w-full px-3 py-2 border border-cyan-700/30 rounded focus:border-[#2d808e] outline-none text-[12px] font-medium placeholder-gray-300" 
+                placeholder="PR Referance" 
+              />
+              <span className="absolute right-3 top-2.5 text-[10px] text-gray-300 font-bold">{prReference.length} / 30</span>
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-black text-[#2d808e] uppercase tracking-tighter"><span className="text-red-500 mr-1">*</span>Type</label>
-            <select value={supplierType} onChange={(e) => setSupplierType(e.target.value)} className="w-full px-3 py-2 border border-[#2d808e]/40 rounded text-sm font-bold outline-none focus:border-[#2d808e]">
-              <option value="">Supplier Type</option>
-              <option value="local">Local Supplier</option>
-              <option value="foreign">Foreign Supplier</option>
-            </select>
+          <div className="space-y-2">
+            <label className="text-[11px] font-bold text-[#2d808e] uppercase tracking-wider flex items-center">
+              <span className="text-red-500 mr-1">*</span> Type
+            </label>
+            <div className="relative">
+              <select 
+                value={supplierType} 
+                onChange={(e) => setSupplierType(e.target.value)} 
+                className="w-full px-3 py-2 border border-cyan-700/30 rounded focus:border-[#2d808e] outline-none text-[12px] font-medium appearance-none text-gray-400"
+              >
+                <option value="">Supplier Type</option>
+                <option value="Local">Local</option>
+                <option value="Foreign">Foreign</option>
+              </select>
+              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-black text-[#2d808e] uppercase tracking-tighter">PR Note</label>
-            <input type="text" value={prNote} onChange={(e) => setPrNote(e.target.value)} className="w-full px-3 py-2 border border-[#2d808e]/40 rounded text-sm font-bold outline-none focus:border-[#2d808e]" placeholder="Additional info..." />
+          <div className="space-y-2">
+            <label className="text-[11px] font-bold text-[#2d808e] uppercase tracking-wider">PR Note</label>
+            <div className="relative">
+              <input 
+                type="text" 
+                maxLength={50}
+                value={prNote} 
+                onChange={(e) => setPrNote(e.target.value)} 
+                className="w-full px-3 py-2 border border-cyan-700/30 rounded focus:border-[#2d808e] outline-none text-[12px] font-medium placeholder-gray-300" 
+                placeholder="PR Referance" 
+              />
+              <span className="absolute right-3 top-2.5 text-[10px] text-gray-300 font-bold">{prNote.length} / 50</span>
+            </div>
           </div>
         </div>
 
-        <div className="space-y-4">
-          <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-2">Item Details Selection</h3>
+        {/* Requester Details */}
+        <div className="space-y-3 pt-2">
+          <h3 className="text-[11px] font-bold text-[#2d808e] uppercase tracking-wider">Requester Details</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <input 
+              type="text" 
+              value={requesterName}
+              onChange={(e) => setRequesterName(e.target.value)}
+              className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[12px] text-gray-700 focus:border-[#2d808e] outline-none" 
+            />
+            <input 
+              type="text" 
+              value={contactNumber}
+              onChange={(e) => setContactNumber(e.target.value)}
+              className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[12px] text-gray-700 focus:border-[#2d808e] outline-none" 
+            />
+            <input 
+              type="email" 
+              value={emailAddress}
+              onChange={(e) => setEmailAddress(e.target.value)}
+              className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[12px] text-gray-700 focus:border-[#2d808e] outline-none" 
+            />
+            <div className="relative">
+              <select 
+                value={department}
+                onChange={(e) => setDepartment(e.target.value)}
+                className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[12px] text-gray-700 focus:border-[#2d808e] outline-none appearance-none"
+              >
+                {costCenters.map(cc => (
+                  <option key={cc} value={cc}>{cc}</option>
+                ))}
+              </select>
+              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            </div>
+          </div>
+        </div>
+
+        {/* Item Details Table */}
+        <div className="space-y-4 pt-2">
+          <h3 className="text-[11px] font-bold text-[#2d808e] uppercase tracking-wider">Item Details</h3>
           <div className="overflow-x-auto scrollbar-thin">
-            <table className="min-w-full border-collapse">
+            <table className="w-full border-collapse">
               <thead>
-                <tr className="text-[10px] font-black text-gray-700 text-left uppercase tracking-tighter">
-                  <th className="pb-3 px-1 w-32">Part Code *</th>
-                  <th className="pb-3 px-1">Name</th>
-                  <th className="pb-3 px-1 w-24 text-center">Spec.</th>
-                  <th className="pb-3 px-1 w-24 text-center">Brand</th>
-                  <th className="pb-3 px-1 w-16 text-center">UOM</th>
-                  <th className="pb-3 px-1 w-20 text-center">Price</th>
-                  <th className="pb-3 px-1 w-20 text-center">On-Hand</th>
-                  <th className="pb-3 px-1 w-20 text-center">Req.Qty *</th>
-                  <th className="pb-3 px-1">Remarks</th>
+                <tr className="text-left text-[10px] font-bold text-gray-800 border-b border-gray-100 uppercase">
+                  <th className="pb-3 px-1 w-[320px]">Name <span className="text-red-500">*</span></th>
+                  <th className="pb-3 px-1 w-[160px]">SKU/Code</th>
+                  <th className="pb-3 px-1 w-[160px]">Specification</th>
+                  <th className="pb-3 px-1 w-[120px]">Brand</th>
+                  <th className="pb-3 px-1 w-[100px]">UOM*</th>
+                  <th className="pb-3 px-1 w-[100px] text-center">Unit Price</th>
+                  <th className="pb-3 px-1 w-[100px] text-center">On-Hand Qty</th>
+                  <th className="pb-3 px-1 w-[100px] text-center">Req. Qty*</th>
+                  <th className="pb-3 px-1 w-[160px]">Remarks</th>
                   <th className="pb-3 w-8"></th>
                 </tr>
               </thead>
-              <tbody className="space-y-2">
+              <tbody>
                 {items.map((item) => (
-                  <tr key={item.id}>
+                  <tr key={item.id} className="group">
+                    <td className="py-1 px-1">
+                      <input 
+                        type="text" 
+                        placeholder="Item Name"
+                        value={item.name}
+                        onChange={(e) => updateItem(item.id, 'name', e.target.value)}
+                        className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] focus:border-[#2d808e] outline-none placeholder-gray-200 font-bold"
+                      />
+                    </td>
                     <td className="py-1 px-1">
                       <div className="relative">
                         <input 
                           type="text" 
-                          placeholder="SKU..."
-                          className="w-full px-2 py-1.5 border border-[#2d808e]/30 rounded text-[10px] font-black outline-none focus:border-[#2d808e]" 
-                          value={item.sku} 
+                          placeholder="SKU/Code"
+                          value={item.sku}
                           onChange={(e) => updateItem(item.id, 'sku', e.target.value)}
                           onBlur={(e) => handleSkuLookup(item.id, e.target.value)}
+                          className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] focus:border-[#2d808e] outline-none placeholder-gray-200"
                         />
-                        {loadingSku === item.id && <Loader2 size={12} className="absolute right-1 top-2 animate-spin text-gray-400" />}
+                        {loadingSku === item.id && <Loader2 size={12} className="absolute right-1 top-2.5 animate-spin text-gray-400" />}
                       </div>
                     </td>
                     <td className="py-1 px-1">
-                      <input type="text" className="w-full px-2 py-1.5 border border-gray-100 bg-gray-50 rounded text-[10px] font-black uppercase" value={item.name} readOnly />
+                      <input 
+                        type="text" 
+                        placeholder="Specification"
+                        value={item.specification}
+                        onChange={(e) => updateItem(item.id, 'specification', e.target.value)}
+                        className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] focus:border-[#2d808e] outline-none placeholder-gray-200"
+                      />
                     </td>
                     <td className="py-1 px-1">
-                      <input type="text" className="w-full px-2 py-1.5 border border-gray-100 rounded text-[10px] text-center" value={item.specification} onChange={(e) => updateItem(item.id, 'specification', e.target.value)} />
+                      <input 
+                        type="text" 
+                        placeholder="Brand"
+                        value={item.brand}
+                        onChange={(e) => updateItem(item.id, 'brand', e.target.value)}
+                        className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] focus:border-[#2d808e] outline-none placeholder-gray-200"
+                      />
                     </td>
                     <td className="py-1 px-1">
-                      <input type="text" className="w-full px-2 py-1.5 border border-gray-100 rounded text-[10px] text-center" value={item.brand} onChange={(e) => updateItem(item.id, 'brand', e.target.value)} />
+                      <input 
+                        type="text" 
+                        placeholder="UOM"
+                        value={item.uom}
+                        onChange={(e) => updateItem(item.id, 'uom', e.target.value)}
+                        className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] text-center focus:border-[#2d808e] outline-none placeholder-gray-200 uppercase"
+                      />
+                    </td>
+                    <td className="py-1 px-1">
+                      <input 
+                        type="text" 
+                        placeholder="Price"
+                        value={item.unitPrice}
+                        onChange={(e) => updateItem(item.id, 'unitPrice', e.target.value)}
+                        className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] text-center focus:border-[#2d808e] outline-none placeholder-gray-200"
+                      />
+                    </td>
+                    <td className="py-1 px-1">
+                      <input 
+                        type="text" 
+                        placeholder="On Hand"
+                        value={item.onHand}
+                        readOnly
+                        className="w-full px-3 py-2 bg-gray-50 border border-cyan-700/30 rounded text-[11px] text-center text-gray-400 outline-none"
+                      />
+                    </td>
+                    <td className="py-1 px-1">
+                      <input 
+                        type="text" 
+                        placeholder="Req. Qty"
+                        value={item.reqQty}
+                        onChange={(e) => updateItem(item.id, 'reqQty', e.target.value)}
+                        className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] text-center font-bold focus:border-[#2d808e] outline-none placeholder-gray-200"
+                      />
+                    </td>
+                    <td className="py-1 px-1">
+                      <input 
+                        type="text" 
+                        placeholder="Remarks"
+                        value={item.remarks}
+                        onChange={(e) => updateItem(item.id, 'remarks', e.target.value)}
+                        className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] focus:border-[#2d808e] outline-none placeholder-gray-200"
+                      />
                     </td>
                     <td className="py-1 px-1 text-center">
-                      <input type="text" className="w-full px-2 py-1.5 border border-gray-100 bg-gray-50 rounded text-[10px] text-center font-bold" value={item.uom} readOnly />
-                    </td>
-                    <td className="py-1 px-1">
-                      <input type="text" className="w-full px-2 py-1.5 border border-gray-100 rounded text-[10px] text-center font-bold" value={item.unitPrice} onChange={(e) => updateItem(item.id, 'unitPrice', e.target.value)} />
-                    </td>
-                    <td className="py-1 px-1">
-                      <input type="text" className="w-full px-2 py-1.5 border border-gray-100 bg-gray-50 rounded text-[10px] text-center font-bold" value={item.onHand} readOnly />
-                    </td>
-                    <td className="py-1 px-1">
-                      <input type="text" className="w-full px-2 py-1.5 border border-[#2d808e]/30 rounded text-[10px] text-center font-black" value={item.reqQty} onChange={(e) => updateItem(item.id, 'reqQty', e.target.value)} />
-                    </td>
-                    <td className="py-1 px-1">
-                      <input type="text" className="w-full px-2 py-1.5 border border-gray-100 rounded text-[10px]" value={item.remarks} onChange={(e) => updateItem(item.id, 'remarks', e.target.value)} />
-                    </td>
-                    <td className="py-1 px-1 text-center">
-                      <button onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-600 transition-colors"><Trash2 size={14} /></button>
+                      <button 
+                        onClick={() => removeItem(item.id)} 
+                        className="text-gray-300 hover:text-red-500 transition-colors"
+                      >
+                        <MinusCircle size={18} />
+                      </button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <button onClick={addItem} className="w-full py-2 bg-gray-50 text-[#2d808e] border border-dashed border-[#2d808e]/30 flex items-center justify-center space-x-2 text-[10px] font-black rounded shadow-sm hover:bg-white transition-all uppercase tracking-widest">
+          <button 
+            onClick={addItem} 
+            className="w-full py-2 bg-[#2d808e] text-white flex items-center justify-center space-x-2 text-[11px] font-bold rounded shadow-sm hover:bg-[#256b78] transition-all uppercase tracking-widest"
+          >
             <Plus size={14} strokeWidth={3} />
-            <span>Add Item Row</span>
+            <span>Add Item</span>
           </button>
         </div>
 
-        <button onClick={handleFormSubmit} className="w-full py-4 bg-[#2d808e] text-white text-[14px] font-black rounded-lg shadow-xl shadow-cyan-900/10 hover:bg-[#256b78] transition-all active:scale-[0.99] uppercase tracking-[0.2em]">
-          Submit Requisition
+        {/* Submit Action */}
+        <button 
+          onClick={handleFormSubmit} 
+          className="w-full py-3 bg-[#2d808e] text-white text-[13px] font-black rounded shadow-xl hover:bg-[#256b78] transition-all active:scale-[0.99] uppercase tracking-widest"
+        >
+          Submit
         </button>
       </div>
     </div>
