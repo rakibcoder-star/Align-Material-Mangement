@@ -76,7 +76,7 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
 
         if (data && data.length > 0) {
           const lastNo = parseInt(data[0].pr_no);
-          if (lastNo >= 2000000000) {
+          if (!isNaN(lastNo) && lastNo >= 2000000000) {
             setPrNo((lastNo + 1).toString());
           } else {
             setPrNo('2000000001');
@@ -158,13 +158,16 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
     const totalQty = items.reduce((sum, item) => sum + (Number(item.reqQty) || 0), 0);
     const totalValue = items.reduce((sum, item) => sum + (Number(item.reqQty) * Number(item.unitPrice) || 0), 0);
     
-    // Omit reqDpt, contact, and email to avoid schema errors if columns are missing
     const prPayload = {
       pr_no: prNo,
       reference: prReference,
       type: supplierType,
       status: 'Pending',
       req_by_name: requesterName,
+      contact: contactNumber,
+      email: emailAddress,
+      reqDpt: department,
+      note: prNote,
       total_value: totalValue,
       items: items 
     };
