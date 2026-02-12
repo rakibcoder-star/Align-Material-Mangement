@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -93,7 +94,7 @@ const SubmenuItem: React.FC<{
   icon: React.ReactNode;
   label: string;
   active?: boolean;
-  onClick?: () => void;
+  onClick?: ()void;
 }> = ({ icon, label, active, onClick }) => (
   <button
     onClick={onClick}
@@ -180,7 +181,7 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
 
       {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
         <div className="bg-white rounded shadow-sm border border-gray-100 overflow-hidden flex flex-col w-full max-w-md">
-          <div className="px-5 py-4 border-b border-gray-50 bg-[#fafbfc]">
+          <div className="px-5 py-4 border-b border-gray-100 bg-[#fafbfc]">
             <h3 className="text-sm font-black text-[#2d808e] uppercase tracking-tighter">PR Approval Queue</h3>
           </div>
           <div className="overflow-y-auto max-h-[400px] scrollbar-thin">
@@ -383,7 +384,8 @@ const Dashboard: React.FC = () => {
               <Route path="/overview" element={<DashboardOverview onCheckStock={() => setIsStockStatusModalOpen(true)} onMoveOrder={() => setIsMoveOrderModalOpen(true)} onPreviewPr={(pr) => setPreviewPr(pr)} />} />
               <Route path="/users" element={hasPermission('manage_users') ? <UserManagement /> : <Navigate to="/overview" />} />
               <Route path="/requisition" element={<PurchaseRequisition />} />
-              <Route path="/purchase-order" element={<PurchaseOrder orders={[]} />} />
+              {/* Fix: Property 'orders' does not exist on PurchaseOrder */}
+              <Route path="/purchase-order" element={<PurchaseOrder />} />
               <Route path="/supplier" element={<Supplier />} />
               <Route path="/purchase-report" element={<PurchaseReport />} />
               <Route path="/inventory" element={<Inventory />} />
