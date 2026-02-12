@@ -37,13 +37,18 @@ const Supplier: React.FC = () => {
 
   const fetchSuppliers = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('suppliers')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (data && !error) setSuppliers(data);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase
+        .from('suppliers')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (data && !error) setSuppliers(data);
+    } catch (err) {
+      console.error("Fetch error:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -57,6 +62,7 @@ const Supplier: React.FC = () => {
     setIsSubmitting(true);
     
     try {
+      // 1. Get last code for auto-increment simulation
       const { data: lastSupplier } = await supabase
         .from('suppliers')
         .select('code')
@@ -71,24 +77,30 @@ const Supplier: React.FC = () => {
         }
       }
 
+      // 2. Prepare Payload (Strictly matching the SQL schema)
       const payload = {
         name: formData.supplierName,
         code: nextCode,
         tin: formData.tin,
         type: formData.type || 'Local',
+        
         phone_office: formData.phoneOffice,
         phone_contact: formData.phoneContact,
         phone_alternate: formData.phoneAlternate,
+        
         email_office: formData.emailOffice,
         email_contact: formData.emailContact,
         email_alternate: formData.emailAlternate,
+        
         tax_name: formData.taxName,
         tax_bin: formData.taxBin,
         tax_address: formData.taxAddress,
-        addr_street: formData.officeStreet,
+        
+        addr_street: formData.officeStreet, // Maps form field 'officeStreet' to DB column 'addr_street'
         addr_city: formData.officeCity,
         addr_country: formData.officeCountry,
         addr_postal: formData.officePostal,
+        
         pay_acc_name: formData.accName,
         pay_acc_no: formData.accNumber,
         pay_bank: formData.bankName,
@@ -99,7 +111,12 @@ const Supplier: React.FC = () => {
 
       const { error } = await supabase.from('suppliers').insert([payload]);
       
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes('schema cache') || error.message.includes('addr_street')) {
+          throw new Error("The database column 'addr_street' is not recognized. Please run the SQL schema and click 'Reload PostgREST schema' in Supabase Settings -> API.");
+        }
+        throw error;
+      }
 
       alert(`Supplier ${formData.supplierName} added successfully!`);
       setView('list');
@@ -165,7 +182,6 @@ const Supplier: React.FC = () => {
         </div>
 
         <form onSubmit={handleFormSubmit} className="bg-white rounded-md shadow-sm border border-gray-100 p-10 space-y-10 max-w-[1400px] mx-auto w-full">
-          {/* Form remains the same as previous turnaround for adding */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="space-y-2">
               <label className="text-[14px] font-bold text-[#2d808e]"><span className="text-red-500 mr-1">*</span>Supplier Name</label>
@@ -183,7 +199,7 @@ const Supplier: React.FC = () => {
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-[14px] font-bold text-[#2d808e]"><span className="text-red-500 mr-1">*</span>TIN</label>
+              <label className="text-[14px] font-bold text-[#2d808e]">TIN</label>
               <div className="relative">
                 <input 
                   type="text" 
@@ -211,7 +227,7 @@ const Supplier: React.FC = () => {
               </div>
             </div>
           </div>
-          {/* ... Rest of the form sections as previously defined ... */}
+
           <div className="space-y-4">
             <h3 className="text-[14px] font-bold text-[#2d808e]">Phone Numbers</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -278,7 +294,6 @@ const Supplier: React.FC = () => {
 
   return (
     <div className="flex flex-col space-y-4 font-sans antialiased text-gray-800">
-      {/* Header Breadcrumb & Actions */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2 text-[10px] font-bold text-[#2d808e] uppercase tracking-wider">
           <Home size={14} className="text-gray-400" />
@@ -293,7 +308,6 @@ const Supplier: React.FC = () => {
         </button>
       </div>
 
-      {/* Filter & Search Bar Area */}
       <div className="flex items-center justify-between">
         <button className="px-6 py-1 border border-[#247d8c] text-[#247d8c] rounded text-[11px] font-bold hover:bg-[#247d8c] hover:text-white transition-all">
           Logs
@@ -315,7 +329,6 @@ const Supplier: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Table Container */}
       <div className="bg-white rounded border border-gray-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[1200px]">
