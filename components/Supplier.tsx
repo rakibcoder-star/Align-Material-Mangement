@@ -9,7 +9,7 @@ const Supplier: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Form Data State
+  // Form Data State matching all UI fields
   const [formData, setFormData] = useState<any>({
     supplierName: '',
     tin: '',
@@ -57,6 +57,7 @@ const Supplier: React.FC = () => {
     setIsSubmitting(true);
     
     try {
+      // Auto-generate code starting from 2000000001
       const { data: lastSupplier } = await supabase
         .from('suppliers')
         .select('code')
@@ -71,6 +72,7 @@ const Supplier: React.FC = () => {
         }
       }
 
+      // Payload exactly matching the SQL Schema
       const payload = {
         name: formData.supplierName,
         code: nextCode,
@@ -86,9 +88,9 @@ const Supplier: React.FC = () => {
         tax_bin: formData.taxBin,
         tax_address: formData.taxAddress,
         addr_street: formData.officeStreet,
-        addr_city: formData.officeCity, // Ensure this column exists in DB
-        addr_country: formData.officeCountry, // Ensure this column exists in DB
-        addr_postal: formData.officePostal,
+        addr_city: formData.officeCity, 
+        addr_country: formData.officeCountry,
+        addr_postal: formData.officePostal, // Correctly sending postal code
         pay_acc_name: formData.accName,
         pay_acc_no: formData.accNumber,
         pay_bank: formData.bankName,
@@ -133,6 +135,8 @@ const Supplier: React.FC = () => {
           <Home size={12} className="text-gray-400" />
           <span className="text-gray-300">/</span>
           <button onClick={() => setView('list')} className="text-gray-400 hover:text-[#2d808e] transition-colors uppercase">SUPPLIER</button>
+          <span className="text-gray-300">/</span>
+          <span className="text-[#2d808e]">ADD NEW</span>
         </div>
 
         <div className="text-center py-2">
