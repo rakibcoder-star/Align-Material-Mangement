@@ -3,11 +3,25 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Drop existing tables to ensure clean schema application
--- NOTE: This will delete existing data. Use ALTER TABLE instead if you want to keep data.
 DROP TABLE IF EXISTS purchase_orders CASCADE;
 DROP TABLE IF EXISTS requisitions CASCADE;
 DROP TABLE IF EXISTS suppliers CASCADE;
 DROP TABLE IF EXISTS items CASCADE;
+DROP TABLE IF EXISTS profiles CASCADE;
+
+-- Profiles / Users Table
+CREATE TABLE profiles (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email TEXT UNIQUE NOT NULL,
+    full_name TEXT,
+    username TEXT UNIQUE,
+    role TEXT DEFAULT 'USER',
+    status TEXT DEFAULT 'Active',
+    last_login TIMESTAMP WITH TIME ZONE,
+    permissions JSONB DEFAULT '[]'::jsonb,
+    granular_permissions JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
 -- Items Table
 CREATE TABLE items (
@@ -26,33 +40,45 @@ CREATE TABLE items (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Suppliers Table
+-- Suppliers Table (Updated for new form)
 CREATE TABLE suppliers (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
     code TEXT UNIQUE NOT NULL,
-    tin TEXT,
-    type TEXT DEFAULT 'Local',
+    tin TEXT NOT NULL,
+    type TEXT NOT NULL DEFAULT 'Local',
+    
+    -- Phone Numbers
     phone_office TEXT,
     phone_contact TEXT,
     phone_alternate TEXT,
+    
+    -- Email Addresses
     email_office TEXT,
     email_contact TEXT,
     email_alternate TEXT,
+    
+    -- Tax Information
     tax_name TEXT,
     tax_bin TEXT,
     tax_address TEXT,
+    
+    -- Office Address
     address_street TEXT,
     address_city TEXT,
     address_country TEXT,
     address_postal TEXT,
+    
+    -- Payment Information
     pay_acc_name TEXT,
-    pay_acc_no TEXT,
-    pay_bank TEXT,
-    pay_branch TEXT,
-    pay_routing TEXT,
-    pay_swift TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    pay_acc_number TEXT,
+    pay_bank_name TEXT,
+    pay_branch_name TEXT,
+    pay_routing_number TEXT,
+    pay_swift_number TEXT,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Requisitions Table
@@ -91,7 +117,7 @@ CREATE TABLE purchase_orders (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Stock Update Function for Inventory Transactions
+-- Stock Update Function
 CREATE OR REPLACE FUNCTION update_item_stock(item_sku TEXT, qty_change INTEGER)
 RETURNS VOID AS $$
 BEGIN
@@ -106,8 +132,10 @@ ALTER TABLE items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE suppliers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE requisitions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE purchase_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow public access items" ON items FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow public access suppliers" ON suppliers FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow public access requisitions" ON requisitions FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow public access po" ON purchase_orders FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow public access profiles" ON profiles FOR ALL USING (true) WITH CHECK (true);
