@@ -173,7 +173,9 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
       reqDpt: department,
       note: prNote,
       total_value: totalValue,
-      items: items 
+      items: items,
+      images: [], // Ensure initialized
+      justification: [] // Ensure initialized
     };
 
     try {
@@ -183,7 +185,7 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
         onSubmit(prPayload);
       } else {
         console.error("Supabase Error:", error);
-        alert(`Error saving PR: ${error.message}\n\nMake sure you have run the latest SQL schema update in Supabase.`);
+        alert(`Error saving PR: ${error.message}`);
       }
     } catch (err: any) {
       alert("Unexpected error: " + err.message);

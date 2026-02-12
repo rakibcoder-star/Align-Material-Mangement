@@ -14,7 +14,6 @@ const PRPreviewModal: React.FC<PRPreviewModalProps> = ({ pr: initialPr, onClose 
   const [justificationData, setJustificationData] = useState<any[]>([]);
   const [images, setImages] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-  const [isApproving, setIsApproving] = useState(false);
 
   useEffect(() => {
     // Reset internal state when initialPr changes
@@ -93,10 +92,12 @@ const PRPreviewModal: React.FC<PRPreviewModalProps> = ({ pr: initialPr, onClose 
   const handleSaveToDB = async (statusOverride?: string) => {
     setIsSaving(true);
     try {
+      // Ensure the payload includes the ID to ensure an update instead of a new insert
       const payload = {
         ...pr,
-        images: images,
-        justification: justificationData,
+        id: initialPr.id, // Explicitly use DB ID
+        images: images,  // Use current local state for images
+        justification: justificationData, // Use current local state for justification
         status: statusOverride || pr.status || 'Pending',
         updated_at: new Date().toISOString()
       };
@@ -108,7 +109,7 @@ const PRPreviewModal: React.FC<PRPreviewModalProps> = ({ pr: initialPr, onClose 
       if (error) throw error;
       
       alert(statusOverride === 'Approved' ? "PR Approved successfully!" : "Changes saved to database successfully!");
-      onClose();
+      onClose(); // Parent will refresh list
     } catch (err: any) {
       alert("Error saving changes: " + err.message);
     } finally {

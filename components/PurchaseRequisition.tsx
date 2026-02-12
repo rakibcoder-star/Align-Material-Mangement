@@ -56,7 +56,16 @@ const PurchaseRequisition: React.FC = () => {
   };
 
   if (view === 'new') {
-    return <NewPurchaseRequisition onBack={() => setView('list')} onSubmit={() => { setView('list'); fetchRequisitions(); }} initialData={editingPr} />;
+    return (
+      <NewPurchaseRequisition 
+        onBack={() => setView('list')} 
+        onSubmit={() => { 
+          setView('list'); 
+          fetchRequisitions(); 
+        }} 
+        initialData={editingPr} 
+      />
+    );
   }
 
   return (
@@ -107,7 +116,6 @@ const PurchaseRequisition: React.FC = () => {
                 const firstSku = prItems.length > 0 ? prItems[0].sku : 'N/A';
                 const totalReqQty = prItems.reduce((acc: number, i: any) => acc + (Number(i.reqQty) || 0), 0);
                 
-                // Show the specific SKU from the first item. If multiple, show how many more.
                 const skuDisplay = prItems.length > 1 ? `${firstSku} (+${prItems.length - 1})` : firstSku;
 
                 return (
@@ -161,7 +169,15 @@ const PurchaseRequisition: React.FC = () => {
         </div>
       </div>
 
-      {previewPr && <PRPreviewModal pr={previewPr} onClose={() => setPreviewPr(null)} />}
+      {previewPr && (
+        <PRPreviewModal 
+          pr={previewPr} 
+          onClose={() => {
+            setPreviewPr(null);
+            fetchRequisitions(); // Refresh list to catch saved changes/images
+          }} 
+        />
+      )}
     </div>
   );
 };
