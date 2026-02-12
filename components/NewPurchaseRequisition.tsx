@@ -154,8 +154,12 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
       alert('PR Number is generating, please wait...');
       return;
     }
+
+    if (items.some(item => !item.name || !item.reqQty)) {
+      alert('Please fill in Item Name and Required Quantity for all items.');
+      return;
+    }
     
-    const totalQty = items.reduce((sum, item) => sum + (Number(item.reqQty) || 0), 0);
     const totalValue = items.reduce((sum, item) => sum + (Number(item.reqQty) * Number(item.unitPrice) || 0), 0);
     
     const prPayload = {
@@ -172,12 +176,17 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
       items: items 
     };
 
-    const { error } = await supabase.from('requisitions').upsert([prPayload]);
+    try {
+      const { error } = await supabase.from('requisitions').upsert([prPayload]);
 
-    if (!error) {
-      onSubmit(prPayload);
-    } else {
-      alert("Error saving PR: " + error.message);
+      if (!error) {
+        onSubmit(prPayload);
+      } else {
+        console.error("Supabase Error:", error);
+        alert(`Error saving PR: ${error.message}\n\nMake sure you have run the latest SQL schema update in Supabase.`);
+      }
+    } catch (err: any) {
+      alert("Unexpected error: " + err.message);
     }
   };
 
@@ -205,7 +214,7 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
             />
           </div>
           <div className="space-y-2">
-            <label className="text-[11px] font-bold text-[#2d808e] uppercase tracking-wider">PR Referance</label>
+            <label className="text-[11px] font-bold text-[#2d808e] uppercase tracking-wider">PR Reference</label>
             <div className="relative">
               <input 
                 type="text" 
@@ -213,7 +222,7 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
                 value={prReference} 
                 onChange={(e) => setPrReference(e.target.value)} 
                 className="w-full px-3 py-2 border border-cyan-700/30 rounded focus:border-[#2d808e] outline-none text-[12px] font-medium placeholder-gray-300" 
-                placeholder="PR Referance" 
+                placeholder="PR Reference" 
               />
               <span className="absolute right-3 top-2.5 text-[10px] text-gray-300 font-bold">{prReference.length} / 30</span>
             </div>
@@ -255,35 +264,47 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
         <div className="space-y-3 pt-2">
           <h3 className="text-[11px] font-bold text-[#2d808e] uppercase tracking-wider">Requester Details</h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <input 
-              type="text" 
-              value={requesterName}
-              onChange={(e) => setRequesterName(e.target.value)}
-              className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[12px] text-gray-700 focus:border-[#2d808e] outline-none" 
-            />
-            <input 
-              type="text" 
-              value={contactNumber}
-              onChange={(e) => setContactNumber(e.target.value)}
-              className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[12px] text-gray-700 focus:border-[#2d808e] outline-none" 
-            />
-            <input 
-              type="email" 
-              value={emailAddress}
-              onChange={(e) => setEmailAddress(e.target.value)}
-              className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[12px] text-gray-700 focus:border-[#2d808e] outline-none" 
-            />
-            <div className="relative">
-              <select 
-                value={department}
-                onChange={(e) => setDepartment(e.target.value)}
-                className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[12px] text-gray-700 focus:border-[#2d808e] outline-none appearance-none"
-              >
-                {costCenters.map(cc => (
-                  <option key={cc} value={cc}>{cc}</option>
-                ))}
-              </select>
-              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <div className="space-y-1">
+              <label className="text-[10px] text-gray-400 font-bold">Name</label>
+              <input 
+                type="text" 
+                value={requesterName}
+                onChange={(e) => setRequesterName(e.target.value)}
+                className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[12px] text-gray-700 focus:border-[#2d808e] outline-none" 
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] text-gray-400 font-bold">Contact Number</label>
+              <input 
+                type="text" 
+                value={contactNumber}
+                onChange={(e) => setContactNumber(e.target.value)}
+                className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[12px] text-gray-700 focus:border-[#2d808e] outline-none" 
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] text-gray-400 font-bold">Email</label>
+              <input 
+                type="email" 
+                value={emailAddress}
+                onChange={(e) => setEmailAddress(e.target.value)}
+                className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[12px] text-gray-700 focus:border-[#2d808e] outline-none" 
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] text-gray-400 font-bold">Department</label>
+              <div className="relative">
+                <select 
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value)}
+                  className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[12px] text-gray-700 focus:border-[#2d808e] outline-none appearance-none"
+                >
+                  {costCenters.map(cc => (
+                    <option key={cc} value={cc}>{cc}</option>
+                  ))}
+                </select>
+                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              </div>
             </div>
           </div>
         </div>
