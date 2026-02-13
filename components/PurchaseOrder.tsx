@@ -11,7 +11,8 @@ import {
   ChevronRight, 
   ChevronDown, 
   Printer,
-  Loader2
+  Loader2,
+  Trash2
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import NewPurchaseOrder from './NewPurchaseOrder';
@@ -24,6 +25,7 @@ const PurchaseOrder: React.FC = () => {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPRItems, setSelectedPRItems] = useState<any[]>([]);
+  const [editingPO, setEditingPO] = useState<any>(null);
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -71,12 +73,39 @@ const PurchaseOrder: React.FC = () => {
     setTimeout(() => window.print(), 600);
   };
 
+  const handleEdit = (po: any) => {
+    const itemsWithIds = (po.items || []).map((item: any, idx: number) => ({
+      ...item,
+      id: item.id || `${po.id}_${idx}`
+    }));
+    setSelectedPRItems(itemsWithIds);
+    setEditingPO(po);
+    setView('create-details');
+  };
+
+  const handleDelete = async (id: string, poNo: string) => {
+    if (window.confirm(`Are you sure you want to delete PO No: ${poNo}?`)) {
+      const { error } = await supabase.from('purchase_orders').delete().eq('id', id);
+      if (error) {
+        alert("Delete failed: " + error.message);
+      } else {
+        fetchOrders();
+      }
+    }
+  };
+
   if (view === 'select-items') {
-    return <NewPurchaseOrder onBack={() => setView('list')} onSubmit={(items) => { setSelectedPRItems(items); setView('create-details'); }} />;
+    return <NewPurchaseOrder onBack={() => setView('list')} onSubmit={(items) => { setSelectedPRItems(items); setEditingPO(null); setView('create-details'); }} />;
   }
 
   if (view === 'create-details') {
-    return <CreatePODetails items={selectedPRItems} onCancel={() => setView('select-items')} onSubmit={() => { setView('list'); fetchOrders(); }} />;
+    return (
+      <CreatePODetails 
+        items={selectedPRItems} 
+        onCancel={() => setView(editingPO ? 'list' : 'select-items')} 
+        onSubmit={() => { setView('list'); setEditingPO(null); fetchOrders(); }} 
+      />
+    );
   }
 
   // Flatten the orders to show items individually as requested by the headers
@@ -131,7 +160,7 @@ const PurchaseOrder: React.FC = () => {
                 <th className="px-4 py-5 text-center border-r border-gray-50">GRN Qty</th>
                 <th className="px-4 py-5 border-r border-gray-50">Req. By</th>
                 <th className="px-4 py-5 border-r border-gray-50">Supplier</th>
-                <th className="px-4 py-5 text-center w-24">Action</th>
+                <th className="px-4 py-5 text-center w-32">Action</th>
               </tr>
             </thead>
             <tbody className="text-[11px] font-bold text-gray-600 uppercase tracking-tighter">
@@ -170,10 +199,18 @@ const PurchaseOrder: React.FC = () => {
                             <Printer size={12} />
                           </button>
                           <button 
+                            onClick={() => handleEdit(item.full_po_obj)}
                             className="p-1.5 text-gray-400 hover:text-[#2d808e] border border-gray-100 rounded transition-all"
                             title="Edit PO"
                           >
                             <Edit2 size={12} />
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(item.full_po_obj.id, item.po_no)}
+                            className="p-1.5 text-gray-400 hover:text-red-500 border border-gray-100 rounded transition-all"
+                            title="Delete PO"
+                          >
+                            <Trash2 size={12} />
                           </button>
                         </div>
                       </td>
