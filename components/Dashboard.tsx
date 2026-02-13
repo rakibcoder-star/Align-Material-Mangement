@@ -193,8 +193,9 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* PR Approval Queue */}
         <div className="bg-white rounded shadow-sm border border-gray-100 overflow-hidden flex flex-col w-full">
-          <div className="px-5 py-4 border-b border-gray-100 bg-[#fafbfc]">
+          <div className="px-5 py-4 border-b border-gray-100 bg-[#fafbfc] flex items-center justify-between">
             <h3 className="text-sm font-black text-[#2d808e] uppercase tracking-tighter">PR Approval Queue</h3>
+            <span className="px-2 py-0.5 bg-cyan-100 text-cyan-700 text-[10px] rounded-full font-black">{recentPrs.length} Pending</span>
           </div>
           <div className="overflow-y-auto max-h-[400px] scrollbar-thin">
             <table className="w-full text-left border-collapse">
@@ -237,8 +238,9 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
 
         {/* PO Approval Queue */}
         <div className="bg-white rounded shadow-sm border border-gray-100 overflow-hidden flex flex-col w-full">
-          <div className="px-5 py-4 border-b border-gray-100 bg-[#fafbfc]">
+          <div className="px-5 py-4 border-b border-gray-100 bg-[#fafbfc] flex items-center justify-between">
             <h3 className="text-sm font-black text-orange-600 uppercase tracking-tighter">PO Approval Queue</h3>
+            <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-[10px] rounded-full font-black">{recentPos.length} Pending</span>
           </div>
           <div className="overflow-y-auto max-h-[400px] scrollbar-thin">
             <table className="w-full text-left border-collapse">

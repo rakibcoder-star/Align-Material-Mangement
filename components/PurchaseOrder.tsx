@@ -111,14 +111,14 @@ const PurchaseOrder: React.FC = () => {
     );
   }
 
-  // Flatten the orders to show items individually as requested by the headers
+  // Flatten the orders to show items individually
   const flattenedItems = orders.flatMap(po => 
     (po.items || []).map((item: any) => ({
       ...item,
       po_no: po.po_no,
       supplier_name: po.supplier_name,
       po_status: po.status,
-      full_po_obj: po // keep for actions
+      full_po_obj: po 
     }))
   );
 
@@ -149,11 +149,12 @@ const PurchaseOrder: React.FC = () => {
 
       <div className="bg-white rounded border border-gray-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[1600px]">
+          <table className="w-full text-left border-collapse min-w-[1700px]">
             <thead className="bg-[#fafbfc]">
               <tr className="text-[10px] font-black text-gray-700 uppercase tracking-widest border-b border-gray-100">
                 <th className="px-4 py-5 text-center w-12 border-r border-gray-50">SL</th>
                 <th className="px-4 py-5 text-center border-r border-gray-50">PO No</th>
+                <th className="px-4 py-5 text-center border-r border-gray-50">Status</th>
                 <th className="px-4 py-5 text-center border-r border-gray-50">PR No</th>
                 <th className="px-4 py-5 text-center border-r border-gray-50">SKU</th>
                 <th className="px-4 py-5 border-r border-gray-50">Name</th>
@@ -169,7 +170,7 @@ const PurchaseOrder: React.FC = () => {
             <tbody className="text-[11px] font-bold text-gray-600 uppercase tracking-tighter">
               {loading ? (
                 <tr>
-                  <td colSpan={12} className="py-20 text-center">
+                  <td colSpan={13} className="py-20 text-center">
                     <div className="flex flex-col items-center justify-center space-y-2">
                       <Loader2 className="animate-spin text-[#2d808e]" size={24} />
                       <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Syncing PO Items...</span>
@@ -179,11 +180,17 @@ const PurchaseOrder: React.FC = () => {
               ) : flattenedItems.length > 0 ? (
                 flattenedItems.map((item, index) => {
                   const poValue = Number(item.poQty || 0) * Number(item.poPrice || 0);
+                  const isPending = item.po_status === 'Pending Approval';
                   return (
                     <tr key={index} className="hover:bg-gray-50 transition-colors border-b border-gray-50">
                       <td className="px-4 py-4 text-center text-gray-400 border-r border-gray-50">{index + 1}</td>
                       <td className="px-4 py-4 text-center font-black text-blue-500 border-r border-gray-50">
                         <button onClick={() => setPreviewPo(item.full_po_obj)} className="hover:underline">{item.po_no}</button>
+                      </td>
+                      <td className="px-4 py-4 text-center border-r border-gray-50">
+                        <span className={`px-2 py-0.5 rounded text-[8px] font-black ${isPending ? 'bg-orange-50 text-orange-600 border border-orange-100' : 'bg-green-50 text-green-600 border border-green-100'}`}>
+                          {item.po_status}
+                        </span>
                       </td>
                       <td className="px-4 py-4 text-center border-r border-gray-50">{item.prNo}</td>
                       <td className="px-4 py-4 text-center border-r border-gray-50 text-gray-400">{item.sku}</td>
@@ -231,7 +238,7 @@ const PurchaseOrder: React.FC = () => {
                 })
               ) : (
                 <tr>
-                  <td colSpan={12} className="py-24 text-center text-gray-300 uppercase font-black tracking-[0.2em] text-[10px]">
+                  <td colSpan={13} className="py-24 text-center text-gray-300 uppercase font-black tracking-[0.2em] text-[10px]">
                     No Purchase Orders Found
                   </td>
                 </tr>
