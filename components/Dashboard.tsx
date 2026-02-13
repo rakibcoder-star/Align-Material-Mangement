@@ -6,6 +6,7 @@ import UserManagement from './UserManagement';
 import MoveOrderModal from './MoveOrderModal';
 import StockStatusModal from './StockStatusModal';
 import PRPreviewModal from './PRPreviewModal';
+import POPreviewModal from './POPreviewModal';
 import PurchaseRequisition from './PurchaseRequisition';
 import PurchaseOrder from './PurchaseOrder';
 import Supplier from './Supplier';
@@ -120,23 +121,36 @@ const KPICard: React.FC<{ label: string; value: string; subValue?: string }> = (
   </div>
 );
 
-const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () => void; onPreviewPr: (pr: any) => void }> = ({ onCheckStock, onMoveOrder, onPreviewPr }) => {
+const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () => void; onPreviewPr: (pr: any) => void; onPreviewPo: (po: any) => void }> = ({ onCheckStock, onMoveOrder, onPreviewPr, onPreviewPo }) => {
   const { user } = useAuth();
   const [dateTime, setDateTime] = useState(new Date());
   const [recentPrs, setRecentPrs] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [recentPos, setRecentPos] = useState<any[]>([]);
+  const [loadingPr, setLoadingPr] = useState(true);
+  const [loadingPo, setLoadingPo] = useState(true);
 
   useEffect(() => {
     const timer = setInterval(() => setDateTime(new Date()), 1000);
     const fetchDashboardData = async () => {
-      const { data } = await supabase
+      // Fetch PRs
+      const { data: prs } = await supabase
         .from('requisitions')
         .select('*')
         .eq('status', 'Pending')
         .order('created_at', { ascending: false })
         .limit(10);
-      if (data) setRecentPrs(data);
-      setLoading(false);
+      if (prs) setRecentPrs(prs);
+      setLoadingPr(false);
+
+      // Fetch POs
+      const { data: pos } = await supabase
+        .from('purchase_orders')
+        .select('*')
+        .eq('status', 'Pending Approval')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      if (pos) setRecentPos(pos);
+      setLoadingPo(false);
     };
     fetchDashboardData();
     return () => clearInterval(timer);
@@ -176,46 +190,93 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
         <KPICard label="Monthly PR(Qty)" value="32.1K" subValue="539" />
       </div>
 
-      <div className="bg-white rounded shadow-sm border border-gray-100 overflow-hidden flex flex-col w-full max-w-md">
-        <div className="px-5 py-4 border-b border-gray-100 bg-[#fafbfc]">
-          <h3 className="text-sm font-black text-[#2d808e] uppercase tracking-tighter">PR Approval Queue</h3>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* PR Approval Queue */}
+        <div className="bg-white rounded shadow-sm border border-gray-100 overflow-hidden flex flex-col w-full">
+          <div className="px-5 py-4 border-b border-gray-100 bg-[#fafbfc]">
+            <h3 className="text-sm font-black text-[#2d808e] uppercase tracking-tighter">PR Approval Queue</h3>
+          </div>
+          <div className="overflow-y-auto max-h-[400px] scrollbar-thin">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-gray-50 sticky top-0 z-10">
+                <tr className="text-[10px] font-bold text-gray-500 uppercase">
+                  <th className="px-5 py-3 text-center">Date</th>
+                  <th className="px-5 py-3 text-center">Ref.No (PR)</th>
+                  <th className="px-5 py-3 text-right">Value</th>
+                </tr>
+              </thead>
+              <tbody className="text-[11px] font-medium">
+                {loadingPr ? (
+                  <tr><td colSpan={3} className="py-10 text-center text-gray-400">Syncing...</td></tr>
+                ) : recentPrs.length > 0 ? (
+                  recentPrs.map((pr) => (
+                    <tr key={pr.id} className="border-b border-gray-50 hover:bg-cyan-50/10 transition-colors">
+                      <td className="px-5 py-3 text-center whitespace-nowrap text-gray-500">
+                        {new Date(pr.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                      </td>
+                      <td className="px-5 py-3 text-center">
+                        <button 
+                          onClick={() => onPreviewPr(pr)}
+                          className="text-[#2d808e] font-black hover:underline transition-all"
+                        >
+                          {pr.pr_no}
+                        </button>
+                      </td>
+                      <td className="px-5 py-3 text-right font-black text-gray-800">
+                        {pr.total_value ? Number(pr.total_value).toLocaleString() : '0'}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr><td colSpan={3} className="py-10 text-center text-gray-400 uppercase font-bold tracking-widest text-[9px]">No pending PR approvals</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-        <div className="overflow-y-auto max-h-[400px] scrollbar-thin">
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-gray-50 sticky top-0 z-10">
-              <tr className="text-[10px] font-bold text-gray-500 uppercase">
-                <th className="px-5 py-3 text-center">Date</th>
-                <th className="px-5 py-3 text-center">Ref.No (PR)</th>
-                <th className="px-5 py-3 text-right">Value</th>
-              </tr>
-            </thead>
-            <tbody className="text-[11px] font-medium">
-              {loading ? (
-                <tr><td colSpan={3} className="py-10 text-center text-gray-400">Syncing...</td></tr>
-              ) : recentPrs.length > 0 ? (
-                recentPrs.map((pr) => (
-                  <tr key={pr.id} className="border-b border-gray-50 hover:bg-cyan-50/10 transition-colors">
-                    <td className="px-5 py-3 text-center whitespace-nowrap text-gray-500">
-                      {new Date(pr.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
-                    </td>
-                    <td className="px-5 py-3 text-center">
-                      <button 
-                        onClick={() => onPreviewPr(pr)}
-                        className="text-[#2d808e] font-black hover:underline transition-all"
-                      >
-                        {pr.pr_no}
-                      </button>
-                    </td>
-                    <td className="px-5 py-3 text-right font-black text-gray-800">
-                      {pr.total_value ? Number(pr.total_value).toLocaleString() : '0'}
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr><td colSpan={3} className="py-10 text-center text-gray-400 uppercase font-bold tracking-widest text-[9px]">No pending approvals</td></tr>
-              )}
-            </tbody>
-          </table>
+
+        {/* PO Approval Queue */}
+        <div className="bg-white rounded shadow-sm border border-gray-100 overflow-hidden flex flex-col w-full">
+          <div className="px-5 py-4 border-b border-gray-100 bg-[#fafbfc]">
+            <h3 className="text-sm font-black text-orange-600 uppercase tracking-tighter">PO Approval Queue</h3>
+          </div>
+          <div className="overflow-y-auto max-h-[400px] scrollbar-thin">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-gray-50 sticky top-0 z-10">
+                <tr className="text-[10px] font-bold text-gray-500 uppercase">
+                  <th className="px-5 py-3 text-center">Date</th>
+                  <th className="px-5 py-3 text-center">PO Number</th>
+                  <th className="px-5 py-3 text-right">Total Value</th>
+                </tr>
+              </thead>
+              <tbody className="text-[11px] font-medium">
+                {loadingPo ? (
+                  <tr><td colSpan={3} className="py-10 text-center text-gray-400">Syncing...</td></tr>
+                ) : recentPos.length > 0 ? (
+                  recentPos.map((po) => (
+                    <tr key={po.id} className="border-b border-gray-50 hover:bg-orange-50/10 transition-colors">
+                      <td className="px-5 py-3 text-center whitespace-nowrap text-gray-500">
+                        {new Date(po.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                      </td>
+                      <td className="px-5 py-3 text-center">
+                        <button 
+                          onClick={() => onPreviewPo(po)}
+                          className="text-orange-600 font-black hover:underline transition-all"
+                        >
+                          {po.po_no}
+                        </button>
+                      </td>
+                      <td className="px-5 py-3 text-right font-black text-gray-800">
+                        {po.total_value ? Number(po.total_value).toLocaleString() : '0'}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr><td colSpan={3} className="py-10 text-center text-gray-400 uppercase font-bold tracking-widest text-[9px]">No pending PO approvals</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -233,6 +294,7 @@ const Dashboard: React.FC = () => {
   const [isMoveOrderModalOpen, setIsMoveOrderModalOpen] = useState(false);
   const [isStockStatusModalOpen, setIsStockStatusModalOpen] = useState(false);
   const [previewPr, setPreviewPr] = useState<any>(null);
+  const [previewPo, setPreviewPo] = useState<any>(null);
   
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
     purchase: location.pathname.includes('requisition') || location.pathname.includes('purchase-order') || location.pathname.includes('supplier') || location.pathname.includes('purchase-report'),
@@ -368,7 +430,7 @@ const Dashboard: React.FC = () => {
         <main className="flex-1 overflow-y-auto p-3 md:p-6 bg-[#f1f3f4] pb-10">
           <div className="max-w-[1600px] mx-auto w-full">
             <Routes>
-              <Route path="/overview" element={<DashboardOverview onCheckStock={() => setIsStockStatusModalOpen(true)} onMoveOrder={() => setIsMoveOrderModalOpen(true)} onPreviewPr={(pr) => setPreviewPr(pr)} />} />
+              <Route path="/overview" element={<DashboardOverview onCheckStock={() => setIsStockStatusModalOpen(true)} onMoveOrder={() => setIsMoveOrderModalOpen(true)} onPreviewPr={(pr) => setPreviewPr(pr)} onPreviewPo={(po) => setPreviewPo(po)} />} />
               <Route path="/users" element={<UserManagement />} />
               <Route path="/requisition" element={<PurchaseRequisition />} />
               <Route path="/purchase-order" element={<PurchaseOrder />} />
@@ -401,6 +463,7 @@ const Dashboard: React.FC = () => {
       <MoveOrderModal isOpen={isMoveOrderModalOpen} onClose={() => setIsMoveOrderModalOpen(false)} />
       <StockStatusModal isOpen={isStockStatusModalOpen} onClose={() => setIsStockStatusModalOpen(false)} />
       {previewPr && <PRPreviewModal pr={previewPr} onClose={() => setPreviewPr(null)} />}
+      {previewPo && <POPreviewModal po={previewPo} onClose={() => { setPreviewPo(null); window.location.reload(); }} />}
     </div>
   );
 };

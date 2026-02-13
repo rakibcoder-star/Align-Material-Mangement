@@ -12,12 +12,14 @@ import {
   ChevronDown, 
   Printer,
   Loader2,
-  Trash2
+  Trash2,
+  Eye
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import NewPurchaseOrder from './NewPurchaseOrder';
 import CreatePODetails from './CreatePODetails';
 import POPrintTemplate from './POPrintTemplate';
+import POPreviewModal from './POPreviewModal';
 import { supabase } from '../lib/supabase';
 
 const PurchaseOrder: React.FC = () => {
@@ -26,6 +28,7 @@ const PurchaseOrder: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedPRItems, setSelectedPRItems] = useState<any[]>([]);
   const [editingPO, setEditingPO] = useState<any>(null);
+  const [previewPo, setPreviewPo] = useState<any>(null);
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -179,7 +182,9 @@ const PurchaseOrder: React.FC = () => {
                   return (
                     <tr key={index} className="hover:bg-gray-50 transition-colors border-b border-gray-50">
                       <td className="px-4 py-4 text-center text-gray-400 border-r border-gray-50">{index + 1}</td>
-                      <td className="px-4 py-4 text-center font-black text-blue-500 border-r border-gray-50">{item.po_no}</td>
+                      <td className="px-4 py-4 text-center font-black text-blue-500 border-r border-gray-50">
+                        <button onClick={() => setPreviewPo(item.full_po_obj)} className="hover:underline">{item.po_no}</button>
+                      </td>
                       <td className="px-4 py-4 text-center border-r border-gray-50">{item.prNo}</td>
                       <td className="px-4 py-4 text-center border-r border-gray-50 text-gray-400">{item.sku}</td>
                       <td className="px-4 py-4 border-r border-gray-50 leading-tight w-64">{item.name}</td>
@@ -191,6 +196,13 @@ const PurchaseOrder: React.FC = () => {
                       <td className="px-4 py-4 border-r border-gray-50 leading-tight">{item.supplier_name}</td>
                       <td className="px-4 py-4 text-center">
                         <div className="flex items-center justify-center space-x-2">
+                          <button 
+                            onClick={() => setPreviewPo(item.full_po_obj)} 
+                            className="p-1.5 text-gray-400 hover:text-cyan-500 border border-gray-100 rounded transition-all"
+                            title="Preview PO"
+                          >
+                            <Eye size={12} />
+                          </button>
                           <button 
                             onClick={() => handlePrint(item.full_po_obj)} 
                             className="p-1.5 text-gray-400 hover:text-blue-500 border border-gray-100 rounded transition-all"
@@ -228,6 +240,7 @@ const PurchaseOrder: React.FC = () => {
           </table>
         </div>
       </div>
+      {previewPo && <POPreviewModal po={previewPo} onClose={() => { setPreviewPo(null); fetchOrders(); }} />}
     </div>
   );
 };

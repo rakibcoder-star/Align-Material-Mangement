@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { X, Trash2, ChevronDown, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -107,7 +108,7 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
       supplier_name: selectedSupplier.name,
       currency: currency,
       total_value: totalValue,
-      status: 'Open',
+      status: 'Pending Approval', // UPDATED: Initial status for approval flow
       items: items,
       terms: {
         deliveryTerms,
@@ -133,7 +134,7 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
       
       if (reqUpdateError) throw reqUpdateError;
 
-      alert(`PO ${poNo} successfully created.`);
+      alert(`PO ${poNo} submitted for approval.`);
       onSubmit(poPayload);
       navigate('/purchase-order');
     } catch (err: any) {
@@ -160,7 +161,7 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
             className="px-12 py-2 text-[13px] font-black text-white bg-[#2d808e] rounded shadow-xl hover:bg-[#256b78] transition-all flex items-center space-x-2 active:scale-[0.98]"
           >
             {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : null}
-            <span>Submit</span>
+            <span>Submit for Approval</span>
           </button>
         </div>
       </div>
