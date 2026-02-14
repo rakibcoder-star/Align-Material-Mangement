@@ -22,7 +22,7 @@ const POPreviewModal: React.FC<POPreviewModalProps> = ({ po: initialPo, onClose 
       try {
         const { error } = await supabase
           .from('purchase_orders')
-          .update({ status: 'Open' }) // Approved POs go to 'Open' status
+          .update({ status: 'Approved' }) // Explicitly set to 'Approved'
           .eq('id', po.id);
 
         if (error) throw error;
@@ -71,7 +71,7 @@ const POPreviewModal: React.FC<POPreviewModalProps> = ({ po: initialPo, onClose 
             </div>
           </div>
           <div className="flex items-center space-x-3">
-             {po.status === 'Pending Approval' && (
+             {(po.status === 'Pending Approval' || po.status === 'Pending') && (
                <button 
                 onClick={handleApprove}
                 disabled={isSaving}

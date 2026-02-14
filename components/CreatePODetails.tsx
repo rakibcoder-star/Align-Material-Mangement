@@ -32,7 +32,7 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
       ...item,
       poQty: item.reqQty, 
       poPending: item.reqQty, 
-      poPrice: item.unitPrice || 0, // REQUIREMENT: PO Price taken from PR price
+      poPrice: item.unitPrice || 0,
       vatPercent: '', 
       remarks: '' 
     }))
@@ -106,9 +106,15 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
       type: poType,
       supplier_id: selectedSupplier.id,
       supplier_name: selectedSupplier.name,
+      // SNAPSHOT supplier details for dynamic printing
+      supplier_address: `${selectedSupplier.address_street || ''}, ${selectedSupplier.address_city || ''}, ${selectedSupplier.address_country || ''}`,
+      supplier_vat: selectedSupplier.tax_bin || 'N/A',
+      supplier_tin: selectedSupplier.tin || 'N/A',
+      supplier_email: selectedSupplier.email_office || 'N/A',
+      supplier_contact: selectedSupplier.phone_office || 'N/A',
       currency: currency,
       total_value: totalValue,
-      status: 'Pending Approval', // UPDATED: Initial status for approval flow
+      status: 'Pending', // Setting to 'Pending' as requested
       items: items,
       terms: {
         deliveryTerms,
@@ -127,14 +133,12 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
       if (poError) throw poError;
       
       const uniquePrNos = Array.from(new Set(items.map(i => i.prNo)));
-      const { error: reqUpdateError } = await supabase
+      await supabase
         .from('requisitions')
         .update({ status: 'Ordered' })
         .in('pr_no', uniquePrNos);
       
-      if (reqUpdateError) throw reqUpdateError;
-
-      alert(`PO ${poNo} submitted for approval.`);
+      alert(`PO ${poNo} submitted as Pending Approval.`);
       onSubmit(poPayload);
       navigate('/purchase-order');
     } catch (err: any) {
@@ -235,9 +239,7 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
           </table>
         </div>
 
-        {/* Form Layout Matching Image Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 pt-4">
-          {/* Column 1 */}
           <div className="space-y-6">
             <div className="space-y-1.5">
               <label className="text-[12px] font-medium text-gray-500">Supplier</label>
@@ -275,7 +277,6 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
             </div>
           </div>
 
-          {/* Column 2 */}
           <div className="space-y-6">
             <div className="space-y-1.5">
               <label className="text-[12px] font-medium text-gray-500">PO Type</label>
@@ -310,7 +311,6 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
             </div>
           </div>
 
-          {/* Column 3 */}
           <div className="space-y-6">
             <div className="space-y-1.5">
               <label className="text-[12px] font-medium text-gray-500">PO Note</label>
@@ -341,7 +341,6 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
             </div>
           </div>
 
-          {/* Column 4 */}
           <div className="space-y-6">
             <div className="space-y-1.5">
               <label className="text-[12px] font-medium text-gray-500">Delivery Terms</label>

@@ -15,6 +15,9 @@ const POPrintTemplate: React.FC<POPrintTemplateProps> = ({ po }) => {
 
   const formatCurrency = (num: number) => num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+  // Strictly map status for visualization: only Approved or Pending
+  const displayStatus = (po.status === 'Approved' || po.status === 'Open') ? 'Approved' : 'Pending';
+
   return (
     <div className="p-10 bg-white text-black font-sans min-h-screen text-[10px]">
       {/* Header Section */}
@@ -29,17 +32,17 @@ const POPrintTemplate: React.FC<POPrintTemplateProps> = ({ po }) => {
         </div>
       </div>
 
-      {/* Meta Grid Section - Exact Match to Reference Image */}
+      {/* Meta Grid Section - Strictly dynamic based on PO data */}
       <div className="grid grid-cols-3 gap-8 mb-6 border-t border-gray-100 pt-6">
         {/* Left Column: Supplier Details */}
         <div className="space-y-1.5">
           <p className="flex"><span className="font-bold w-28 shrink-0">PO No.:</span> <span className="font-black">{po.po_no}</span></p>
-          <p className="flex"><span className="font-bold w-28 shrink-0">Supplier Name:</span> {po.supplier_name}</p>
-          <p className="flex text-[9px]"><span className="font-bold w-28 shrink-0">Supplier Address:</span> <span>{po.supplierAddress || 'Dhaka-1213, Mohakhali, Dhaka, Bangladesh.'}</span></p>
-          <p className="flex"><span className="font-bold w-28 shrink-0">VAT No.:</span> {po.vatNo || '002481919-0101'}</p>
-          <p className="flex"><span className="font-bold w-28 shrink-0">TIN No.:</span> {po.tinNo || '373350321060'}</p>
-          <p className="flex"><span className="font-bold w-28 shrink-0">Email:</span> {po.supplierEmail || 'nsr201218@yahoo.com'}</p>
-          <p className="flex"><span className="font-bold w-28 shrink-0">Contact:</span> {po.supplierContact || '01927963132'}</p>
+          <p className="flex"><span className="font-bold w-28 shrink-0">Supplier Name:</span> <span className="uppercase">{po.supplier_name}</span></p>
+          <p className="flex text-[9px]"><span className="font-bold w-28 shrink-0">Supplier Address:</span> <span>{po.supplier_address || 'N/A'}</span></p>
+          <p className="flex"><span className="font-bold w-28 shrink-0">VAT No.:</span> {po.supplier_vat || 'N/A'}</p>
+          <p className="flex"><span className="font-bold w-28 shrink-0">TIN No.:</span> {po.supplier_tin || 'N/A'}</p>
+          <p className="flex"><span className="font-bold w-28 shrink-0">Email:</span> {po.supplier_email || 'N/A'}</p>
+          <p className="flex"><span className="font-bold w-28 shrink-0">Contact:</span> {po.supplier_contact || 'N/A'}</p>
         </div>
         
         {/* Middle Column: Buyer Details */}
@@ -54,12 +57,17 @@ const POPrintTemplate: React.FC<POPrintTemplateProps> = ({ po }) => {
         {/* Right Column: Metadata */}
         <div className="space-y-1.5">
           <p className="flex"><span className="font-bold w-28 shrink-0">Issue Date:</span> {new Date(po.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
-          <p className="flex"><span className="font-bold w-28 shrink-0">Delivery Date:</span> {terms.deliveryTarget || '22-Jan-2026'}</p>
-          <p className="flex"><span className="font-bold w-28 shrink-0">PO Status:</span> <span className="font-bold text-[#2d808e]">{po.status}</span></p>
+          <p className="flex"><span className="font-bold w-28 shrink-0">Delivery Date:</span> {terms.deliveryTarget || 'N/A'}</p>
+          <p className="flex">
+            <span className="font-bold w-28 shrink-0">PO Status:</span> 
+            <span className={`font-black uppercase ${displayStatus === 'Approved' ? 'text-green-600' : 'text-orange-600'}`}>
+              {displayStatus}
+            </span>
+          </p>
           <p className="flex"><span className="font-bold w-28 shrink-0">Currency:</span> {po.currency || 'BDT'}</p>
           <p className="flex"><span className="font-bold w-28 shrink-0">Requested by:</span> {po.requested_by || 'Sohel Rana'}</p>
-          <p className="flex"><span className="font-bold w-28 shrink-0">Contact No.:</span> +880 1773 402954</p>
-          <p className="flex"><span className="font-bold w-28 shrink-0">PO Note:</span> {po.note || 'Stationery item.'}</p>
+          <p className="flex"><span className="font-bold w-28 shrink-0">Contact No.:</span> {po.requested_contact || '+880 1773 402954'}</p>
+          <p className="flex"><span className="font-bold w-28 shrink-0">PO Note:</span> {po.note || 'N/A'}</p>
         </div>
       </div>
 
@@ -115,14 +123,14 @@ const POPrintTemplate: React.FC<POPrintTemplateProps> = ({ po }) => {
         Total Amount In Word: {grandTotal.toLocaleString()} {po.currency || 'BDT'} ONLY.
       </p>
 
-      {/* Terms & Conditions Section - Styled as requested from image */}
+      {/* Terms & Conditions Section */}
       <div className="border border-black mb-12 overflow-hidden">
         {[
-          { label: 'Delivery Terms:', text: terms.deliveryTerms || '1. Delivery has to be done within 03 working days after receiving PO by the supplier.\n2. Delivery has to be done as per specification of PO and quotation.\n3. Incase of failure of work within the given time, supplier will be penalized as per company policy.\n4. If any damage or problem occurs with the product, the supplier/seller will immediately replace/make arrangements with a new product.' },
-          { label: 'Delivery Location:', text: terms.deliveryLocation || 'Contact Person: ZZZ (+8801 222 222 22)\nPlot- 12/A & 12/B, Block-C, Kaliakoir Hi-Tech Park, Gazipur, Bangladesh, 1750.' },
-          { label: 'Bill Submission:', text: terms.billSubmission || 'Contact Person: KKK (+880 111 222 333)\n76/B, Khawaja Palace, Road-11 Banani, Dhaka, Bangladesh, 1213.' },
-          { label: 'Documents to be submitted with the bill:', text: terms.documentsRequired || '1. Fully signed PO copy accept by supplier.\n2. Delivery challan with receiving sign from inventory/warehouse officials.\n3. Mushok 6.3.\n4. Price quotation.' },
-          { label: 'Payment Terms:', text: terms.paymentTerms || '1. 100% payment will be made within 30 working days of successful delivery of required .\n2. VAT and AIT applicable as per BD Govt. rules.' },
+          { label: 'Delivery Terms:', text: terms.deliveryTerms || 'N/A' },
+          { label: 'Delivery Location:', text: terms.deliveryLocation || 'N/A' },
+          { label: 'Bill Submission:', text: terms.billSubmission || 'N/A' },
+          { label: 'Documents to be submitted with the bill:', text: terms.documentsRequired || 'N/A' },
+          { label: 'Payment Terms:', text: terms.paymentTerms || 'N/A' },
           { label: 'Payment Mode:', text: terms.paymentMethod || 'Bank A/C Name: N/A\nBank A/C Number: N/A\nBank Name: N/A\nBranch Name: N/A\nRouting No.: N/A\nSwift Code: N/A' },
         ].map((row, i) => (
           <div key={i} className="flex border-b last:border-0 border-black min-h-[50px]">
@@ -136,7 +144,7 @@ const POPrintTemplate: React.FC<POPrintTemplateProps> = ({ po }) => {
         ))}
       </div>
 
-      {/* Signature Grid - Exact Match to Footer Image */}
+      {/* Signature Grid */}
       <div className="grid grid-cols-5 gap-4 mt-16 px-4">
         {[
           { title: 'PREPARED BY', name: 'SOHEL RANA', company: 'Fair Technology Limited' },

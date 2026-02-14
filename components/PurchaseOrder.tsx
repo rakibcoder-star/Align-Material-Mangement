@@ -4,12 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { 
   Home, 
   FileSpreadsheet, 
-  History, 
   Edit2, 
-  Filter, 
-  ChevronLeft, 
-  ChevronRight, 
-  ChevronDown, 
   Printer,
   Loader2,
   Trash2,
@@ -58,7 +53,7 @@ const PurchaseOrder: React.FC = () => {
         'GRN Qty': item.receivedQty || 0,
         'Req. By': item.reqBy,
         'Supplier': po.supplier_name,
-        'Status': po.status
+        'Status': (po.status === 'Approved' || po.status === 'Open') ? 'Approved' : 'Pending'
       }))
     );
     const worksheet = XLSX.utils.json_to_sheet(flattenedForExport);
@@ -111,7 +106,6 @@ const PurchaseOrder: React.FC = () => {
     );
   }
 
-  // Flatten the orders to show items individually
   const flattenedItems = orders.flatMap(po => 
     (po.items || []).map((item: any) => ({
       ...item,
@@ -154,7 +148,7 @@ const PurchaseOrder: React.FC = () => {
               <tr className="text-[10px] font-black text-gray-700 uppercase tracking-widest border-b border-gray-100">
                 <th className="px-4 py-5 text-center w-12 border-r border-gray-50">SL</th>
                 <th className="px-4 py-5 text-center border-r border-gray-50">PO No</th>
-                <th className="px-4 py-5 text-center border-r border-gray-50">Status</th>
+                <th className="px-4 py-5 text-center border-r border-gray-50 w-24">Status</th>
                 <th className="px-4 py-5 text-center border-r border-gray-50">PR No</th>
                 <th className="px-4 py-5 text-center border-r border-gray-50">SKU</th>
                 <th className="px-4 py-5 border-r border-gray-50">Name</th>
@@ -180,7 +174,9 @@ const PurchaseOrder: React.FC = () => {
               ) : flattenedItems.length > 0 ? (
                 flattenedItems.map((item, index) => {
                   const poValue = Number(item.poQty || 0) * Number(item.poPrice || 0);
-                  const isPending = item.po_status === 'Pending Approval';
+                  const displayStatus = (item.po_status === 'Approved' || item.po_status === 'Open') ? 'Approved' : 'Pending';
+                  const isApproved = displayStatus === 'Approved';
+                  
                   return (
                     <tr key={index} className="hover:bg-gray-50 transition-colors border-b border-gray-50">
                       <td className="px-4 py-4 text-center text-gray-400 border-r border-gray-50">{index + 1}</td>
@@ -188,13 +184,17 @@ const PurchaseOrder: React.FC = () => {
                         <button onClick={() => setPreviewPo(item.full_po_obj)} className="hover:underline">{item.po_no}</button>
                       </td>
                       <td className="px-4 py-4 text-center border-r border-gray-50">
-                        <span className={`px-2 py-0.5 rounded text-[8px] font-black ${isPending ? 'bg-orange-50 text-orange-600 border border-orange-100' : 'bg-green-50 text-green-600 border border-green-100'}`}>
-                          {item.po_status}
+                        <span className={`px-3 py-1 rounded text-[9px] font-black shadow-sm ${
+                          isApproved 
+                            ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
+                            : 'bg-amber-50 text-amber-600 border border-amber-100'
+                        }`}>
+                          {displayStatus}
                         </span>
                       </td>
                       <td className="px-4 py-4 text-center border-r border-gray-50">{item.prNo}</td>
                       <td className="px-4 py-4 text-center border-r border-gray-50 text-gray-400">{item.sku}</td>
-                      <td className="px-4 py-4 border-r border-gray-50 leading-tight w-64">{item.name}</td>
+                      <td className="px-4 py-4 border-r border-gray-50 leading-tight w-64 uppercase">{item.name}</td>
                       <td className="px-4 py-4 text-right border-r border-gray-50 font-black">{Number(item.poPrice || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                       <td className="px-4 py-4 text-center border-r border-gray-50">{item.poQty}</td>
                       <td className="px-4 py-4 text-right border-r border-gray-50 font-black text-[#2d808e]">{poValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
