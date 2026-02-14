@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createRoot } from 'react-dom/client';
 import { Home, Printer, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 // @ts-ignore
@@ -9,25 +10,66 @@ interface BarcodeGeneratorProps {
   onBack: () => void;
 }
 
+const BarcodePrintView = ({ labels, settings }: any) => {
+  const svgRefs = useRef<Record<string, SVGSVGElement | null>>({});
+
+  useEffect(() => {
+    labels.forEach((label: any, idx: number) => {
+      const svg = svgRefs.current[`${label.sku}-${idx}`];
+      if (svg) {
+        JsBarcode(svg, label.sku, {
+          format: "CODE128",
+          width: settings.barcodeWidth,
+          height: settings.barcodeHeight,
+          displayValue: false,
+          margin: 0
+        });
+      }
+    });
+  }, [labels, settings]);
+
+  return (
+    <div className="grid grid-cols-2 gap-4 p-4 bg-white" style={{ width: '100%' }}>
+      {labels.map((label: any, idx: number) => (
+        <div 
+          key={`${label.sku}-${idx}`}
+          className="border border-gray-300 p-4 flex flex-col items-center justify-center break-inside-avoid mb-4"
+          style={{ minHeight: '120px' }}
+        >
+          {settings.showName && (
+            <div className="w-full text-center mb-2 font-black uppercase truncate" style={{ fontSize: `${settings.nameFontSize}px` }}>
+              {label.name}
+            </div>
+          )}
+          <svg ref={el => svgRefs.current[`${label.sku}-${idx}`] = el}></svg>
+          {settings.showCode && (
+            <div className="w-full text-center mt-2 font-black tracking-widest" style={{ fontSize: `${settings.codeFontSize}px` }}>
+              {label.sku}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const BarcodeGenerator: React.FC<BarcodeGeneratorProps> = ({ onBack }) => {
   const [skuInput, setSkuInput] = useState('');
   const [hGutter, setHGutter] = useState(16);
   const [vGutter, setVGutter] = useState(16);
-  const [columnCount, setColumnCount] = useState(1);
+  const [columnCount, setColumnCount] = useState(2); // Default to 2
   const [showCode, setShowCode] = useState(true);
   const [codeFontSize, setCodeFontSize] = useState(12);
   const [showName, setShowName] = useState(true);
   const [nameFontSize, setNameFontSize] = useState(12);
-  const [barcodeHeight, setBarcodeHeight] = useState(25);
+  const [barcodeHeight, setBarcodeHeight] = useState(40);
   const [barcodeWidth, setBarcodeWidth] = useState(2);
-  const [randomLabel, setRandomLabel] = useState(false);
-  const [uniqueValue, setUniqueValue] = useState(false);
   const [pageWidth, setPageWidth] = useState(210);
   
   const [labels, setLabels] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const barcodeRefs = useRef<Record<string, HTMLCanvasElement | null>>({});
+  const barcodeRefs = useRef<Record<string, SVGSVGElement | null>>({});
 
   const fetchItems = async (skus: string[]) => {
     setLoading(true);
@@ -65,9 +107,9 @@ const BarcodeGenerator: React.FC<BarcodeGeneratorProps> = ({ onBack }) => {
 
   useEffect(() => {
     labels.forEach((label, idx) => {
-      const canvas = barcodeRefs.current[`${label.sku}-${idx}`];
-      if (canvas) {
-        JsBarcode(canvas, label.sku, {
+      const svg = barcodeRefs.current[`${label.sku}-${idx}`];
+      if (svg) {
+        JsBarcode(svg, label.sku, {
           format: "CODE128",
           width: barcodeWidth,
           height: barcodeHeight,
@@ -82,13 +124,15 @@ const BarcodeGenerator: React.FC<BarcodeGeneratorProps> = ({ onBack }) => {
     const printSection = document.getElementById('print-section');
     if (!printSection) return;
     printSection.innerHTML = '';
-    const clone = document.getElementById('barcode-preview-area')?.cloneNode(true) as HTMLElement;
-    if (clone) {
-      clone.style.backgroundColor = 'white';
-      clone.style.padding = '0';
-      printSection.appendChild(clone);
-      window.print();
-    }
+    const root = createRoot(printSection);
+    root.render(
+      <BarcodePrintView 
+        labels={labels} 
+        settings={{ showCode, codeFontSize, showName, nameFontSize, barcodeHeight, barcodeWidth }} 
+      />
+    );
+    // Give time for SVGs to render in the print root
+    setTimeout(() => window.print(), 800);
   };
 
   const CustomSlider = ({ label, value, min, max, steps, onChange }: any) => (
@@ -103,7 +147,7 @@ const BarcodeGenerator: React.FC<BarcodeGeneratorProps> = ({ onBack }) => {
           type="range" 
           min={min} 
           max={max} 
-          step={steps[1] - steps[0]}
+          step={steps[1] - steps[0] || 1}
           value={value}
           onChange={(e) => onChange(Number(e.target.value))}
           className="absolute -top-2 left-0 w-full h-5 opacity-0 cursor-pointer z-20"
@@ -188,14 +232,6 @@ const BarcodeGenerator: React.FC<BarcodeGeneratorProps> = ({ onBack }) => {
                 <span className="text-[10px] font-bold text-gray-500 uppercase">x Width</span>
                 <input type="number" value={barcodeWidth} onChange={e => setBarcodeWidth(Number(e.target.value))} className="w-16 px-2 py-0.5 border border-gray-200 rounded text-xs font-bold" />
               </div>
-              <div className="flex items-center space-x-2">
-                <input type="checkbox" checked={randomLabel} onChange={e => setRandomLabel(e.target.checked)} className="w-3 h-3 accent-[#2d808e]" />
-                <span className="text-[10px] font-bold text-gray-400 uppercase">Random Label</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <input type="checkbox" checked={uniqueValue} onChange={e => setUniqueValue(e.target.checked)} className="w-3 h-3 accent-[#2d808e]" />
-                <span className="text-[10px] font-bold text-gray-400 uppercase">Unique Value</span>
-              </div>
               <div className="col-span-2 flex items-center justify-between mt-2">
                 <div className="flex flex-col">
                    <span className="text-[10px] font-bold text-gray-500 uppercase">Page Width mm</span>
@@ -234,7 +270,7 @@ const BarcodeGenerator: React.FC<BarcodeGeneratorProps> = ({ onBack }) => {
                 {label.name}
               </div>
             )}
-            <canvas ref={el => barcodeRefs.current[`${label.sku}-${idx}`] = el}></canvas>
+            <svg ref={el => barcodeRefs.current[`${label.sku}-${idx}`] = el}></svg>
             {showCode && (
               <div className="w-full text-center mt-1 font-black" style={{ fontSize: `${codeFontSize}px` }}>
                 {label.sku}

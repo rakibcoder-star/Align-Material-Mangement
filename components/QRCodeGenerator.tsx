@@ -1,11 +1,44 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createRoot } from 'react-dom/client';
 import { Home, Printer, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface QRCodeGeneratorProps {
   onBack: () => void;
 }
+
+const QRCodePrintView = ({ labels, settings }: any) => {
+  return (
+    <div className="grid grid-cols-2 gap-4 p-4 bg-white" style={{ width: '100%' }}>
+      {labels.map((label: any, idx: number) => (
+        <div 
+          key={`${label.sku}-${idx}`}
+          className="border border-gray-300 p-4 flex flex-col items-center justify-center break-inside-avoid mb-4 text-center"
+          style={{ minHeight: '150px' }}
+        >
+          {settings.showName && (
+            <div className="w-full font-black uppercase truncate mb-2" style={{ fontSize: `${settings.nameFontSize}px` }}>
+              {label.name}
+            </div>
+          )}
+          <div className="bg-white p-1">
+            <img 
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=${settings.qrSize}x${settings.qrSize}&data=${label.sku}`} 
+              alt={label.sku}
+              style={{ width: `${settings.qrSize}px`, height: `${settings.qrSize}px` }}
+            />
+          </div>
+          {settings.showCode && (
+            <div className="w-full mt-2 font-black tracking-widest" style={{ fontSize: `${settings.codeFontSize}px` }}>
+              {label.sku}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({ onBack }) => {
   const [skuInput, setSkuInput] = useState('');
@@ -17,14 +50,10 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({ onBack }) => {
   const [showName, setShowName] = useState(true);
   const [nameFontSize, setNameFontSize] = useState(12);
   const [qrSize, setQrSize] = useState(100);
-  const [randomLabel, setRandomLabel] = useState(false);
-  const [uniqueValue, setUniqueValue] = useState(false);
   const [pageWidth, setPageWidth] = useState(210);
   
   const [labels, setLabels] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-
-  const qrRefs = useRef<Record<string, HTMLImageElement | null>>({});
 
   const fetchItems = async (skus: string[]) => {
     setLoading(true);
@@ -64,13 +93,15 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({ onBack }) => {
     const printSection = document.getElementById('print-section');
     if (!printSection) return;
     printSection.innerHTML = '';
-    const clone = document.getElementById('qr-preview-area')?.cloneNode(true) as HTMLElement;
-    if (clone) {
-      clone.style.backgroundColor = 'white';
-      clone.style.padding = '0';
-      printSection.appendChild(clone);
-      window.print();
-    }
+    const root = createRoot(printSection);
+    root.render(
+      <QRCodePrintView 
+        labels={labels} 
+        settings={{ showCode, codeFontSize, showName, nameFontSize, qrSize }} 
+      />
+    );
+    // Give time for images to load from external API
+    setTimeout(() => window.print(), 1000);
   };
 
   const CustomSlider = ({ label, value, min, max, steps, onChange }: any) => (
@@ -169,14 +200,6 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({ onBack }) => {
               <div className="flex flex-col space-y-1">
                 <span className="text-[10px] font-bold text-gray-500 uppercase">Page Width mm</span>
                 <input type="number" value={pageWidth} onChange={e => setPageWidth(Number(e.target.value))} className="w-16 px-2 py-0.5 border border-gray-200 rounded text-xs font-bold" />
-              </div>
-              <div className="flex items-center space-x-2">
-                <input type="checkbox" checked={randomLabel} onChange={e => setRandomLabel(e.target.checked)} className="w-3 h-3 accent-[#2d808e]" />
-                <span className="text-[10px] font-bold text-gray-400 uppercase">Random Label</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <input type="checkbox" checked={uniqueValue} onChange={e => setUniqueValue(e.target.checked)} className="w-3 h-3 accent-[#2d808e]" />
-                <span className="text-[10px] font-bold text-gray-400 uppercase">Unique Value</span>
               </div>
               <div className="col-span-2 flex items-center justify-end mt-2">
                 <button 
