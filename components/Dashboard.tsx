@@ -21,6 +21,7 @@ import ItemUOM from './ItemUOM';
 import ItemGroup from './ItemGroup';
 import ItemType from './ItemType';
 import CostCenter from './CostCenter';
+import LabelManagement from './LabelManagement';
 import { supabase } from '../lib/supabase';
 import { 
   Gauge, 
@@ -122,6 +123,7 @@ const KPICard: React.FC<{ label: string; value: string; subValue?: string }> = (
 );
 
 const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () => void; onPreviewPr: (pr: any) => void; onPreviewPo: (po: any) => void }> = ({ onCheckStock, onMoveOrder, onPreviewPr, onPreviewPo }) => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [dateTime, setDateTime] = useState(new Date());
   const [recentPrs, setRecentPrs] = useState<any[]>([]);
@@ -169,7 +171,7 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
           <p className="text-[11px] font-bold text-gray-400 mt-0.5">{formatDate(dateTime)}</p>
         </div>
         <div className="flex items-center space-x-2">
-          <button className="flex items-center px-4 py-2 bg-[#2d808e] text-white text-[11px] font-bold rounded shadow-sm hover:bg-[#256b78] transition-all">
+          <button onClick={() => navigate('/label')} className="flex items-center px-4 py-2 bg-[#2d808e] text-white text-[11px] font-bold rounded shadow-sm hover:bg-[#256b78] transition-all">
              <Menu size={14} className="mr-2" /> Code Print
           </button>
           <button onClick={onCheckStock} className="flex items-center px-4 py-2 bg-[#2d808e] text-white text-[11px] font-bold rounded shadow-sm hover:bg-[#256b78] transition-all">
@@ -448,6 +450,7 @@ const Dashboard: React.FC = () => {
               <Route path="/item-group" element={<ItemGroup />} />
               <Route path="/item-type" element={<ItemType />} />
               <Route path="/cost-center" element={<CostCenter />} />
+              <Route path="/label" element={<LabelManagement />} />
               <Route path="/" element={<Navigate to="/overview" replace />} />
             </Routes>
           </div>
