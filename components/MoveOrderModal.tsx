@@ -1,5 +1,8 @@
+
 import React, { useState } from 'react';
-import { X, Trash2, Plus } from 'lucide-react';
+import { X, Trash2, Plus, ScanLine, Loader2 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import ScannerModal from './ScannerModal';
 
 interface MoveOrderItem {
   id: string;
@@ -22,11 +25,24 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
   ]);
   const [refText, setRefText] = useState('');
   const [headerText, setHeaderText] = useState('');
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
   if (!isOpen) return null;
 
-  const addItem = () => {
-    setItems([...items, { id: Date.now().toString(), name: '', sku: '', uom: '', onHand: '', reqQty: '', remarks: '' }]);
+  const addItem = (itemData?: Partial<MoveOrderItem>) => {
+    setItems(prev => [
+      ...prev, 
+      { 
+        id: Date.now().toString(), 
+        name: itemData?.name || '', 
+        sku: itemData?.sku || '', 
+        uom: itemData?.uom || '', 
+        onHand: itemData?.onHand || '', 
+        reqQty: itemData?.reqQty || '', 
+        remarks: itemData?.remarks || '' 
+      }
+    ]);
   };
 
   const removeItem = (id: string) => {
@@ -39,6 +55,68 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
     setItems(items.map(item => item.id === id ? { ...item, [field]: value } : item));
   };
 
+  const handleSkuLookup = async (id: string, sku: string) => {
+    if (!sku) return;
+    setIsSearching(true);
+    const { data, error } = await supabase
+      .from('items')
+      .select('*')
+      .eq('sku', sku)
+      .maybeSingle();
+
+    if (data && !error) {
+      setItems(prev => prev.map(item => item.id === id ? {
+        ...item,
+        name: data.name,
+        uom: data.uom,
+        onHand: String(data.on_hand_stock || '0'),
+      } : item));
+    }
+    setIsSearching(false);
+  };
+
+  const handleScannedCode = async (code: string) => {
+    setIsScannerOpen(false);
+    setIsSearching(true);
+    
+    try {
+      const { data, error } = await supabase
+        .from('items')
+        .select('*')
+        .eq('sku', code)
+        .maybeSingle();
+
+      if (data && !error) {
+        // If the first row is empty, fill it. Otherwise add a new row.
+        const firstRow = items[0];
+        if (items.length === 1 && !firstRow.sku && !firstRow.name) {
+          setItems([{
+            id: firstRow.id,
+            sku: data.sku,
+            name: data.name,
+            uom: data.uom,
+            onHand: String(data.on_hand_stock || '0'),
+            reqQty: '',
+            remarks: ''
+          }]);
+        } else {
+          addItem({
+            sku: data.sku,
+            name: data.name,
+            uom: data.uom,
+            onHand: String(data.on_hand_stock || '0')
+          });
+        }
+      } else {
+        alert(`Item with SKU "${code}" not found in master database.`);
+      }
+    } catch (err) {
+      console.error("Lookup error:", err);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-10 px-4 bg-black/30 backdrop-blur-sm overflow-y-auto">
       <div className="bg-white w-full max-w-[1400px] rounded-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
@@ -49,8 +127,17 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
               <X size={20} />
             </button>
             <h2 className="text-lg font-bold text-gray-800 tracking-tight">Move Order Request</h2>
+            {isSearching && <Loader2 size={16} className="animate-spin text-[#2d808e]" />}
           </div>
           <div className="flex items-center space-x-3">
+            <button 
+              onClick={() => setIsScannerOpen(true)}
+              className="flex items-center px-6 py-2 text-sm font-black text-white bg-[#2d808e] rounded hover:bg-[#256b78] transition-all shadow-md group uppercase tracking-widest"
+            >
+              <ScanLine size={18} className="mr-2 group-hover:scale-110 transition-transform" />
+              MO Scanner
+            </button>
+            <div className="h-6 w-px bg-gray-200 mx-1"></div>
             <button 
               onClick={onClose}
               className="px-6 py-2 text-sm font-semibold text-gray-600 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-all"
@@ -67,7 +154,7 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
 
         {/* Content */}
         <div className="p-8 space-y-8">
-          {/* Top Fields - Matching Image Labels and Structure */}
+          {/* Top Fields */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-bold text-[#2d808e]">Referance</label>
@@ -124,7 +211,7 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
                     <thead>
                       <tr className="text-[11px] font-bold text-gray-800 text-left">
                         <th className="pb-2 pr-2">Name</th>
-                        <th className="pb-2 px-2 w-[160px]">Part/SKU</th>
+                        <th className="pb-2 px-2 w-[180px]">Part/SKU</th>
                         <th className="pb-2 px-2 w-[100px]">UOM</th>
                         <th className="pb-2 px-2 w-[120px]">On-Hand</th>
                         <th className="pb-2 px-2 w-[120px]">Req. Qty</th>
@@ -136,32 +223,33 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
                       {items.map((item) => (
                         <tr key={item.id} className="group">
                           <td className="pr-2 py-1">
-                            <select 
-                              value={item.name}
-                              onChange={(e) => updateItem(item.id, 'name', e.target.value)}
-                              className="w-full px-3 py-2 bg-white border border-cyan-700/30 rounded focus:border-[#2d808e] outline-none text-xs text-gray-400"
-                            >
-                              <option value="">Item Name</option>
-                              <option value="item1">Item 1</option>
-                              <option value="item2">Item 2</option>
-                            </select>
-                          </td>
-                          <td className="px-2 py-1">
                             <input 
                               type="text" 
-                              placeholder="SKU/Code"
-                              value={item.sku}
-                              onChange={(e) => updateItem(item.id, 'sku', e.target.value)}
-                              className="w-full px-3 py-2 bg-[#f8f9fa] border border-cyan-700/30 rounded focus:border-[#2d808e] outline-none text-xs placeholder-gray-300"
+                              placeholder="Item Name"
+                              value={item.name}
+                              onChange={(e) => updateItem(item.id, 'name', e.target.value)}
+                              className="w-full px-3 py-2 bg-[#f8f9fa] border border-cyan-700/30 rounded focus:border-[#2d808e] outline-none text-xs font-bold uppercase"
                             />
+                          </td>
+                          <td className="px-2 py-1">
+                            <div className="relative">
+                              <input 
+                                type="text" 
+                                placeholder="SKU/Code"
+                                value={item.sku}
+                                onChange={(e) => updateItem(item.id, 'sku', e.target.value)}
+                                onBlur={(e) => handleSkuLookup(item.id, e.target.value)}
+                                className="w-full px-3 py-2 bg-white border border-[#2d808e]/40 rounded focus:border-[#2d808e] outline-none text-xs font-black text-[#2d808e]"
+                              />
+                            </div>
                           </td>
                           <td className="px-2 py-1">
                             <input 
                               type="text" 
                               placeholder="UOM"
                               value={item.uom}
-                              onChange={(e) => updateItem(item.id, 'uom', e.target.value)}
-                              className="w-full px-3 py-2 bg-[#f8f9fa] border border-cyan-700/30 rounded focus:border-[#2d808e] outline-none text-xs placeholder-gray-300 text-center"
+                              readOnly
+                              className="w-full px-3 py-2 bg-[#f8f9fa] border border-transparent rounded text-xs text-gray-500 text-center"
                             />
                           </td>
                           <td className="px-2 py-1">
@@ -169,17 +257,17 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
                               type="text" 
                               placeholder="On-Hand"
                               value={item.onHand}
-                              onChange={(e) => updateItem(item.id, 'onHand', e.target.value)}
-                              className="w-full px-3 py-2 bg-[#f8f9fa] border border-cyan-700/30 rounded focus:border-[#2d808e] outline-none text-xs placeholder-gray-300 text-center"
+                              readOnly
+                              className="w-full px-3 py-2 bg-[#f8f9fa] border border-transparent rounded text-xs text-[#2d808e] font-black text-center"
                             />
                           </td>
                           <td className="px-2 py-1">
                             <input 
-                              type="text" 
+                              type="number" 
                               placeholder="Req. Qty"
                               value={item.reqQty}
                               onChange={(e) => updateItem(item.id, 'reqQty', e.target.value)}
-                              className="w-full px-3 py-2 bg-white border border-cyan-700/30 rounded focus:border-[#2d808e] outline-none text-xs placeholder-gray-300 text-center"
+                              className="w-full px-3 py-2 bg-white border border-cyan-700/30 rounded focus:border-[#2d808e] outline-none text-xs font-black text-center"
                             />
                           </td>
                           <td className="px-2 py-1">
@@ -209,21 +297,27 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
 
             {/* Add Item Button Bar */}
             <button 
-              onClick={addItem}
+              onClick={() => addItem()}
               className="w-full py-2 bg-[#2d808e] text-white flex items-center justify-center space-x-2 text-xs font-bold rounded hover:bg-[#256b78] transition-all"
             >
               <Plus size={14} strokeWidth={3} />
-              <span>Add Item</span>
+              <span>Add Item Manually</span>
             </button>
           </div>
         </div>
       </div>
+
+      {isScannerOpen && (
+        <ScannerModal 
+          onScan={handleScannedCode} 
+          onClose={() => setIsScannerOpen(false)} 
+        />
+      )}
     </div>
   );
 };
 
 // Helper for select arrows
-// Fixed: Making className optional to resolve TS error on line 111
 const ChevronDown = ({ size, className }: { size: number, className?: string }) => (
   <svg 
     width={size} 

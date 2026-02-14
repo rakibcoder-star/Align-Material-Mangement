@@ -1,7 +1,9 @@
 {
   "name": "ALIGN Data Management System",
   "description": "Dynamic multi-user platform integrated with Supabase Auth & Database, optimized for private GitHub deployment and Render.com hosting.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": [
+    "camera"
+  ],
   "deployment": {
     "platform": "render.com",
     "type": "static-site",
