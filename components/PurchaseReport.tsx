@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Home, FileSpreadsheet, Inbox, Filter, ChevronDown, Loader2, Search } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -47,7 +48,9 @@ const PurchaseReport: React.FC = () => {
           query = query.gte('created_at', `${filterDateStart}T00:00:00`).lte('created_at', `${filterDateEnd}T23:59:59`);
         }
         if (status !== 'All') {
-          query = query.eq('status', status);
+          // Map UI "Pending" back to DB "Open" if necessary, though PRs usually use "Pending"
+          const dbStatus = status === 'Pending' ? 'Open' : status;
+          query = query.eq('status', dbStatus);
         }
         if (docRef) {
           query = query.ilike('pr_no', `%${docRef}%`);
@@ -90,7 +93,9 @@ const PurchaseReport: React.FC = () => {
           query = query.gte('created_at', `${filterDateStart}T00:00:00`).lte('created_at', `${filterDateEnd}T23:59:59`);
         }
         if (status !== 'All') {
-          query = query.eq('status', status);
+          // POs in this system often use "Open" as initial state. Map UI "Pending" to DB "Open".
+          const dbStatus = status === 'Pending' ? 'Open' : status;
+          query = query.eq('status', dbStatus);
         }
         if (docRef) {
           query = query.ilike('po_no', `%${docRef}%`);
@@ -202,7 +207,7 @@ const PurchaseReport: React.FC = () => {
             <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
           </div>
 
-          {/* Field 5: Dropdown (All, In-Process, Checked, Approved, Hold, Closed) */}
+          {/* Field 5: Dropdown (All, Ordered, Pending, Approved) */}
           <div className="relative flex-1 min-w-[120px] md:flex-initial">
             <select 
               value={status}
@@ -210,11 +215,9 @@ const PurchaseReport: React.FC = () => {
               className="w-full appearance-none bg-white border border-gray-200 rounded px-3 py-1.5 text-[11px] text-gray-600 font-medium outline-none focus:border-[#2d808e] transition-all"
             >
               <option value="All">All</option>
-              <option value="In-Process">In-Process</option>
-              <option value="Checked">Checked</option>
+              <option value="Ordered">Ordered</option>
+              <option value="Pending">Pending</option>
               <option value="Approved">Approved</option>
-              <option value="Hold">Hold</option>
-              <option value="Closed">Closed</option>
             </select>
             <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
           </div>
@@ -296,7 +299,7 @@ const PurchaseReport: React.FC = () => {
                       <span className={`px-2 py-0.5 rounded text-[9px] font-black border ${
                         row.status === 'Approved' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-orange-50 text-orange-600 border-orange-100'
                       }`}>
-                        {row.status}
+                        {row.status === 'Open' ? 'Pending' : row.status}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center whitespace-nowrap uppercase text-gray-400">{row.createdBy}</td>
