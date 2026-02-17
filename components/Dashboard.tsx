@@ -25,7 +25,7 @@ import LabelManagement from './LabelManagement';
 import { supabase } from '../lib/supabase';
 import { 
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend
+  PieChart, Pie, Cell
 } from 'recharts';
 import { 
   Gauge, 
@@ -137,20 +137,27 @@ const KPICard: React.FC<{ label: string; value: string; subValue?: string }> = (
   </div>
 );
 
-const LiquidGauge: React.FC<{ label: string; value: number; subLabel: string; color?: string }> = ({ label, value, subLabel, color = "#3b82f6" }) => (
+const LiquidGauge: React.FC<{ label: string; value: number; subLabel: string; color?: string; colorLight?: string }> = ({ label, value, subLabel, color = "#3b82f6", colorLight = "#93c5fd" }) => (
   <div className="bg-white p-3 rounded-lg border border-gray-100 flex flex-col items-center">
     <h3 className="text-[8px] font-black text-[#2d808e] uppercase tracking-widest mb-2">{label} ({subLabel})</h3>
-    <div className="relative w-24 h-24 rounded-full border-2 border-[#3b82f6] p-1 overflow-hidden flex items-center justify-center">
+    <div className="relative w-24 h-24 rounded-full border-2 border-gray-100 p-1 overflow-hidden flex items-center justify-center bg-gray-50 shadow-inner">
       <div 
-        className="absolute bottom-0 left-0 w-[200%] h-[120%] transition-all duration-1000 ease-in-out"
-        style={{ transform: `translateY(${100 - value}%)`, left: '-50%' }}
+        className="absolute bottom-0 left-0 w-[400%] h-full transition-all duration-1000 ease-in-out z-0"
+        style={{ transform: `translateY(${100 - value}%)` }}
       >
-        <svg viewBox="0 0 500 150" preserveAspectRatio="none" className="w-full h-10 opacity-80 animate-wave">
-          <path d="M0.00,49.98 C150.00,150.00 349.20,-50.00 500.00,49.98 L500.00,150.00 L0.00,150.00 Z" style={{ fill: color }}></path>
+        {/* Secondary Wave (Back) */}
+        <svg viewBox="0 0 500 150" preserveAspectRatio="none" className="absolute top-0 left-0 w-full h-10 opacity-30 animate-wave-slow" style={{ transform: 'translateY(-100%)' }}>
+          <path d="M0,70 C150,150 350,0 500,70 L500,150 L0,150 Z" style={{ fill: colorLight }}></path>
         </svg>
-        <div className="w-full h-full" style={{ background: color }}></div>
+        {/* Main Wave (Front) */}
+        <svg viewBox="0 0 500 150" preserveAspectRatio="none" className="absolute top-0 left-0 w-full h-10 opacity-80 animate-wave" style={{ transform: 'translateY(-100%)' }}>
+          <path d="M0,70 C150,150 350,0 500,70 L500,150 L0,150 Z" style={{ fill: color }}></path>
+        </svg>
+        <div className="w-full h-full" style={{ background: `linear-gradient(to bottom, ${color}, ${color}dd)` }}></div>
       </div>
-      <span className="relative z-10 text-lg font-black text-gray-800 drop-shadow-sm">{value} %</span>
+      <div className="relative z-10 flex flex-col items-center">
+        <span className="text-lg font-black text-gray-800 drop-shadow-[0_2px_2px_rgba(255,255,255,0.8)]">{value}%</span>
+      </div>
     </div>
   </div>
 );
@@ -198,7 +205,9 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
           const type = item.type || 'Other';
           types[type] = (types[type] || 0) + 1;
         });
-        setStockTypes(Object.entries(types).map(([name, value]) => ({ name, value })));
+        const mappedTypes = Object.entries(types).map(([name, value]) => ({ name, value }));
+        setStockTypes(mappedTypes);
+        
         const dieselItem = items.find(i => i.sku === '4492');
         const octaneItem = items.find(i => i.sku === '3121');
         if (dieselItem) setDieselStock(Math.min(100, Math.round((dieselItem.on_hand_stock / 10000) * 100)));
@@ -316,21 +325,40 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <LiquidGauge label="DIESEL" value={dieselStock} subLabel="4492" color="#3b82f6" />
-        <LiquidGauge label="OCTANE" value={octaneStock} subLabel="3121" color="#0ea5e9" />
-        <div className="bg-white p-3 rounded border border-gray-100 flex flex-col items-center">
-          <h3 className="text-[8px] font-black text-[#2d808e] uppercase tracking-widest mb-1">Stock Types</h3>
-          <div className="h-28 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={stockTypes} innerRadius={25} outerRadius={38} paddingAngle={3} dataKey="value">
-                  {stockTypes.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={{ fontSize: '8px' }} />
-              </PieChart>
-            </ResponsiveContainer>
+        <LiquidGauge label="DIESEL" value={dieselStock} subLabel="4492" color="#3b82f6" colorLight="#93c5fd" />
+        <LiquidGauge label="OCTANE" value={octaneStock} subLabel="3121" color="#0ea5e9" colorLight="#7dd3fc" />
+        
+        {/* Stock Types with Side Breakdown List */}
+        <div className="bg-white p-3 rounded border border-gray-100 flex flex-col">
+          <h3 className="text-[8px] font-black text-[#2d808e] uppercase tracking-widest mb-2 text-center">Stock Types Distribution</h3>
+          <div className="flex flex-1 items-center">
+            <div className="h-28 w-1/2">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={stockTypes} innerRadius={22} outerRadius={35} paddingAngle={3} dataKey="value">
+                    {stockTypes.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ fontSize: '8px' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="w-1/2 flex flex-col space-y-1 pl-2 border-l border-gray-50 overflow-y-auto max-h-[110px] scrollbar-thin">
+              {stockTypes.map((type, index) => {
+                const total = stockTypes.reduce((acc, curr) => acc + curr.value, 0);
+                const percent = ((type.value / total) * 100).toFixed(0);
+                return (
+                  <div key={index} className="flex items-center justify-between group hover:bg-gray-50 p-1 rounded transition-colors">
+                    <div className="flex items-center space-x-1.5 overflow-hidden">
+                      <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
+                      <span className="text-[8px] font-bold text-gray-500 uppercase truncate leading-none">{type.name}</span>
+                    </div>
+                    <span className="text-[8px] font-black text-[#2d808e] ml-1">{percent}%</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
@@ -377,14 +405,14 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
                   <th className="px-3 py-1.5 text-right">Value</th>
                 </tr>
               </thead>
-              <tbody className="text-[9px] font-medium text-gray-600">
+              <tbody className="text-[10px] font-medium text-gray-600">
                 {pendingPos.map((po) => (
                   <tr key={po.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
-                    <td className="px-3 py-1.5 text-center">{new Date(po.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</td>
-                    <td className="px-3 py-1.5 text-center">
-                      <button onClick={() => onPreviewPo(po)} className="text-blue-500 font-bold border border-blue-100 rounded px-1.5 py-0.5 hover:bg-blue-50 transition-all">{po.po_no}</button>
+                    <td className="px-4 py-2 text-center">{new Date(po.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</td>
+                    <td className="px-4 py-2 text-center">
+                      <button onClick={() => onPreviewPo(po)} className="text-blue-500 font-bold border border-blue-100 rounded px-2 py-0.5 hover:bg-blue-50 transition-all">{po.po_no}</button>
                     </td>
-                    <td className="px-3 py-1.5 text-right font-black">{(po.total_value || 0).toLocaleString()}</td>
+                    <td className="px-4 py-2 text-right font-black">{(po.total_value || 0).toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>
@@ -399,20 +427,20 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
           <div className="overflow-y-auto max-h-[160px]">
             <table className="w-full text-left border-collapse">
               <thead className="bg-gray-50/50 sticky top-0">
-                <tr className="text-[8px] font-bold text-gray-400 uppercase border-b border-gray-50">
-                  <th className="px-3 py-1.5 text-center">Date</th>
-                  <th className="px-3 py-1.5 text-center">Ref.No</th>
-                  <th className="px-3 py-1.5 text-right">Value</th>
+                <tr className="text-[9px] font-bold text-gray-400 uppercase border-b border-gray-50">
+                  <th className="px-4 py-2 text-center">Date</th>
+                  <th className="px-4 py-2 text-center">Ref.No</th>
+                  <th className="px-4 py-2 text-right">Value</th>
                 </tr>
               </thead>
-              <tbody className="text-[9px] font-medium text-gray-600">
+              <tbody className="text-[10px] font-medium text-gray-600">
                 {pendingMos.map((mo) => (
                   <tr key={mo.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
-                    <td className="px-3 py-1.5 text-center whitespace-nowrap">{new Date(mo.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</td>
-                    <td className="px-3 py-1.5 text-center">
-                      <button className="text-blue-500 font-bold border border-blue-50 rounded px-1.5 py-0.5 hover:bg-blue-50 transition-all">{mo.mo_no}</button>
+                    <td className="px-4 py-2 text-center whitespace-nowrap">{new Date(mo.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</td>
+                    <td className="px-4 py-2 text-center">
+                      <button className="text-blue-500 font-bold border border-blue-50 rounded px-2 py-0.5 hover:bg-blue-50 transition-all">{mo.mo_no}</button>
                     </td>
-                    <td className="px-3 py-1.5 text-right font-black">{(mo.total_value || 0).toLocaleString()}</td>
+                    <td className="px-4 py-2 text-right font-black">{(mo.total_value || 0).toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>
@@ -750,8 +778,15 @@ const Dashboard: React.FC = () => {
           from { transform: translateX(0); }
           to { transform: translateX(-50%); }
         }
+        @keyframes wave-slow {
+          from { transform: translateX(-50%); }
+          to { transform: translateX(0); }
+        }
         .animate-wave {
-          animation: wave 4s linear infinite;
+          animation: wave 3s linear infinite;
+        }
+        .animate-wave-slow {
+          animation: wave-slow 6s linear infinite;
         }
       `}</style>
     </div>
