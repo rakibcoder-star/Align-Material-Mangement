@@ -24,6 +24,10 @@ import CostCenter from './CostCenter';
 import LabelManagement from './LabelManagement';
 import { supabase } from '../lib/supabase';
 import { 
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend
+} from 'recharts';
+import { 
   Gauge, 
   ShoppingCart, 
   Warehouse, 
@@ -47,7 +51,8 @@ import {
   BarChart3,
   X,
   Plus,
-  ShieldAlert
+  ShieldAlert,
+  LogOut as LogOutIcon
 } from 'lucide-react';
 
 const SidebarItem: React.FC<{ 
@@ -62,23 +67,23 @@ const SidebarItem: React.FC<{
   danger?: boolean;
 }> = ({ icon, label, active, hasSubmenu, isOpen, isCollapsed, onClick, children, danger }) => {
   return (
-    <div className="w-full">
+    <div className="w-full px-2">
       <button
         onClick={onClick}
         title={isCollapsed ? label : ''}
-        className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} px-2 py-2 text-sm transition-all duration-200 ${
+        className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} px-3 py-2 text-sm transition-all duration-200 rounded-lg border ${
           active 
-            ? 'text-[#2d808e] bg-[#d1e0e2] font-semibold border border-[#2d808e] rounded-lg' 
+            ? 'text-[#2d808e] bg-[#eef6f7] font-bold border-[#2d808e]' 
             : danger 
-              ? 'text-red-500 hover:bg-red-50' 
-              : 'text-gray-600 hover:bg-gray-50'
-        } ${active ? 'mx-1 w-[calc(100%-8px)]' : ''}`}
+              ? 'text-red-500 hover:bg-red-50 border-transparent' 
+              : 'text-gray-600 hover:bg-gray-50 border-transparent'
+        }`}
       >
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-3">
           <div className={`${active ? 'text-[#2d808e]' : danger ? 'text-red-400' : 'text-gray-500'} shrink-0`}>
-            {icon && React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { size: 15 }) : icon}
+            {icon && React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { size: 16 }) : icon}
           </div>
-          {!isCollapsed && <span className="text-[11px] leading-tight tracking-tight whitespace-nowrap overflow-hidden">{label}</span>}
+          {!isCollapsed && <span className="text-[11px] font-bold leading-tight tracking-tight whitespace-nowrap overflow-hidden">{label}</span>}
         </div>
         {!isCollapsed && hasSubmenu && (
           <div className="text-gray-400 shrink-0 ml-1">
@@ -86,7 +91,7 @@ const SidebarItem: React.FC<{
           </div>
         )}
       </button>
-      {!isCollapsed && isOpen && children && <div className="py-0.5">{children}</div>}
+      {!isCollapsed && isOpen && children && <div className="py-1 space-y-0.5">{children}</div>}
     </div>
   );
 };
@@ -97,27 +102,47 @@ const SubmenuItem: React.FC<{
   active?: boolean;
   onClick?: () => void;
 }> = ({ icon, label, active, onClick }) => (
-  <button
-    onClick={onClick}
-    className={`w-full flex items-center space-x-2 pl-6 pr-1.5 py-1.5 text-[11px] transition-all duration-200 ${
-      active 
-        ? 'text-[#2d808e] bg-[#d1e0e2] font-semibold border border-[#2d808e] rounded-lg mx-1 w-[calc(100%-8px)]' 
-        : 'text-gray-600 hover:bg-gray-50'
-    }`}
-  >
-    <div className={`${active ? 'text-[#2d808e]' : 'text-gray-400'} shrink-0`}>
-      {icon && React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { size: 12 }) : icon}
-    </div>
-    <span className="truncate tracking-tight">{label}</span>
-  </button>
+  <div className="px-2">
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center space-x-3 pl-8 pr-3 py-1.5 text-[11px] transition-all duration-200 rounded-lg border ${
+        active 
+          ? 'text-[#2d808e] font-bold bg-[#eef6f7] border-[#2d808e]' 
+          : 'text-gray-500 hover:text-[#2d808e] hover:bg-gray-50 border-transparent'
+      }`}
+    >
+      <div className={`${active ? 'text-[#2d808e]' : 'text-gray-400'} shrink-0`}>
+        {icon && React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { size: 14 }) : icon}
+      </div>
+      <span className="truncate font-bold uppercase tracking-tight">{label}</span>
+    </button>
+  </div>
 );
 
 const KPICard: React.FC<{ label: string; value: string; subValue?: string }> = ({ label, value, subValue }) => (
-  <div className="bg-white p-4 rounded shadow-sm border border-gray-100 flex flex-col justify-center min-h-[90px] hover:shadow-md transition-all">
+  <div className="bg-white p-4 rounded shadow-sm border border-gray-100 flex flex-col justify-center min-h-[90px] hover:shadow-md transition-all group">
     <h3 className="text-[11px] text-gray-400 font-bold tracking-tight mb-1">{label}</h3>
     <div className="flex items-baseline space-x-1">
-      <p className="text-xl font-black text-gray-700 tracking-tight">{value}</p>
+      <p className="text-xl font-black text-gray-700 tracking-tight group-hover:text-[#2d808e] transition-colors">{value}</p>
       {subValue && <p className="text-[13px] font-bold text-gray-400">({subValue})</p>}
+    </div>
+  </div>
+);
+
+const LiquidGauge: React.FC<{ label: string; value: number; subLabel: string; color?: string }> = ({ label, value, subLabel, color = "#3b82f6" }) => (
+  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center">
+    <h3 className="text-[11px] font-black text-[#2d808e] uppercase tracking-widest mb-4">{label} ({subLabel})</h3>
+    <div className="relative w-36 h-36 rounded-full border-[3px] border-[#3b82f6] p-1 overflow-hidden flex items-center justify-center">
+      <div 
+        className="absolute bottom-0 left-0 w-[200%] h-[120%] transition-all duration-1000 ease-in-out"
+        style={{ transform: `translateY(${100 - value}%)`, left: '-50%' }}
+      >
+        <svg viewBox="0 0 500 150" preserveAspectRatio="none" className="w-full h-20 opacity-80 animate-wave">
+          <path d="M0.00,49.98 C150.00,150.00 349.20,-50.00 500.00,49.98 L500.00,150.00 L0.00,150.00 Z" style={{ fill: color }}></path>
+        </svg>
+        <div className="w-full h-full" style={{ background: color }}></div>
+      </div>
+      <span className="relative z-10 text-2xl font-black text-gray-800 drop-shadow-sm">{value} %</span>
     </div>
   </div>
 );
@@ -126,158 +151,362 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
   const navigate = useNavigate();
   const { user } = useAuth();
   const [dateTime, setDateTime] = useState(new Date());
-  const [recentPrs, setRecentPrs] = useState<any[]>([]);
-  const [recentPos, setRecentPos] = useState<any[]>([]);
-  const [loadingPr, setLoadingPr] = useState(true);
-  const [loadingPo, setLoadingPo] = useState(true);
+  
+  // Pending Approvals
+  const [pendingPrs, setPendingPrs] = useState<any[]>([]);
+  const [pendingPos, setPendingPos] = useState<any[]>([]);
+  const [pendingMos, setPendingMos] = useState<any[]>([]);
+  
+  // Historical logs
+  const [latestPRs, setLatestPRs] = useState<any[]>([]);
+  const [latestMOs, setLatestMOs] = useState<any[]>([]);
+  
+  const [stockTypes, setStockTypes] = useState<any[]>([]);
+  const [dieselStock, setDieselStock] = useState(41);
+  const [octaneStock, setOctaneStock] = useState(57);
+  const [weeklyData, setWeeklyData] = useState<any[]>([]);
+  const [monthlyData, setMonthlyData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [stats, setStats] = useState({
+    todayOrderQty: '0', todayOrderCount: '0',
+    lastDayOrderQty: '0', lastDayOrderCount: '0',
+    weeklyOrderQty: '0', weeklyOrderCount: '0',
+    monthlyOrderQty: '0', monthlyOrderCount: '0',
+    weeklyPrQty: '0', weeklyPrCount: '0',
+    monthlyPrQty: '0', monthlyPrCount: '0'
+  });
 
   useEffect(() => {
     const timer = setInterval(() => setDateTime(new Date()), 1000);
     const fetchDashboardData = async () => {
-      // Fetch PRs
-      const { data: prs } = await supabase
-        .from('requisitions')
-        .select('*')
-        .eq('status', 'Pending')
-        .order('created_at', { ascending: false })
-        .limit(10);
-      if (prs) setRecentPrs(prs);
-      setLoadingPr(false);
+      setLoading(true);
+      
+      // 1. Fetch Pending Approvals
+      const { data: prApprovals } = await supabase.from('requisitions').select('*').eq('status', 'Pending').order('created_at', { ascending: false }).limit(5);
+      if (prApprovals) setPendingPrs(prApprovals);
 
-      // Fetch POs
-      const { data: pos } = await supabase
-        .from('purchase_orders')
-        .select('*')
-        .eq('status', 'Pending Approval')
-        .order('created_at', { ascending: false })
-        .limit(10);
-      if (pos) setRecentPos(pos);
-      setLoadingPo(false);
+      const { data: poApprovals } = await supabase.from('purchase_orders').select('*').eq('status', 'Pending').order('created_at', { ascending: false }).limit(5);
+      if (poApprovals) setPendingPos(poApprovals);
+
+      const { data: moApprovals } = await supabase.from('move_orders').select('*').eq('status', 'Pending').order('created_at', { ascending: false }).limit(5);
+      if (moApprovals) setPendingMos(moApprovals);
+
+      // 2. Fetch Latest Logs (Historical)
+      const { data: prLogs } = await supabase.from('requisitions').select('*').order('created_at', { ascending: false }).limit(10);
+      if (prLogs) setLatestPRs(prLogs);
+
+      // 3. Fetch Items for Stock Types Chart and Gauges
+      const { data: items } = await supabase.from('items').select('*');
+      if (items) {
+        const types: Record<string, number> = {};
+        items.forEach(item => {
+          const type = item.type || 'Other';
+          types[type] = (types[type] || 0) + 1;
+        });
+        setStockTypes(Object.entries(types).map(([name, value]) => ({ name, value })));
+
+        const dieselItem = items.find(i => i.sku === '4492');
+        const octaneItem = items.find(i => i.sku === '3121');
+        if (dieselItem) setDieselStock(Math.min(100, Math.round((dieselItem.on_hand_stock / 10000) * 100)));
+        if (octaneItem) setOctaneStock(Math.min(100, Math.round((octaneItem.on_hand_stock / 10000) * 100)));
+      }
+
+      // 4. Mock Analytics (Typically would fetch from movement logs table)
+      setWeeklyData([
+        { name: '08-Sun', qty: 0, value: 0 },
+        { name: '09-Mon', qty: 126, value: 20914 },
+        { name: '10-Tue', qty: 0, value: 0 },
+        { name: '11-Wed', qty: 0, value: 0 },
+        { name: '12-Thu', qty: 0, value: 0 },
+        { name: '13-Fri', qty: 0, value: 0 },
+        { name: '14-Sat', qty: 0, value: 0 },
+      ]);
+      setMonthlyData([
+        { name: 'JAN', value: 5700000 },
+        { name: 'FEB', value: 300000 },
+        { name: 'MAR', value: 10000 },
+        { name: 'APR', value: 0 }, { name: 'MAY', value: 0 }, { name: 'JUN', value: 0 }, { name: 'JUL', value: 0 }, { name: 'AUG', value: 0 }, { name: 'SEP', value: 0 }, { name: 'OCT', value: 0 }, { name: 'NOV', value: 0 }, { name: 'DEC', value: 0 },
+      ]);
+
+      setLatestMOs([
+        { sl: 1, date: '09-Feb-26', tnx: '10404', name: 'GROOVE WHEEL-V, 2 INCH (SS)', qty: 4, value: 4200 }
+      ]);
+
+      // 5. KPI Calculations
+      const today = new Date(); today.setHours(0,0,0,0);
+      const { data: allPo } = await supabase.from('purchase_orders').select('items, created_at');
+      const { data: allPr } = await supabase.from('requisitions').select('items, created_at');
+
+      const sumQty = (list: any[], dateLimit: Date) => {
+        let qty = 0; let count = 0;
+        list?.filter(entry => new Date(entry.created_at) >= dateLimit).forEach(entry => {
+          count++;
+          (entry.items || []).forEach((item: any) => qty += Number(item.poQty || item.reqQty || 0));
+        });
+        return { qty: qty > 1000 ? (qty/1000).toFixed(1) + 'K' : qty.toString(), count: count.toString() };
+      };
+
+      const lastWeek = new Date(today); lastWeek.setDate(today.getDate() - 7);
+      const lastMonth = new Date(today); lastMonth.setMonth(today.getMonth() - 1);
+
+      setStats({
+        todayOrderQty: sumQty(allPo || [], today).qty, todayOrderCount: sumQty(allPo || [], today).count,
+        lastDayOrderQty: sumQty(allPo || [], new Date(today.getTime() - 86400000)).qty, lastDayOrderCount: sumQty(allPo || [], new Date(today.getTime() - 86400000)).count,
+        weeklyOrderQty: sumQty(allPo || [], lastWeek).qty, weeklyOrderCount: sumQty(allPo || [], lastWeek).count,
+        monthlyOrderQty: sumQty(allPo || [], lastMonth).qty, monthlyOrderCount: sumQty(allPo || [], lastMonth).count,
+        weeklyPrQty: sumQty(allPr || [], lastWeek).qty, weeklyPrCount: sumQty(allPr || [], lastWeek).count,
+        monthlyPrQty: sumQty(allPr || [], lastMonth).qty, monthlyPrCount: sumQty(allPr || [], lastMonth).count
+      });
+      
+      setLoading(false);
     };
+    
     fetchDashboardData();
     return () => clearInterval(timer);
   }, []);
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) + 
-           ' ' + date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
-  };
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#ff7300', '#2d808e', '#1e293b'];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-slide-up pb-20">
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-[#2d808e] tracking-tight uppercase">Dashboard Overview</h1>
-          <p className="text-[11px] font-bold text-gray-400 mt-0.5">{formatDate(dateTime)}</p>
+          <h1 className="text-2xl font-black text-[#2d808e] tracking-tight uppercase italic">Dashboard Analytics</h1>
+          <p className="text-[11px] font-bold text-gray-400 mt-0.5">{dateTime.toLocaleString()}</p>
         </div>
         <div className="flex items-center space-x-2">
-          <button onClick={() => navigate('/label')} className="flex items-center px-4 py-2 bg-[#2d808e] text-white text-[11px] font-bold rounded shadow-sm hover:bg-[#256b78] transition-all">
-             <Menu size={14} className="mr-2" /> Code Print
-          </button>
-          <button onClick={onCheckStock} className="flex items-center px-4 py-2 bg-[#2d808e] text-white text-[11px] font-bold rounded shadow-sm hover:bg-[#256b78] transition-all">
-             <LayoutGrid size={14} className="mr-2" /> Check Stock
-          </button>
-          <button onClick={onMoveOrder} className="flex items-center px-4 py-2 bg-[#2d808e] text-white text-[11px] font-bold rounded shadow-sm hover:bg-[#256b78] transition-all">
-             <Plus size={14} className="mr-2" /> Move Order
-          </button>
+          <button onClick={() => navigate('/label')} className="px-4 py-2 bg-[#2d808e] text-white text-[11px] font-bold rounded shadow-sm hover:bg-[#256b78] uppercase transition-all">Code Print</button>
+          <button onClick={onCheckStock} className="px-4 py-2 bg-[#2d808e] text-white text-[11px] font-bold rounded shadow-sm hover:bg-[#256b78] uppercase transition-all">Check Stock</button>
+          <button onClick={onMoveOrder} className="px-4 py-2 bg-[#2d808e] text-white text-[11px] font-bold rounded shadow-sm hover:bg-[#256b78] uppercase transition-all">Move Order</button>
         </div>
       </div>
 
+      {/* Row 1: KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-        <KPICard label="Today Order(Qty)" value="0" subValue="0" />
-        <KPICard label="Lastday Order(Qty)" value="20.9K" subValue="126" />
-        <KPICard label="Weekly Order(Qty)" value="63.5K" subValue="502" />
-        <KPICard label="Monthly Order(Qty)" value="296.2K" subValue="577" />
-        <KPICard label="Weekly PR(Qty)" value="32.1K" subValue="539" />
-        <KPICard label="Monthly PR(Qty)" value="32.1K" subValue="539" />
+        <KPICard label="Today Order(Qty)" value={stats.todayOrderQty} subValue={stats.todayOrderCount} />
+        <KPICard label="Lastday Order(Qty)" value={stats.lastDayOrderQty} subValue={stats.lastDayOrderCount} />
+        <KPICard label="Weekly Order(Qty)" value={stats.weeklyOrderQty} subValue={stats.weeklyOrderCount} />
+        <KPICard label="Monthly Order(Qty)" value={stats.monthlyOrderQty} subValue={stats.monthlyOrderCount} />
+        <KPICard label="Weekly PR(Qty)" value={stats.weeklyPrQty} subValue={stats.weeklyPrCount} />
+        <KPICard label="Monthly PR(Qty)" value={stats.monthlyPrQty} subValue={stats.monthlyPrCount} />
       </div>
 
+      {/* Row 2: Analytics Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* PR Approval Queue */}
-        <div className="bg-white rounded shadow-sm border border-gray-100 overflow-hidden flex flex-col w-full">
-          <div className="px-5 py-4 border-b border-gray-100 bg-[#fafbfc] flex items-center justify-between">
-            <h3 className="text-sm font-black text-[#2d808e] uppercase tracking-tighter">PR Approval Queue</h3>
-            <span className="px-2 py-0.5 bg-cyan-100 text-cyan-700 text-[10px] rounded-full font-black">{recentPrs.length} Pending</span>
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <h3 className="text-[13px] font-black text-[#2d808e] uppercase tracking-tighter mb-6">Weekly Move Order</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={weeklyData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                <Bar yAxisId="left" dataKey="qty" fill="#1e293b" radius={[4, 4, 0, 0]} barSize={40} />
+                <Line yAxisId="right" type="monotone" dataKey="value" stroke="#f97316" strokeWidth={3} dot={{ fill: '#f97316', r: 4 }} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
-          <div className="overflow-y-auto max-h-[400px] scrollbar-thin">
+        </div>
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <h3 className="text-[13px] font-black text-[#2d808e] uppercase tracking-tighter mb-6">Monthly Move Order</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={monthlyData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                <Tooltip />
+                <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} dot={{ fill: '#3b82f6', r: 4 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Row 3: Gauges and Stock Types */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <LiquidGauge label="DIESEL" value={dieselStock} subLabel="4492" color="#3b82f6" />
+        <LiquidGauge label="OCTANE" value={octaneStock} subLabel="3121" color="#0ea5e9" />
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center">
+          <h3 className="text-[11px] font-black text-[#2d808e] uppercase tracking-widest mb-2">Stock Types</h3>
+          <div className="h-48 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={stockTypes} innerRadius={50} outerRadius={70} paddingAngle={5} dataKey="value">
+                  {stockTypes.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: '9px', fontWeight: 'bold', paddingTop: '10px' }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Row 4: Approval Command Center (PR, PO, MO Approvals) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* PR Approval Queue */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+          <div className="px-5 py-4 border-b border-gray-100 bg-[#fafbfc]">
+             <h3 className="text-[13px] font-black text-[#2d808e] uppercase tracking-tighter">PR Approval</h3>
+          </div>
+          <div className="overflow-y-auto max-h-[300px]">
             <table className="w-full text-left border-collapse">
-              <thead className="bg-gray-50 sticky top-0 z-10">
-                <tr className="text-[10px] font-bold text-gray-500 uppercase">
+              <thead className="bg-gray-50/50 sticky top-0">
+                <tr className="text-[10px] font-bold text-gray-400 uppercase border-b border-gray-50">
                   <th className="px-5 py-3 text-center">Date</th>
-                  <th className="px-5 py-3 text-center">Ref.No (PR)</th>
+                  <th className="px-5 py-3 text-center">Ref.No</th>
                   <th className="px-5 py-3 text-right">Value</th>
                 </tr>
               </thead>
-              <tbody className="text-[11px] font-medium">
-                {loadingPr ? (
-                  <tr><td colSpan={3} className="py-10 text-center text-gray-400">Syncing...</td></tr>
-                ) : recentPrs.length > 0 ? (
-                  recentPrs.map((pr) => (
-                    <tr key={pr.id} className="border-b border-gray-50 hover:bg-cyan-50/10 transition-colors">
-                      <td className="px-5 py-3 text-center whitespace-nowrap text-gray-500">
-                        {new Date(pr.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
-                      </td>
-                      <td className="px-5 py-3 text-center">
-                        <button 
-                          onClick={() => onPreviewPr(pr)}
-                          className="text-[#2d808e] font-black hover:underline transition-all"
-                        >
-                          {pr.pr_no}
-                        </button>
-                      </td>
-                      <td className="px-5 py-3 text-right font-black text-gray-800">
-                        {pr.total_value ? Number(pr.total_value).toLocaleString() : '0'}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr><td colSpan={3} className="py-10 text-center text-gray-400 uppercase font-bold tracking-widest text-[9px]">No pending PR approvals</td></tr>
-                )}
+              <tbody className="text-[11px] font-medium text-gray-600">
+                {pendingPrs.map((pr) => (
+                  <tr key={pr.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
+                    <td className="px-5 py-3 text-center">{new Date(pr.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })}</td>
+                    <td className="px-5 py-3 text-center">
+                      <button onClick={() => onPreviewPr(pr)} className="text-blue-500 font-bold border border-blue-200 rounded px-3 py-1 hover:bg-blue-50 transition-all">{pr.pr_no}</button>
+                    </td>
+                    <td className="px-5 py-3 text-right font-black">{(pr.total_value || 0).toLocaleString()}</td>
+                  </tr>
+                ))}
+                {pendingPrs.length === 0 && <tr><td colSpan={3} className="py-20 text-center text-gray-300 uppercase font-black text-[9px] tracking-widest">No PR Pending</td></tr>}
               </tbody>
             </table>
           </div>
         </div>
 
         {/* PO Approval Queue */}
-        <div className="bg-white rounded shadow-sm border border-gray-100 overflow-hidden flex flex-col w-full">
-          <div className="px-5 py-4 border-b border-gray-100 bg-[#fafbfc] flex items-center justify-between">
-            <h3 className="text-sm font-black text-orange-600 uppercase tracking-tighter">PO Approval Queue</h3>
-            <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-[10px] rounded-full font-black">{recentPos.length} Pending</span>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+          <div className="px-5 py-4 border-b border-gray-100 bg-[#fafbfc]">
+             <h3 className="text-[13px] font-black text-[#2d808e] uppercase tracking-tighter">PO Approval</h3>
           </div>
-          <div className="overflow-y-auto max-h-[400px] scrollbar-thin">
+          <div className="overflow-y-auto max-h-[300px]">
             <table className="w-full text-left border-collapse">
-              <thead className="bg-gray-50 sticky top-0 z-10">
-                <tr className="text-[10px] font-bold text-gray-500 uppercase">
+              <thead className="bg-gray-50/50 sticky top-0">
+                <tr className="text-[10px] font-bold text-gray-400 uppercase border-b border-gray-50">
                   <th className="px-5 py-3 text-center">Date</th>
-                  <th className="px-5 py-3 text-center">PO Number</th>
-                  <th className="px-5 py-3 text-right">Total Value</th>
+                  <th className="px-5 py-3 text-center">Ref.No</th>
+                  <th className="px-5 py-3 text-right">Value</th>
                 </tr>
               </thead>
-              <tbody className="text-[11px] font-medium">
-                {loadingPo ? (
-                  <tr><td colSpan={3} className="py-10 text-center text-gray-400">Syncing...</td></tr>
-                ) : recentPos.length > 0 ? (
-                  recentPos.map((po) => (
-                    <tr key={po.id} className="border-b border-gray-50 hover:bg-orange-50/10 transition-colors">
-                      <td className="px-5 py-3 text-center whitespace-nowrap text-gray-500">
-                        {new Date(po.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+              <tbody className="text-[11px] font-medium text-gray-600">
+                {pendingPos.map((po) => (
+                  <tr key={po.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
+                    <td className="px-5 py-3 text-center">{new Date(po.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })}</td>
+                    <td className="px-5 py-3 text-center">
+                      <button onClick={() => onPreviewPo(po)} className="text-blue-500 font-bold border border-blue-200 rounded px-3 py-1 hover:bg-blue-50 transition-all">{po.po_no}</button>
+                    </td>
+                    <td className="px-5 py-3 text-right font-black">{(po.total_value || 0).toLocaleString()}</td>
+                  </tr>
+                ))}
+                {pendingPos.length === 0 && <tr><td colSpan={3} className="py-20 text-center text-gray-300 uppercase font-black text-[9px] tracking-widest">No PO Pending</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* MO Approval Queue (MATCHING REQUESTED DESIGN) */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+          <div className="px-5 py-4 border-b border-gray-100 bg-[#fafbfc]">
+             <h3 className="text-[13px] font-black text-[#2d808e] uppercase tracking-tighter">MO Approval</h3>
+          </div>
+          <div className="overflow-y-auto max-h-[300px]">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-gray-50/50 sticky top-0">
+                <tr className="text-[10px] font-bold text-gray-400 uppercase border-b border-gray-50">
+                  <th className="px-5 py-3 text-center">Date</th>
+                  <th className="px-5 py-3 text-center">Ref.No</th>
+                  <th className="px-5 py-3 text-right">Value</th>
+                </tr>
+              </thead>
+              <tbody className="text-[11px] font-medium text-gray-600">
+                {pendingMos.map((mo) => (
+                  <tr key={mo.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
+                    <td className="px-5 py-3 text-center whitespace-nowrap">{new Date(mo.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })}</td>
+                    <td className="px-5 py-3 text-center">
+                      <button className="text-blue-500 font-bold border-2 border-blue-100 rounded-lg px-4 py-1.5 hover:bg-blue-50 transition-all">{mo.mo_no}</button>
+                    </td>
+                    <td className="px-5 py-3 text-right font-black">{(mo.total_value || 0).toLocaleString()}</td>
+                  </tr>
+                ))}
+                {pendingMos.length === 0 && <tr><td colSpan={3} className="py-20 text-center text-gray-300 uppercase font-black text-[9px] tracking-widest">No MO Pending</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* Row 5: Latest Logs (Movement & PR) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100 bg-[#fafbfc]">
+             <h3 className="text-[13px] font-black text-[#2d808e] uppercase tracking-tighter">Latest Move orders</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-gray-50/50">
+                <tr className="text-[10px] font-bold text-gray-500 uppercase">
+                  <th className="px-5 py-3 w-12 text-center">#</th>
+                  <th className="px-5 py-3">Date</th>
+                  <th className="px-5 py-3">Tnx.No</th>
+                  <th className="px-5 py-3">Item Name</th>
+                  <th className="px-5 py-3 text-center">Qty</th>
+                  <th className="px-5 py-3 text-right">Value</th>
+                </tr>
+              </thead>
+              <tbody className="text-[11px] font-medium text-gray-600">
+                {latestMOs.map((mo, i) => (
+                  <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
+                    <td className="px-5 py-3 text-center font-bold text-gray-400">{i+1}</td>
+                    <td className="px-5 py-3 whitespace-nowrap">{mo.date}</td>
+                    <td className="px-5 py-3 text-blue-500 font-bold">{mo.tnx}</td>
+                    <td className="px-5 py-3 font-bold uppercase truncate max-w-[150px]">{mo.name}</td>
+                    <td className="px-5 py-3 text-center font-bold">{mo.qty}</td>
+                    <td className="px-5 py-3 text-right font-black text-gray-800">{mo.value.toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100 bg-[#fafbfc]">
+             <h3 className="text-[13px] font-black text-[#2d808e] uppercase tracking-tighter">Latest PR</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-gray-50/50">
+                <tr className="text-[10px] font-bold text-gray-500 uppercase">
+                  <th className="px-5 py-3 w-12 text-center">#</th>
+                  <th className="px-5 py-3">Date</th>
+                  <th className="px-5 py-3">PR No</th>
+                  <th className="px-5 py-3">Requested By</th>
+                  <th className="px-5 py-3 text-center">Qty</th>
+                  <th className="px-5 py-3 text-right">Value</th>
+                </tr>
+              </thead>
+              <tbody className="text-[11px] font-medium text-gray-600">
+                {latestPRs.map((pr, i) => {
+                  const qty = (pr.items || []).reduce((acc: number, item: any) => acc + Number(item.reqQty || 0), 0);
+                  return (
+                    <tr key={pr.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
+                      <td className="px-5 py-3 text-center font-bold text-gray-400">{i+1}</td>
+                      <td className="px-5 py-3 whitespace-nowrap">{new Date(pr.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })}</td>
+                      <td className="px-5 py-3 text-blue-500 font-bold">
+                        <button onClick={() => onPreviewPr(pr)} className="hover:underline">{pr.pr_no}</button>
                       </td>
-                      <td className="px-5 py-3 text-center">
-                        <button 
-                          onClick={() => onPreviewPo(po)}
-                          className="text-orange-600 font-black hover:underline transition-all"
-                        >
-                          {po.po_no}
-                        </button>
-                      </td>
-                      <td className="px-5 py-3 text-right font-black text-gray-800">
-                        {po.total_value ? Number(po.total_value).toLocaleString() : '0'}
-                      </td>
+                      <td className="px-5 py-3 font-bold uppercase truncate max-w-[150px]">{pr.req_by_name}</td>
+                      <td className="px-5 py-3 text-center font-bold">{qty}</td>
+                      <td className="px-5 py-3 text-right font-black text-gray-800">{(pr.total_value || 0).toLocaleString()}</td>
                     </tr>
-                  ))
-                ) : (
-                  <tr><td colSpan={3} className="py-10 text-center text-gray-400 uppercase font-bold tracking-widest text-[9px]">No pending PO approvals</td></tr>
-                )}
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -288,7 +517,7 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
 };
 
 const Dashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const activeTab = location.pathname.substring(1) || 'overview';
@@ -334,7 +563,7 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-[#f1f3f4] overflow-hidden font-['Inter'] no-print">
+    <div className="flex h-screen bg-[#f8fafb] overflow-hidden font-sans no-print">
       {isMobileMenuOpen && (
         <div 
           className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden animate-in fade-in duration-300"
@@ -342,96 +571,117 @@ const Dashboard: React.FC = () => {
         />
       )}
 
+      {/* LEFT SIDEBAR - Reduced width to 210px */}
       <aside className={`
         fixed inset-y-0 left-0 z-50 transform md:relative md:translate-x-0 transition-all duration-300 ease-in-out
-        ${isMobileMenuOpen ? 'translate-x-0 w-[190px]' : '-translate-x-full md:translate-x-0'}
-        ${isSidebarCollapsed && !isMobileMenuOpen ? 'md:w-16' : 'md:w-40'}
-        bg-white border-r border-gray-200 flex flex-col h-full shadow-sm shrink-0
+        ${isMobileMenuOpen ? 'translate-x-0 w-[210px]' : '-translate-x-full md:translate-x-0'}
+        ${isSidebarCollapsed && !isMobileMenuOpen ? 'md:w-16' : 'md:w-[210px]'}
+        bg-white border-r border-gray-100 flex flex-col h-full shadow-sm shrink-0
       `}>
-        <div className="flex justify-between items-center p-3 md:hidden border-b border-gray-100 mb-2">
-          <button onClick={() => handleNav('/overview')} className="text-lg font-black text-[#2d808e] tracking-tighter">ALIGN</button>
-          <button onClick={() => setIsMobileMenuOpen(false)} className="p-1.5 text-gray-400 hover:text-gray-600 focus:outline-none">
-            <X size={18} />
+        <div className="flex justify-between items-center p-6 border-b border-gray-50 shrink-0">
+          <button onClick={() => handleNav('/overview')} className="text-2xl font-black text-gray-800 tracking-tighter hover:text-[#2d808e] transition-colors">ALIGN</button>
+          <button onClick={() => setIsMobileMenuOpen(false)} className="md:hidden p-1.5 text-gray-400 hover:text-gray-600 focus:outline-none">
+            <X size={20} />
           </button>
         </div>
 
-        <div className={`pt-4 pb-3 px-2 flex flex-col items-center space-y-2 ${isSidebarCollapsed && !isMobileMenuOpen ? 'md:px-0' : ''}`}>
-          <div className={`${isSidebarCollapsed && !isMobileMenuOpen ? 'w-9 h-9' : 'w-12 h-12'} rounded-full bg-[#e2eff1] flex items-center justify-center transition-all duration-300 shadow-inner shrink-0`}>
-            <UserIcon size={isSidebarCollapsed && !isMobileMenuOpen ? 16 : 24} className="text-[#2d808e]" strokeWidth={1.5} />
+        <div className={`pt-8 pb-6 px-4 flex flex-col items-center space-y-4 shrink-0 ${isSidebarCollapsed && !isMobileMenuOpen ? 'md:px-2' : ''}`}>
+          <div className={`${isSidebarCollapsed && !isMobileMenuOpen ? 'w-10 h-10' : 'w-20 h-20'} rounded-full bg-[#eef6f7] flex items-center justify-center transition-all duration-500 shadow-inner border-2 border-white ring-4 ring-[#eef6f7]/50`}>
+            <UserIcon size={isSidebarCollapsed && !isMobileMenuOpen ? 20 : 40} className="text-[#2d808e]" strokeWidth={1} />
           </div>
           {(!isSidebarCollapsed || isMobileMenuOpen) && (
-            <div className="text-center overflow-hidden w-full px-1">
-              <span className="text-[10px] font-bold text-[#2d808e] block truncate uppercase tracking-tight">System Admin</span>
-              <span className="text-[7px] text-gray-400 font-bold uppercase tracking-widest">Administrator</span>
+            <div className="text-center overflow-hidden w-full space-y-1">
+              <span className="text-[13px] font-black text-gray-800 block truncate uppercase tracking-tight">
+                {user?.fullName || 'SYSTEM ADMIN'}
+              </span>
+              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] block">
+                {user?.role || 'ADMINISTRATOR'}
+              </span>
             </div>
           )}
         </div>
 
-        <div className="flex-1 py-1.5 overflow-y-auto overflow-x-hidden space-y-0.5 scrollbar-thin text-center">
+        <div className="flex-1 py-4 overflow-y-auto overflow-x-hidden space-y-1.5 scrollbar-thin">
           <SidebarItem icon={<Gauge />} label="Dashboard" active={activeTab === 'overview'} isCollapsed={isSidebarCollapsed && !isMobileMenuOpen} onClick={() => handleNav('/overview')} />
 
           <SidebarItem icon={<ShoppingCart />} label="Purchase" hasSubmenu isCollapsed={isSidebarCollapsed && !isMobileMenuOpen} isOpen={openMenus.purchase} onClick={() => toggleMenu('purchase')}>
-            <div className="space-y-0.5">
-              <SubmenuItem icon={<ClipboardList />} label="Requisition" active={activeTab === 'requisition'} onClick={() => handleNav('/requisition')} />
-              <SubmenuItem icon={<ShoppingBag />} label="Order" active={activeTab === 'purchase-order'} onClick={() => handleNav('/purchase-order')} />
-              <SubmenuItem icon={<Truck />} label="Supplier" active={activeTab === 'supplier'} onClick={() => handleNav('/supplier')} />
-              <SubmenuItem icon={<BarChart3 />} label="Report" active={activeTab === 'purchase-report'} onClick={() => handleNav('/purchase-report')} />
-            </div>
+            <SubmenuItem icon={<ClipboardList />} label="Requisition" active={activeTab === 'requisition'} onClick={() => handleNav('/requisition')} />
+            <SubmenuItem icon={<ShoppingBag />} label="Order" active={activeTab === 'purchase-order'} onClick={() => handleNav('/purchase-order')} />
+            <SubmenuItem icon={<Truck />} label="Supplier" active={activeTab === 'supplier'} onClick={() => handleNav('/supplier')} />
+            <SubmenuItem icon={<BarChart3 />} label="Report" active={activeTab === 'purchase-report'} onClick={() => handleNav('/purchase-report')} />
           </SidebarItem>
 
           <SidebarItem icon={<Warehouse />} label="Warehouse" hasSubmenu isCollapsed={isSidebarCollapsed && !isMobileMenuOpen} isOpen={openMenus.warehouse} onClick={() => toggleMenu('warehouse')}>
-            <div className="space-y-0.5">
-              <SubmenuItem icon={<LayoutGrid />} label="Inventory" active={activeTab === 'inventory'} onClick={() => handleNav('/inventory')} />
-              <SubmenuItem icon={<ArrowRight />} label="Receive" active={activeTab === 'receive'} onClick={() => handleNav('/receive')} />
-              <SubmenuItem icon={<ArrowLeft />} label="Issue" active={activeTab === 'issue'} onClick={() => handleNav('/issue')} />
-              <SubmenuItem icon={<FileText />} label="Tnx-Report" active={activeTab === 'tnx-report'} onClick={() => handleNav('/tnx-report')} />
-              <SubmenuItem icon={<FileText />} label="MO-Report" active={activeTab === 'mo-report'} onClick={() => handleNav('/mo-report')} />
-            </div>
+            <SubmenuItem icon={<LayoutGrid />} label="Inventory" active={activeTab === 'inventory'} onClick={() => handleNav('/inventory')} />
+            <SubmenuItem icon={<ArrowRight />} label="Receive" active={activeTab === 'receive'} onClick={() => handleNav('/receive')} />
+            <SubmenuItem icon={<ArrowLeft />} label="Issue" active={activeTab === 'issue'} onClick={() => handleNav('/issue')} />
+            <SubmenuItem icon={<FileText />} label="Tnx-Report" active={activeTab === 'tnx-report'} onClick={() => handleNav('/tnx-report')} />
+            <SubmenuItem icon={<FileText />} label="MO-Report" active={activeTab === 'mo-report'} onClick={() => handleNav('/mo-report')} />
           </SidebarItem>
 
           <SidebarItem icon={<LayoutGrid />} label="Item Master" hasSubmenu isCollapsed={isSidebarCollapsed && !isMobileMenuOpen} isOpen={openMenus.itemMaster} onClick={() => toggleMenu('itemMaster')}>
-            <div className="space-y-0.5">
-              <SubmenuItem icon={<FileText />} label="Item List" active={activeTab === 'item-list'} onClick={() => handleNav('/item-list')} />
-              <SubmenuItem icon={<Boxes />} label="Item UOM" active={activeTab === 'item-uom'} onClick={() => handleNav('/item-uom')} />
-              <SubmenuItem icon={<Layers />} label="Item Group" active={activeTab === 'item-group'} onClick={() => handleNav('/item-group')} />
-              <SubmenuItem icon={<Tag />} label="Item Type" active={activeTab === 'item-type'} onClick={() => handleNav('/item-type')} />
-              <SubmenuItem icon={<Home />} label="Cost Center" active={activeTab === 'cost-center'} onClick={() => handleNav('/cost-center')} />
-            </div>
+            <SubmenuItem icon={<FileText />} label="Item List" active={activeTab === 'item-list'} onClick={() => handleNav('/item-list')} />
+            <SubmenuItem icon={<Boxes />} label="Item UOM" active={activeTab === 'item-uom'} onClick={() => handleNav('/item-uom')} />
+            <SubmenuItem icon={<Layers />} label="Item Group" active={activeTab === 'item-group'} onClick={() => handleNav('/item-group')} />
+            <SubmenuItem icon={<Tag />} label="Item Type" active={activeTab === 'item-type'} onClick={() => handleNav('/item-type')} />
+            <SubmenuItem icon={<Home />} label="Cost Center" active={activeTab === 'cost-center'} onClick={() => handleNav('/cost-center')} />
           </SidebarItem>
 
           <SidebarItem icon={<ShieldAlert />} label="Admin" hasSubmenu isCollapsed={isSidebarCollapsed && !isMobileMenuOpen} isOpen={openMenus.admin} onClick={() => toggleMenu('admin')}>
-            <div className="space-y-0.5">
-              <SubmenuItem icon={<UserIcon />} label="Users" active={activeTab === 'users'} onClick={() => handleNav('/users')} />
-            </div>
+            <SubmenuItem icon={<UserIcon />} label="Users" active={activeTab === 'users'} onClick={() => handleNav('/users')} />
           </SidebarItem>
+        </div>
+
+        <div className="p-4 border-t border-gray-50 shrink-0">
+          <button 
+            onClick={logout}
+            className={`w-full flex items-center ${isSidebarCollapsed && !isMobileMenuOpen ? 'justify-center' : 'space-x-3 px-4'} py-3 text-red-500 hover:bg-red-50 transition-all rounded-lg group`}
+          >
+            <LogOutIcon size={18} className="group-hover:scale-110 transition-transform" />
+            {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="text-[12px] font-black uppercase tracking-widest">Sign Out</span>}
+          </button>
         </div>
       </aside>
 
       <div className="flex-1 flex flex-col overflow-hidden relative">
-        <header className="h-14 md:h-16 bg-white border-b border-gray-200 flex items-center justify-between px-3 md:px-6 z-30 shrink-0">
-          <div className="flex items-center space-x-1.5 md:space-x-4">
-            <button onClick={() => window.innerWidth < 768 ? setIsMobileMenuOpen(true) : setIsSidebarCollapsed(!isSidebarCollapsed)} className="p-1.5 hover:bg-gray-100 rounded-md transition-colors text-[#2d808e] focus:outline-none">
-              <Menu size={18} />
+        <header className="h-16 md:h-20 bg-white border-b border-gray-100 flex items-center justify-between px-6 md:px-10 z-30 shrink-0">
+          <div className="flex items-center space-x-6">
+            <button 
+              onClick={() => window.innerWidth < 768 ? setIsMobileMenuOpen(true) : setIsSidebarCollapsed(!isSidebarCollapsed)} 
+              className="p-2 hover:bg-[#eef6f7] rounded-xl transition-all text-[#2d808e] focus:outline-none shadow-sm shadow-[#2d808e]/5"
+            >
+              <Menu size={22} />
             </button>
-            <button onClick={() => handleNav('/overview')} className="text-lg md:text-2xl font-black text-gray-800 tracking-tighter hover:text-[#2d808e] transition-colors">ALIGN</button>
-          </div>
-          
-          <div className="flex-1 max-w-xs px-2 hidden lg:block">
-            <div className="relative group">
-              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#2d808e]" />
-              <input type="text" placeholder="Quick search..." className="w-full pl-8 pr-3 py-1.5 bg-gray-50 border border-transparent focus:border-[#2d808e] focus:bg-white rounded-lg outline-none text-[11px] transition-all" />
+            <div className="hidden lg:block w-px h-8 bg-gray-100"></div>
+            <div className="hidden lg:block relative group w-[400px]">
+              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-[#2d808e] transition-colors" />
+              <input 
+                type="text" 
+                placeholder="Quick search components or data terminal..." 
+                className="w-full pl-12 pr-4 py-2.5 bg-gray-50 border border-transparent focus:border-[#2d808e]/30 focus:bg-white rounded-xl outline-none text-[12px] font-bold text-gray-600 transition-all shadow-inner" 
+              />
             </div>
           </div>
 
-          <div className="flex items-center space-x-1.5 md:space-x-3">
-             <button className="p-1.5 text-gray-400 hover:text-[#2d808e] transition-colors"><Bell size={16} /></button>
-             <div className="w-8 h-8 rounded-full bg-[#e2eff1] flex items-center justify-center border border-gray-100">
-               <UserIcon size={16} className="text-[#2d808e]" />
+          <div className="flex items-center space-x-4">
+             <button className="p-2.5 text-gray-400 hover:text-[#2d808e] bg-gray-50 rounded-xl transition-all relative">
+               <Bell size={20} />
+               <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+             </button>
+             <div className="w-px h-6 bg-gray-100"></div>
+             <div className="flex items-center space-x-3 pl-2">
+                <div className="text-right hidden sm:block">
+                  <p className="text-[12px] font-black text-gray-800 uppercase tracking-tight leading-none">{user?.fullName || 'SYSTEM ADMIN'}</p>
+                  <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">Status: Online</p>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-[#eef6f7] flex items-center justify-center border border-white shadow-sm ring-2 ring-[#eef6f7]">
+                  <UserIcon size={20} className="text-[#2d808e]" />
+                </div>
              </div>
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-3 md:p-6 bg-[#f1f3f4] pb-10">
+        <main className="flex-1 overflow-y-auto p-6 md:p-10 bg-[#f8fafb] pb-20">
           <div className="max-w-[1600px] mx-auto w-full">
             <Routes>
               <Route path="/overview" element={<DashboardOverview onCheckStock={() => setIsStockStatusModalOpen(true)} onMoveOrder={() => setIsMoveOrderModalOpen(true)} onPreviewPr={(pr) => setPreviewPr(pr)} onPreviewPo={(po) => setPreviewPo(po)} />} />
@@ -456,11 +706,9 @@ const Dashboard: React.FC = () => {
           </div>
         </main>
 
-        <footer className="h-12 md:h-16 border-t border-gray-200 flex flex-col md:flex-row items-center justify-center bg-white px-4 shrink-0 sticky bottom-0 z-10">
-           <div className="flex flex-col md:flex-row items-center md:space-x-4 text-[8px] md:text-[9px] font-bold uppercase tracking-widest text-center">
-              <p className="text-gray-500">All rights Reserved © ALIGN 2026</p>
-              <div className="hidden md:block w-1 h-1 bg-[#2d808e]/20 rounded-full"></div>
-              <p className="text-gray-400">Developed by <a href="https://github.com/rakibcoder-star" target="_blank" rel="noopener noreferrer" className="text-[#2d808e] font-black hover:underline transition-all">RAKIB H SHUVO</a></p>
+        <footer className="h-16 border-t border-gray-100 flex items-center justify-center bg-white px-10 shrink-0 sticky bottom-0 z-20">
+           <div className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-300">
+             &copy; 2026 ALIGN - Proprietary Enterprise Node
            </div>
         </footer>
       </div>
@@ -468,7 +716,17 @@ const Dashboard: React.FC = () => {
       <MoveOrderModal isOpen={isMoveOrderModalOpen} onClose={() => setIsMoveOrderModalOpen(false)} />
       <StockStatusModal isOpen={isStockStatusModalOpen} onClose={() => setIsStockStatusModalOpen(false)} />
       {previewPr && <PRPreviewModal pr={previewPr} onClose={() => setPreviewPr(null)} />}
-      {previewPo && <POPreviewModal po={previewPo} onClose={() => { setPreviewPo(null); window.location.reload(); }} />}
+      {previewPo && <POPreviewModal po={previewPo} onClose={() => { setPreviewPo(null); }} />}
+      
+      <style>{`
+        @keyframes wave {
+          from { transform: translateX(0); }
+          to { transform: translateX(-50%); }
+        }
+        .animate-wave {
+          animation: wave 4s linear infinite;
+        }
+      `}</style>
     </div>
   );
 };

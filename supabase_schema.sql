@@ -1,3 +1,4 @@
+
 -- =========================================================
 -- CRITICAL REPAIR SCRIPT: RUN THIS IN SUPABASE SQL EDITOR
 -- =========================================================
@@ -22,7 +23,7 @@ ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS phone_contact TEXT;
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS phone_alternate TEXT;
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS email_office TEXT;
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS email_contact TEXT;
-ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS email_alternate TEXT; -- THE CRITICAL FIX
+ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS email_alternate TEXT; 
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS tax_name TEXT;
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS tax_bin TEXT;
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS tax_address TEXT;
@@ -37,7 +38,7 @@ ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS pay_branch_name TEXT;
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS pay_routing_number TEXT;
 ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS pay_swift_number TEXT;
 
--- FORCE CACHE RELOAD: This solves the "Could not find column in schema cache" error
+-- FORCE CACHE RELOAD
 NOTIFY pgrst, 'reload schema';
 
 -- =========================================================
@@ -97,13 +98,32 @@ CREATE TABLE IF NOT EXISTS purchase_orders (
     type TEXT,
     supplier_id UUID REFERENCES suppliers(id),
     supplier_name TEXT,
+    supplier_address TEXT,
+    supplier_vat TEXT,
+    supplier_tin TEXT,
+    supplier_email TEXT,
+    supplier_contact TEXT,
     currency TEXT DEFAULT 'BDT',
     total_value DECIMAL DEFAULT 0,
-    status TEXT DEFAULT 'Open',
+    status TEXT DEFAULT 'Pending',
     items JSONB DEFAULT '[]'::jsonb,
     terms JSONB DEFAULT '{}'::jsonb,
     note TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ADDED: Move Orders Table
+CREATE TABLE IF NOT EXISTS move_orders (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    mo_no TEXT UNIQUE NOT NULL,
+    reference TEXT,
+    header_text TEXT,
+    department TEXT,
+    status TEXT DEFAULT 'Pending',
+    total_value DECIMAL DEFAULT 0,
+    items JSONB DEFAULT '[]'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Row Level Security
@@ -111,16 +131,19 @@ ALTER TABLE items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE suppliers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE requisitions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE purchase_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE move_orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Allow all" ON items;
 DROP POLICY IF EXISTS "Allow all" ON suppliers;
 DROP POLICY IF EXISTS "Allow all" ON requisitions;
 DROP POLICY IF EXISTS "Allow all" ON purchase_orders;
+DROP POLICY IF EXISTS "Allow all" ON move_orders;
 DROP POLICY IF EXISTS "Allow all" ON profiles;
 
 CREATE POLICY "Allow all" ON items FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all" ON suppliers FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all" ON requisitions FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all" ON purchase_orders FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all" ON move_orders FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all" ON profiles FOR ALL USING (true) WITH CHECK (true);
