@@ -123,7 +123,6 @@ const MaterialsMovementForm: React.FC<MaterialsMovementFormProps> = ({ selectedI
       // 1. Reduce stock for each item in DB
       for (const item of items) {
         const qty = item.tnxQty || 0;
-        // Resolved ambiguity error by adding is_receive: false
         const { error } = await supabase.rpc('update_item_stock', {
           item_sku: item.sku,
           qty_change: -qty,
@@ -132,32 +131,37 @@ const MaterialsMovementForm: React.FC<MaterialsMovementFormProps> = ({ selectedI
         if (error) throw error;
       }
 
-      // 2. Complete the issue task by updating Move Order status
+      // 2. Complete the issue task by updating Move Order status and item locations
       const uniqueMoIds = Array.from(new Set(items.map(i => i.moId).filter(Boolean)));
-      if (uniqueMoIds.length > 0) {
-        const { error: statusError } = await supabase
+      for (const moId of uniqueMoIds) {
+        const moItems = items.filter(i => i.moId === moId).map(i => ({
+          ...i,
+          issuedQty: Number(i.issuedQty || 0) + Number(i.tnxQty)
+        }));
+
+        const { error: updateError } = await supabase
           .from('move_orders')
-          .update({ status: 'Completed' })
-          .in('id', uniqueMoIds);
+          .update({ 
+            status: 'Completed',
+            items: moItems, // Save updated items with their transaction locations
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', moId);
         
-        if (statusError) throw statusError;
+        if (updateError) throw updateError;
       }
 
-      // 3. Show Success Notification matching image
-      const giId = (10000 + Math.floor(Math.random() * 9999)).toString();
+      // 3. Show Success Notification starting from 500000
+      const giId = (500000 + Math.floor(Math.random() * 5000)).toString();
       const firstItem = items[0];
       setShowNotification({
         giId: giId,
         moNo: firstItem.moNo || 'N/A',
         itemsCount: items.length,
-        details: `Item ${firstItem.sku} updated (location: ${firstItem.location}, issue Qty: ${firstItem.tnxQty})`
+        details: `Item: ${firstItem.name} | Qty: ${firstItem.tnxQty} | Loc: ${firstItem.location}`
       });
 
-      // Wait a bit before proceeding
-      setTimeout(() => {
-        onSubmit({ items });
-      }, 3000);
-
+      setIsSubmitting(false);
     } catch (err: any) {
       alert("Error processing issue: " + err.message);
       setIsSubmitting(false);
@@ -172,27 +176,36 @@ const MaterialsMovementForm: React.FC<MaterialsMovementFormProps> = ({ selectedI
         ))}
       </datalist>
 
-      {/* Success Notification Popup (Floating Top-Right) */}
+      {/* Success Notification Popup (Floating Center-Top) */}
       {showNotification && (
-        <div className="fixed top-6 right-6 z-[200] w-[380px] bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.1)] border border-gray-100 p-5 animate-in fade-in slide-in-from-top-4 duration-300">
-          <div className="flex items-start space-x-4">
-            <div className="bg-[#4CAF50] rounded-full p-1.5 shrink-0">
-              <CheckCircle2 size={18} className="text-white" strokeWidth={3} />
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-[2px] p-4">
+          <div className="w-[450px] bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-emerald-100 overflow-hidden animate-in fade-in zoom-in duration-300">
+            <div className="bg-emerald-500 p-6 text-center">
+              <CheckCircle2 size={48} className="text-white mx-auto mb-3" strokeWidth={3} />
+              <h4 className="text-xl font-black text-white uppercase tracking-tight">MO Issue Completed</h4>
             </div>
-            <div className="flex-1 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <h4 className="text-[14px] font-bold text-gray-800 leading-tight">
-                  GI ID #{showNotification.giId} for MO ID#{showNotification.moNo} - process completed
-                </h4>
-                <button onClick={() => setShowNotification(null)} className="text-gray-400 hover:text-gray-600 transition-colors">
-                  <X size={16} />
-                </button>
+            <div className="p-8 space-y-6">
+              <div className="space-y-4">
+                <div className="flex justify-between border-b border-gray-100 pb-2">
+                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Issue Number</span>
+                  <span className="text-[13px] font-black text-[#2d808e]">#{showNotification.giId}</span>
+                </div>
+                <div className="flex justify-between border-b border-gray-100 pb-2">
+                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">MO Number</span>
+                  <span className="text-[13px] font-black text-blue-600">#{showNotification.moNo}</span>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest block">Details</span>
+                  <p className="text-[14px] font-bold text-gray-800 leading-tight bg-gray-50 p-3 rounded-lg border border-gray-100">{showNotification.details}</p>
+                </div>
+                <p className="text-[10px] text-center text-gray-400 font-medium">Total Items Processed: {showNotification.itemsCount}</p>
               </div>
-              <div className="space-y-1 text-[13px] text-gray-600 font-medium">
-                <p>New goods issue record created #{showNotification.giId}</p>
-                <p>Transaction details created ({showNotification.itemsCount} items)</p>
-                <p>{showNotification.details}</p>
-              </div>
+              <button 
+                onClick={() => { setShowNotification(null); onSubmit({ items }); }} 
+                className="w-full py-3 bg-[#2d808e] text-white font-black text-[13px] uppercase tracking-[0.2em] rounded-xl shadow-lg hover:bg-[#256b78] transition-all active:scale-[0.98]"
+              >
+                Close & Proceed
+              </button>
             </div>
           </div>
         </div>
@@ -209,8 +222,8 @@ const MaterialsMovementForm: React.FC<MaterialsMovementFormProps> = ({ selectedI
           <button onClick={onCancel} className="px-8 py-1.5 text-[13px] font-bold text-gray-600 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-all">Cancel</button>
           <button 
             onClick={handleFinalSubmit}
-            disabled={isSubmitting}
-            className="px-10 py-1.5 text-[13px] font-black text-white bg-[#2d808e] rounded hover:bg-[#256b78] shadow-lg shadow-cyan-900/10 transition-all flex items-center space-x-2 active:scale-[0.98]"
+            disabled={isSubmitting || !!showNotification}
+            className="px-10 py-1.5 text-[13px] font-black text-white bg-[#2d808e] rounded hover:bg-[#256b78] shadow-lg shadow-cyan-900/10 transition-all flex items-center space-x-2 active:scale-[0.98] disabled:opacity-50"
           >
             {isSubmitting && <Loader2 className="animate-spin" size={14} />}
             <span>Commit MO Issue</span>

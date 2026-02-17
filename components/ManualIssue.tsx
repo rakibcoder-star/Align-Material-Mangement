@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Home, Trash2, Loader2, Save, Plus } from 'lucide-react';
+import { Home, Trash2, Loader2, Save, Plus, CheckCircle2, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface IssueItem {
@@ -22,6 +22,7 @@ interface ManualIssueProps {
 const ManualIssue: React.FC<ManualIssueProps> = ({ onBack, onSubmit }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingSku, setLoadingSku] = useState<string | null>(null);
+  const [showNotification, setShowNotification] = useState<any | null>(null);
   const [formData, setFormData] = useState({
     documentDate: new Date().toISOString().split('T')[0],
     issueDate: new Date().toISOString().split('T')[0],
@@ -80,7 +81,6 @@ const ManualIssue: React.FC<ManualIssueProps> = ({ onBack, onSubmit }) => {
       // MASTER LOGIC: Reduce stock for each item in DB (negative change)
       for (const item of items) {
         const qty = parseInt(item.issueQty) || 0;
-        // Resolved ambiguity error by adding is_receive: false
         const { error } = await supabase.rpc('update_item_stock', {
           item_sku: item.sku,
           qty_change: -qty,
@@ -89,16 +89,69 @@ const ManualIssue: React.FC<ManualIssueProps> = ({ onBack, onSubmit }) => {
         if (error) throw error;
       }
 
-      onSubmit({ ...formData, items });
+      // Generate random Issue No from 500000+
+      const issueNo = (500000 + Math.floor(Math.random() * 9999)).toString();
+      const firstItem = items[0];
+      
+      setShowNotification({
+        issueNo,
+        itemName: firstItem.name,
+        qty: firstItem.issueQty,
+        totalItems: items.length
+      });
+
+      setIsSubmitting(false);
     } catch (err: any) {
       alert("Error reducing Master Stock: " + err.message);
-    } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="flex flex-col space-y-6 min-h-screen bg-[#f1f3f4] pb-12">
+    <div className="flex flex-col space-y-6 min-h-screen bg-[#f1f3f4] pb-12 relative">
+      
+      {/* Centered Top-up Notification Overlay */}
+      {showNotification && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+            <div className="bg-emerald-500 p-8 text-center text-white">
+              <CheckCircle2 size={56} className="mx-auto mb-4" strokeWidth={3} />
+              <h4 className="text-xl font-black uppercase tracking-tight">Issue Committed</h4>
+            </div>
+            <div className="p-8 space-y-6">
+              <div className="space-y-4">
+                <div className="flex justify-between border-b border-gray-100 pb-2">
+                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Issue Number</span>
+                  <span className="text-[15px] font-black text-[#2d808e]">#{showNotification.issueNo}</span>
+                </div>
+                <div className="flex justify-between border-b border-gray-100 pb-2">
+                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">MO Number</span>
+                  <span className="text-[13px] font-black text-gray-300 italic">N/A (Manual)</span>
+                </div>
+                <div className="space-y-2">
+                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest block">Summary</span>
+                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                    <p className="text-[12px] font-black text-gray-800 leading-tight uppercase">{showNotification.itemName}</p>
+                    <p className="text-[11px] font-bold text-[#2d808e] mt-1">Quantity: {showNotification.qty}</p>
+                  </div>
+                </div>
+                {showNotification.totalItems > 1 && (
+                  <p className="text-[10px] text-center text-gray-400 font-bold uppercase italic">
+                    + {showNotification.totalItems - 1} other items processed
+                  </p>
+                )}
+              </div>
+              <button 
+                onClick={() => { setShowNotification(null); onSubmit({ ...formData, items }); }} 
+                className="w-full py-3 bg-[#2d808e] text-white font-black text-[13px] uppercase tracking-widest rounded-xl shadow-lg hover:bg-[#256b78] transition-all active:scale-[0.98]"
+              >
+                Close & Finish
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2 text-[11px] font-bold text-[#2d808e] uppercase tracking-wider">
           <Home size={14} className="text-gray-400" />
@@ -125,6 +178,7 @@ const ManualIssue: React.FC<ManualIssueProps> = ({ onBack, onSubmit }) => {
               <option value="">Select Center</option>
               <option value="DEPT1">Production</option>
               <option value="DEPT2">Maintenance</option>
+              <option value="DEPT3">Admin</option>
             </select>
           </div>
           <div className="space-y-2">

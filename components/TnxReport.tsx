@@ -19,6 +19,22 @@ const TnxReport: React.FC = () => {
       let combinedData: any[] = [];
       let sl = 1;
 
+      // Fetch Item Master Locations for mapping by SKU and Name (Increased limit for safety)
+      const { data: itemMaster } = await supabase.from('items').select('sku, name, location').limit(5000);
+      const skuLocationMap: Record<string, string> = {};
+      const nameLocationMap: Record<string, string> = {};
+      
+      if (itemMaster) {
+        itemMaster.forEach(i => {
+          if (i.sku) skuLocationMap[i.sku] = i.location || 'N/A';
+          if (i.name) nameLocationMap[i.name.toUpperCase()] = i.location || 'N/A';
+        });
+      }
+
+      const getMasterLocation = (sku: string, name: string) => {
+        return (sku && skuLocationMap[sku]) || (name && nameLocationMap[name.toUpperCase()]) || 'N/A';
+      };
+
       // 1. Fetch Purchase Orders (PO & GRN)
       if (tnxType === 'All' || tnxType === 'PO' || tnxType === 'GRN') {
         let poQuery = supabase.from('purchase_orders').select('*');
@@ -54,7 +70,7 @@ const TnxReport: React.FC = () => {
                   unitPrice: Number(item.poPrice) || 0,
                   tnxQty: Number(item.poQty) || 0,
                   tnxValue: (Number(item.poQty) || 0) * (Number(item.poPrice) || 0),
-                  location: 'N/A',
+                  location: item.location || getMasterLocation(item.sku, item.name),
                   remarks: po.note || '',
                   usedOn: po.supplier_name,
                   status: po.status,
@@ -77,7 +93,7 @@ const TnxReport: React.FC = () => {
                   unitPrice: Number(item.poPrice) || 0,
                   tnxQty: Number(item.receivedQty) || 0,
                   tnxValue: (Number(item.receivedQty) || 0) * (Number(item.poPrice) || 0),
-                  location: 'WH-01',
+                  location: item.location || getMasterLocation(item.sku, item.name),
                   remarks: 'PO Received',
                   usedOn: po.supplier_name,
                   status: 'Completed',
@@ -122,7 +138,8 @@ const TnxReport: React.FC = () => {
                 unitPrice: Number(item.unitPrice) || 0,
                 tnxQty: Number(item.reqQty) || 0,
                 tnxValue: (Number(item.reqQty) || 0) * (Number(item.unitPrice) || 0),
-                location: item.location || 'N/A',
+                // Priority: Transaction-specific location (from MO issue), fallback to Master Item Location
+                location: item.location || getMasterLocation(item.sku, item.name),
                 remarks: item.remarks || '',
                 usedOn: mo.department,
                 status: mo.status,
@@ -269,8 +286,8 @@ const TnxReport: React.FC = () => {
                   </td>
                 </tr>
               ) : reportData.length > 0 ? (
-                reportData.map((row) => (
-                  <tr key={row.sl} className="border-b border-gray-50 text-[10px] hover:bg-gray-50/50 transition-colors">
+                reportData.map((row, idx) => (
+                  <tr key={idx} className="border-b border-gray-50 text-[10px] hover:bg-gray-50/50 transition-colors">
                     <td className="px-4 py-3 text-center border-r border-gray-50 text-gray-400">{row.sl}</td>
                     <td className="px-4 py-3 border-r border-gray-50 font-medium whitespace-nowrap">{row.tnxDate}</td>
                     <td className="px-4 py-3 border-r border-gray-50 font-medium whitespace-nowrap">{row.docDate}</td>
@@ -280,10 +297,10 @@ const TnxReport: React.FC = () => {
                     <td className="px-4 py-3 border-r border-gray-50 text-gray-600 font-black">{row.sku}</td>
                     <td className="px-4 py-3 border-r border-gray-50 font-black uppercase text-gray-800 leading-tight">{row.name}</td>
                     <td className="px-4 py-3 border-r border-gray-50 text-center uppercase font-bold text-gray-400">{row.uom}</td>
-                    <td className="px-4 py-3 border-r border-gray-50 text-right font-bold text-gray-700">{row.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                    <td className="px-4 py-3 border-r border-gray-50 text-right font-bold text-gray-700">{Number(row.unitPrice).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                     <td className="px-4 py-3 border-r border-gray-50 text-center font-black text-gray-800">{row.tnxQty}</td>
-                    <td className="px-4 py-3 border-r border-gray-50 text-right font-black text-[#2d808e]">{row.tnxValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                    <td className="px-4 py-3 border-r border-gray-50 text-center uppercase text-gray-400 font-bold">{row.location}</td>
+                    <td className="px-4 py-3 border-r border-gray-50 text-right font-black text-[#2d808e]">{Number(row.tnxValue).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                    <td className="px-4 py-3 border-r border-gray-50 text-center uppercase text-[#2d808e] font-black">{row.location}</td>
                     <td className="px-4 py-3 border-r border-gray-50 text-left truncate max-w-[200px] text-gray-400 italic">{row.remarks}</td>
                     <td className="px-4 py-3 border-r border-gray-50 uppercase font-bold text-gray-500">{row.usedOn}</td>
                     <td className="px-4 py-3 border-r border-gray-50 text-center">

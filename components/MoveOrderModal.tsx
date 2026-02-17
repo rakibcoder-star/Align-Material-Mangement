@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Trash2, Plus, ScanLine, Loader2 } from 'lucide-react';
+import { X, Trash2, Plus, ScanLine, Loader2, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import ScannerModal from './ScannerModal';
 
@@ -30,6 +30,7 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isOpen) {
@@ -37,6 +38,7 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
       setRefText('');
       setHeaderText('');
       setDepartment('');
+      setShowSuccess(null);
     }
   }, [isOpen]);
 
@@ -125,11 +127,10 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
 
       if (error) throw error;
 
-      alert(`Move Order ${nextMoNo} submitted successfully.`);
-      onClose();
+      setShowSuccess(nextMoNo);
+      setIsSubmitting(false);
     } catch (err: any) {
       alert("Submission failed: " + err.message);
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -180,6 +181,44 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-10 px-4 bg-black/30 backdrop-blur-sm overflow-y-auto">
       <div className="bg-white w-full max-w-[1400px] rounded-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+        
+        {/* Success Centered Top-up Overlay */}
+        {showSuccess && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+              <div className="bg-emerald-500 p-8 text-center">
+                <CheckCircle2 size={56} className="text-white mx-auto mb-4" strokeWidth={3} />
+                <h4 className="text-xl font-black text-white uppercase tracking-tight">Move Order Generated</h4>
+              </div>
+              <div className="p-10 space-y-6">
+                <div className="space-y-1 text-center">
+                  <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest block">Reference ID</span>
+                  <p className="text-3xl font-black text-[#2d808e] tracking-tighter">#{showSuccess}</p>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-2">
+                   <div className="flex justify-between text-[11px] font-bold">
+                     <span className="text-gray-400 uppercase">Department</span>
+                     <span className="text-gray-700 uppercase">{department || 'Not Assigned'}</span>
+                   </div>
+                   <div className="flex justify-between text-[11px] font-bold">
+                     <span className="text-gray-400 uppercase">Total Items</span>
+                     <span className="text-gray-700">{items.length}</span>
+                   </div>
+                </div>
+                <p className="text-center text-[11px] text-gray-500 font-medium leading-relaxed">
+                  Your move order request has been registered in the system node and is pending approval.
+                </p>
+                <button 
+                  onClick={() => { setShowSuccess(null); onClose(); }}
+                  className="w-full py-3 bg-[#2d808e] text-white text-[13px] font-black uppercase rounded-xl tracking-widest hover:bg-[#256b78] shadow-lg transition-all active:scale-[0.98]"
+                >
+                  Close & Proceed
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-white sticky top-0 z-10">
           <div className="flex items-center space-x-3">
             <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
@@ -205,8 +244,8 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
             </button>
             <button 
               onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="px-8 py-2 text-sm font-semibold text-white bg-[#2d808e] rounded hover:bg-[#256b78] transition-all shadow-sm flex items-center gap-2"
+              disabled={isSubmitting || !!showSuccess}
+              className="px-8 py-2 text-sm font-semibold text-white bg-[#2d808e] rounded hover:bg-[#256b78] transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
             >
               {isSubmitting && <Loader2 size={14} className="animate-spin" />}
               Submit
