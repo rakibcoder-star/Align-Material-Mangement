@@ -138,27 +138,34 @@ const KPICard: React.FC<{ label: string; value: string; subValue?: string }> = (
 
 const LiquidGauge: React.FC<{ label: string; value: number; subLabel: string; color?: string; colorLight?: string }> = ({ label, value, subLabel, color = "#2589ff", colorLight = "#60a5fa" }) => {
   return (
-    <div className="bg-white p-6 rounded-2xl border border-gray-100 flex flex-col items-center group/gauge transition-all hover:shadow-lg">
-      <h3 className="text-sm font-black text-gray-700 uppercase tracking-widest mb-6">{label} <span className="text-gray-400">({subLabel})</span></h3>
-      <div className="relative w-48 h-48 rounded-full border-[8px] border-gray-100 p-1 overflow-hidden flex items-center justify-center bg-white shadow-inner ring-4 ring-[#2d808e]/5">
+    <div className="bg-white p-8 rounded-2xl border border-gray-100 flex flex-col items-center transition-all hover:shadow-lg">
+      <h3 className="text-[12px] font-black text-[#2d808e] uppercase tracking-widest mb-10">{label} ({subLabel})</h3>
+      <div className="relative w-48 h-48 rounded-full border-[6px] border-[#f0f4f8] overflow-hidden flex items-center justify-center bg-white shadow-inner">
+        {/* Waving Liquid */}
         <div 
           className="absolute bottom-0 left-0 w-full transition-all duration-1000 ease-in-out z-10"
           style={{ height: `${value}%` }}
         >
-          <div className="absolute top-0 left-0 w-[200%] h-12 -translate-y-1/2 opacity-30 animate-water-back" style={{ fill: colorLight }}>
+          {/* Back Wave */}
+          <div className="absolute top-0 left-0 w-[200%] h-20 -translate-y-1/2 opacity-30 animate-water-back" style={{ fill: colorLight }}>
             <svg viewBox="0 0 1000 100" preserveAspectRatio="none" className="w-full h-full">
               <path d="M0,50 C150,0 350,100 500,50 C650,0 850,100 1000,50 L1000,100 L0,100 Z" />
             </svg>
           </div>
-          <div className="absolute top-0 left-0 w-[200%] h-12 -translate-y-1/2 opacity-90 animate-water-front" style={{ fill: color }}>
+          {/* Front Wave */}
+          <div className="absolute top-0 left-0 w-[200%] h-20 -translate-y-1/2 opacity-80 animate-water-front" style={{ fill: color }}>
             <svg viewBox="0 0 1000 100" preserveAspectRatio="none" className="w-full h-full">
               <path d="M0,50 C150,100 350,0 500,50 C650,100 850,0 1000,50 L1000,100 L0,100 Z" />
             </svg>
           </div>
+          {/* Solid Liquid Fill */}
           <div className="w-full h-full" style={{ backgroundColor: color }}></div>
         </div>
-        <div className="absolute inset-0 rounded-full pointer-events-none z-20 shadow-[inset_0_10px_20px_rgba(255,255,255,0.5)]"></div>
-        <div className="absolute top-6 left-10 w-16 h-8 bg-white/20 blur-[1px] rounded-full rotate-[-35deg] pointer-events-none z-20"></div>
+        
+        {/* Reflection Highlight */}
+        <div className="absolute inset-0 rounded-full pointer-events-none z-20 shadow-[inset_0_10px_20px_rgba(255,255,255,0.3)]"></div>
+        
+        {/* Percentage Text */}
         <div className="relative z-30 flex flex-col items-center">
           <span className="text-5xl font-black text-gray-800 drop-shadow-[0_2px_4px_rgba(255,255,255,0.8)] tracking-tighter">
             {value}%
@@ -374,8 +381,8 @@ const DashboardOverview: React.FC<{
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <LiquidGauge label="DIESEL STORAGE" value={dieselStock} subLabel="NODE 4457" color="#2d808e" colorLight="#60a5fa" />
-        <LiquidGauge label="OCTANE STORAGE" value={octaneStock} subLabel="NODE 3121" color="#f97316" colorLight="#fdba74" />
+        <LiquidGauge label="DIESEL" value={dieselStock} subLabel="4457" color="#2d808e" colorLight="#60a5fa" />
+        <LiquidGauge label="OCTANE" value={octaneStock} subLabel="3121" color="#2589ff" colorLight="#8ebfff" />
         <div className="bg-white p-6 rounded-2xl border border-gray-100 flex flex-col shadow-sm">
           <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest mb-6 text-center">Stock Segmentation</h3>
           <div className="flex flex-1 items-center justify-around gap-4">

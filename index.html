@@ -20,12 +20,10 @@
         -moz-osx-font-smoothing: grayscale;
       }
 
-      /* Apply font variable to all standard elements */
       button, input, select, textarea {
         font-family: inherit;
       }
 
-      /* Custom scrollbar */
       ::-webkit-scrollbar {
         width: 6px;
       }
@@ -40,7 +38,6 @@
         background: #ced4da;
       }
 
-      /* Print Styles */
       @media print {
         body * {
           visibility: hidden;
@@ -60,13 +57,28 @@
         }
       }
 
-      /* Animation for UI appearance */
       @keyframes slideUp {
         from { transform: translateY(20px); opacity: 0; }
         to { transform: translateY(0); opacity: 1; }
       }
       .animate-slide-up {
         animation: slideUp 0.5s ease-out forwards;
+      }
+
+      /* Live Water Wave Animations */
+      @keyframes wave-front {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-50%); }
+      }
+      @keyframes wave-back {
+        0% { transform: translateX(-50%); }
+        100% { transform: translateX(0); }
+      }
+      .animate-water-front {
+        animation: wave-front 4s linear infinite;
+      }
+      .animate-water-back {
+        animation: wave-back 6s linear infinite;
       }
     </style>
   <script type="importmap">
@@ -89,7 +101,6 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
 </head>
   <body>
     <div id="root"></div>
