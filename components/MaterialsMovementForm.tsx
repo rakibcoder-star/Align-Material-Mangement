@@ -123,9 +123,11 @@ const MaterialsMovementForm: React.FC<MaterialsMovementFormProps> = ({ selectedI
       // 1. Reduce stock for each item in DB
       for (const item of items) {
         const qty = item.tnxQty || 0;
+        // Resolved ambiguity error by adding is_receive: false
         const { error } = await supabase.rpc('update_item_stock', {
           item_sku: item.sku,
-          qty_change: -qty
+          qty_change: -qty,
+          is_receive: false
         });
         if (error) throw error;
       }

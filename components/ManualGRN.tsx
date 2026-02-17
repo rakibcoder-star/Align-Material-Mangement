@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Home, Plus, MinusCircle, Loader2, Save } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -82,9 +83,11 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
       // Logic to update master inventory stock
       for (const item of items) {
         const qty = parseInt(item.recQty) || 0;
+        // Resolved ambiguity error by adding is_receive: true
         const { error } = await supabase.rpc('update_item_stock', {
           item_sku: item.sku,
-          qty_change: qty
+          qty_change: qty,
+          is_receive: true
         });
         if (error) throw error;
       }

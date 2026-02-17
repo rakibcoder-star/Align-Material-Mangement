@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Home, Trash2, Loader2, Save, Plus } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -79,9 +80,11 @@ const ManualIssue: React.FC<ManualIssueProps> = ({ onBack, onSubmit }) => {
       // MASTER LOGIC: Reduce stock for each item in DB (negative change)
       for (const item of items) {
         const qty = parseInt(item.issueQty) || 0;
+        // Resolved ambiguity error by adding is_receive: false
         const { error } = await supabase.rpc('update_item_stock', {
           item_sku: item.sku,
-          qty_change: -qty
+          qty_change: -qty,
+          is_receive: false
         });
         if (error) throw error;
       }
