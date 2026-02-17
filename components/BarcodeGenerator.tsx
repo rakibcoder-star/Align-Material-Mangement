@@ -41,7 +41,8 @@ const BarcodePrintView = ({ labels, settings }: any) => {
               {label.name}
             </div>
           )}
-          <svg ref={el => svgRefs.current[`${label.sku}-${idx}`] = el}></svg>
+          {/* Fixed type error: callback ref should return void, not the assigned element */}
+          <svg ref={el => { svgRefs.current[`${label.sku}-${idx}`] = el; }}></svg>
           {settings.showCode && (
             <div className="w-full text-center mt-2 font-black tracking-widest" style={{ fontSize: `${settings.codeFontSize}px` }}>
               {label.sku}
@@ -270,7 +271,8 @@ const BarcodeGenerator: React.FC<BarcodeGeneratorProps> = ({ onBack }) => {
                 {label.name}
               </div>
             )}
-            <svg ref={el => barcodeRefs.current[`${label.sku}-${idx}`] = el}></svg>
+            {/* Fixed type error: callback ref should return void, not the assigned element */}
+            <svg ref={el => { barcodeRefs.current[`${label.sku}-${idx}`] = el; }}></svg>
             {showCode && (
               <div className="w-full text-center mt-1 font-black" style={{ fontSize: `${codeFontSize}px` }}>
                 {label.sku}

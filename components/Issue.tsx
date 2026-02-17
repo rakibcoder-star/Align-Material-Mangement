@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { Home, Filter, Search, History, Inbox, ChevronLeft, ChevronRight, ChevronDown, Plus, Trash2, Calendar } from 'lucide-react';
+
+import React, { useState, useEffect } from 'react';
+import { Home, Filter, Search, ChevronLeft, ChevronRight, ChevronDown, Loader2, Inbox } from 'lucide-react';
 import MaterialsMovementForm from './MaterialsMovementForm';
 import ManualIssue from './ManualIssue';
+import { supabase } from '../lib/supabase';
 
 interface IssueItem {
   id: string;
@@ -13,6 +15,7 @@ interface IssueItem {
   issueQty: number;
   reqDept: string;
   reqBy: string;
+  fullMo?: any;
 }
 
 const Issue: React.FC = () => {
@@ -20,13 +23,48 @@ const Issue: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [pageSize, setPageSize] = useState(10);
+  const [issues, setIssues] = useState<IssueItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data matching the screenshot
-  const [issues] = useState<IssueItem[]>([
-    { id: '1', moNo: '100230', refNo: '12386', sku: '3100000121', name: 'AC GAS, R134A', moQty: 1, issueQty: 0, reqDept: 'Assembly', reqBy: 'Md. Rokun Zzaman Emon' },
-    { id: '2', moNo: '100221', refNo: '13177', sku: '3300000032', name: 'TOILET TISSUE', moQty: 48, issueQty: 0, reqDept: 'Admin', reqBy: 'Md. Rokun Zzaman Emon' },
-    { id: '3', moNo: '100208', refNo: '11583', sku: '3100000188', name: 'SAND PAPER, 1500 GRIT', moQty: 4, issueQty: 0, reqDept: 'Paint Shop', reqBy: 'Rakibul Hassan' },
-  ]);
+  const fetchApprovedMOs = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('move_orders')
+        .select('*')
+        .eq('status', 'Approved')
+        .order('created_at', { ascending: false });
+
+      if (data && !error) {
+        const flattened: IssueItem[] = [];
+        data.forEach(mo => {
+          (mo.items || []).forEach((item: any, idx: number) => {
+            flattened.push({
+              id: `${mo.id}_${idx}`,
+              moNo: mo.mo_no,
+              refNo: mo.reference || 'N/A',
+              sku: item.sku || 'N/A',
+              name: item.name || 'N/A',
+              moQty: Number(item.reqQty) || 0,
+              issueQty: 0,
+              reqDept: mo.department || 'N/A',
+              reqBy: mo.requested_by || 'N/A',
+              fullMo: mo
+            });
+          });
+        });
+        setIssues(flattened);
+      }
+    } catch (err) {
+      console.error("Fetch issues error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchApprovedMOs();
+  }, []);
 
   const toggleSelect = (id: string) => {
     const next = new Set(selectedIds);
@@ -36,21 +74,21 @@ const Issue: React.FC = () => {
   };
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === issues.length) setSelectedIds(new Set());
+    if (selectedIds.size === issues.length && issues.length > 0) setSelectedIds(new Set());
     else setSelectedIds(new Set(issues.map(i => i.id)));
   };
 
   const handleMOIssueSubmit = (data: any) => {
-    console.log("MO Issue Submitted:", data);
     alert("Materials Movement completed successfully!");
     setView('list');
     setSelectedIds(new Set());
+    fetchApprovedMOs();
   };
 
   const handleManualIssueSubmit = (data: any) => {
-    console.log("Manual Issue Submitted:", data);
     alert("Goods Issue successfully recorded!");
     setView('list');
+    fetchApprovedMOs();
   };
 
   if (view === 'mo-issue') {
@@ -73,22 +111,28 @@ const Issue: React.FC = () => {
     );
   }
 
+  const filteredIssues = issues.filter(i => 
+    i.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    i.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    i.moNo.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <div className="flex flex-col space-y-4">
+    <div className="flex flex-col space-y-4 font-sans antialiased text-gray-800">
       {/* Breadcrumbs & Top Actions */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2 text-[11px] font-bold text-[#2d808e] uppercase tracking-wider">
           <Home size={14} className="text-gray-400" />
-          <span className="text-gray-400">/</span>
-          <span>ISSUE</span>
+          <span className="text-gray-300">/</span>
+          <span className="text-[#2d808e] font-black">ISSUE</span>
         </div>
-        <div className="flex items-center space-x-2">
-          <button className="flex items-center space-x-1.5 border border-[#2d808e] bg-white px-5 py-1.5 rounded text-[12px] font-bold text-gray-700 hover:bg-gray-50 transition-all shadow-sm">
+        <div className="flex items-center space-x-3">
+          <button className="flex items-center space-x-1.5 border border-[#2d808e] bg-white px-5 py-1.5 rounded text-[12px] font-bold text-gray-700 hover:bg-gray-50 transition-all shadow-sm uppercase tracking-tight">
             <span>Logs</span>
           </button>
           <button 
             onClick={() => setView('manual')}
-            className="bg-[#2d808e] text-white px-6 py-1.5 rounded text-[13px] font-bold shadow-sm hover:bg-[#256b78] transition-all active:scale-[0.98]"
+            className="bg-[#2d808e] text-white px-6 py-1.5 rounded text-[12px] font-black shadow-lg shadow-cyan-900/10 hover:bg-[#256b78] transition-all uppercase tracking-widest"
           >
             Manual Issue
           </button>
@@ -96,123 +140,145 @@ const Issue: React.FC = () => {
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between pt-1">
         <button 
           onClick={() => setView('mo-issue')}
           disabled={selectedIds.size === 0}
-          className={`px-6 py-1.5 rounded text-[12px] font-bold transition-all border ${
+          className={`px-8 py-2 rounded text-[12px] font-bold border transition-all uppercase tracking-widest ${
             selectedIds.size > 0 
-              ? 'bg-[#2d808e] text-white border-[#2d808e] hover:bg-[#256b78] shadow-sm' 
-              : 'bg-[#e9ecef] text-gray-300 border-gray-100 cursor-not-allowed'
+              ? 'bg-[#2d808e] text-white border-[#2d808e] hover:bg-[#256b78] shadow-md' 
+              : 'bg-[#f4f7f8] text-[#c0cdd0] border-gray-200 cursor-not-allowed'
           }`}
         >
           MO Issue
         </button>
 
         <div className="flex items-center">
-          <div className="relative flex">
+          <div className="relative flex shadow-sm">
             <input 
               type="text" 
               placeholder="Search by name"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-64 px-4 py-1.5 border border-gray-200 rounded-l outline-none text-[12px] text-gray-600 focus:border-[#2d808e]"
+              className="w-72 px-4 py-2 border border-gray-200 rounded-l outline-none text-[12px] text-gray-600 focus:border-[#2d808e] transition-all"
             />
-            <button className="bg-[#2d808e] text-white px-3 rounded-r flex items-center justify-center hover:bg-[#256b78]">
-              <Search size={14} />
+            <button className="bg-[#2d808e] text-white px-3.5 rounded-r flex items-center justify-center hover:bg-[#256b78] transition-colors">
+              <Search size={16} strokeWidth={2.5} />
             </button>
           </div>
         </div>
       </div>
 
       {/* Table Section */}
-      <div className="bg-white rounded shadow-sm border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="bg-white rounded border border-gray-100 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto scrollbar-thin">
           <table className="w-full text-left border-collapse min-w-[1200px]">
-            <thead className="bg-[#fcfcfc]">
-              <tr className="text-[12px] font-bold text-gray-800 border-b border-gray-100">
-                <th className="px-6 py-4 w-12 text-center">
-                  <div className="flex items-center justify-center">
-                    <input 
-                      type="checkbox" 
-                      checked={selectedIds.size === issues.length && issues.length > 0}
-                      onChange={toggleSelectAll}
-                      className="w-4 h-4 rounded border-gray-300 text-[#2d808e] focus:ring-[#2d808e]"
-                    />
+            <thead className="bg-[#fafbfc]">
+              <tr className="text-[11px] font-black text-gray-800 uppercase tracking-tight border-b border-gray-100">
+                <th className="px-4 py-5 w-12 text-center">
+                  <input 
+                    type="checkbox" 
+                    checked={selectedIds.size === issues.length && issues.length > 0}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 rounded border-gray-300 accent-[#2d808e]"
+                  />
+                </th>
+                <th className="px-4 py-5 text-center border-r border-gray-50/50 w-32 relative">
+                  <div className="flex items-center justify-center gap-2">
+                    MO No
+                    <Filter size={10} className="text-gray-300" />
                   </div>
                 </th>
-                <th className="px-6 py-4 text-center relative">
-                  MO No
-                  <Filter size={10} className="inline-block ml-2 text-gray-300" />
+                <th className="px-4 py-5 text-center border-r border-gray-50/50 w-32 relative">
+                  <div className="flex items-center justify-center gap-2">
+                    Ref.No
+                    <Filter size={10} className="text-gray-300" />
+                  </div>
                 </th>
-                <th className="px-6 py-4 text-center relative">
-                  Ref.No
-                  <Filter size={10} className="inline-block ml-2 text-gray-300" />
+                <th className="px-4 py-5 text-center border-r border-gray-50/50 w-40 relative">
+                  <div className="flex items-center justify-center gap-2">
+                    SKU
+                    <Filter size={10} className="text-gray-300" />
+                  </div>
                 </th>
-                <th className="px-6 py-4 text-center relative">
-                  SKU
-                  <Filter size={10} className="inline-block ml-2 text-gray-300" />
-                </th>
-                <th className="px-6 py-4 text-left">Name</th>
-                <th className="px-6 py-4 text-center w-24">MO Qty</th>
-                <th className="px-6 py-4 text-center w-24">Issue Qty</th>
-                <th className="px-6 py-4 text-left w-40">Req. Dept.</th>
-                <th className="px-6 py-4 text-left w-48">Req. By</th>
+                <th className="px-4 py-5 border-r border-gray-50/50">Name</th>
+                <th className="px-4 py-5 text-center border-r border-gray-50/50 w-28 uppercase">MO Qty</th>
+                <th className="px-4 py-5 text-center border-r border-gray-50/50 w-28 uppercase">Issue Qty</th>
+                <th className="px-4 py-5 text-center border-r border-gray-50/50 w-40 uppercase">Req. Dept.</th>
+                <th className="px-4 py-5 text-center w-48 uppercase">Req. By</th>
               </tr>
             </thead>
-            <tbody className="text-[12px] text-gray-700 font-medium">
-              {issues.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0">
-                  <td className="px-6 py-4 text-center">
-                    <div className="flex items-center justify-center">
+            <tbody className="text-[11px] font-bold text-gray-600 uppercase tracking-tighter">
+              {loading ? (
+                <tr>
+                  <td colSpan={9} className="py-24 text-center">
+                    <div className="flex flex-col items-center justify-center space-y-3">
+                      <Loader2 className="animate-spin text-[#2d808e]" size={32} />
+                      <span className="text-gray-400 font-black tracking-widest uppercase">Syncing Issue Repository...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredIssues.length > 0 ? (
+                filteredIssues.map((item) => (
+                  <tr key={item.id} className="hover:bg-gray-50/50 transition-colors border-b border-gray-50 last:border-0 group">
+                    <td className="px-4 py-4 text-center">
                       <input 
                         type="checkbox" 
                         checked={selectedIds.has(item.id)}
                         onChange={() => toggleSelect(item.id)}
-                        className="w-4 h-4 rounded border-gray-300 text-[#2d808e] focus:ring-[#2d808e]"
+                        className="w-4 h-4 rounded border-gray-300 accent-[#2d808e]"
                       />
+                    </td>
+                    <td className="px-4 py-4 text-center border-r border-gray-50/50">
+                      <button className="text-blue-500 font-black hover:underline transition-all">
+                        {item.moNo}
+                      </button>
+                    </td>
+                    <td className="px-4 py-4 text-center border-r border-gray-50/50 text-gray-700">{item.refNo}</td>
+                    <td className="px-4 py-4 text-center border-r border-gray-50/50 text-gray-700">{item.sku}</td>
+                    <td className="px-4 py-4 border-r border-gray-50/50 uppercase text-gray-800 leading-tight">
+                      {item.name}
+                    </td>
+                    <td className="px-4 py-4 text-center border-r border-gray-50/50 text-gray-500">{item.moQty}</td>
+                    <td className="px-4 py-4 text-center border-r border-gray-50/50 font-black text-gray-800">{item.issueQty}</td>
+                    <td className="px-4 py-4 text-center border-r border-gray-50/50 text-gray-500 whitespace-nowrap">{item.reqDept}</td>
+                    <td className="px-4 py-4 text-center text-gray-500 whitespace-nowrap">{item.reqBy}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={9} className="py-24 text-center">
+                    <div className="flex flex-col items-center justify-center text-gray-300 space-y-2">
+                      <Inbox size={48} strokeWidth={1} />
+                      <p className="text-[11px] font-black uppercase tracking-[0.2em]">Empty Issue Node</p>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-center">
-                    <button className="text-blue-500 hover:underline font-bold transition-all">
-                      {item.moNo}
-                    </button>
-                  </td>
-                  <td className="px-6 py-4 text-center">{item.refNo}</td>
-                  <td className="px-6 py-4 text-center">{item.sku}</td>
-                  <td className="px-6 py-4 font-bold uppercase text-[11px] leading-tight">
-                    {item.name}
-                  </td>
-                  <td className="px-6 py-4 text-center">{item.moQty}</td>
-                  <td className="px-6 py-4 text-center">{item.issueQty}</td>
-                  <td className="px-6 py-4 text-left whitespace-nowrap">{item.reqDept}</td>
-                  <td className="px-6 py-4 text-left whitespace-nowrap">{item.reqBy}</td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
       {/* Pagination Footer */}
-      <div className="flex items-center justify-end space-x-4 pt-2 pb-6">
-        <div className="flex items-center space-x-1">
-          <button className="p-1.5 text-gray-300 hover:text-gray-500"><ChevronLeft size={16} /></button>
-          <button className="w-7 h-7 flex items-center justify-center text-xs font-bold rounded bg-white border border-[#2d808e] text-[#2d808e]">1</button>
-          <button className="p-1.5 text-gray-300 hover:text-gray-500"><ChevronRight size={16} /></button>
+      <div className="flex items-center justify-end space-x-4 pt-3 pb-8">
+        <div className="flex items-center space-x-1.5">
+          <button className="p-1 text-gray-300 hover:text-gray-500 transition-colors"><ChevronLeft size={16} /></button>
+          <button className="w-7 h-7 flex items-center justify-center text-[11px] font-black rounded border border-[#2d808e] bg-white text-[#2d808e] shadow-sm">1</button>
+          <button className="p-1 text-gray-300 hover:text-[#2d808e] transition-colors"><ChevronRight size={16} /></button>
         </div>
         
-        <div className="flex items-center space-x-2 border border-gray-200 rounded bg-white px-2 py-1">
+        <div className="relative group shadow-sm">
           <select 
             value={pageSize}
             onChange={(e) => setPageSize(Number(e.target.value))}
-            className="text-[11px] font-bold text-gray-600 outline-none appearance-none pr-4 bg-transparent cursor-pointer"
+            className="appearance-none bg-white border border-gray-200 rounded px-4 py-1.5 text-[11px] font-bold text-gray-500 pr-10 focus:border-[#2d808e] outline-none transition-all cursor-pointer"
           >
             <option value={10}>10 / page</option>
             <option value={20}>20 / page</option>
             <option value={50}>50 / page</option>
           </select>
-          <ChevronDown size={12} className="text-gray-400 pointer-events-none" />
+          <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none group-hover:text-gray-400 transition-colors" />
         </div>
       </div>
     </div>

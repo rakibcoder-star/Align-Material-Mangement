@@ -4,6 +4,7 @@ import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-
 import { useAuth } from '../context/AuthContext';
 import UserManagement from './UserManagement';
 import MoveOrderModal from './MoveOrderModal';
+import MOApprovalModal from './MOApprovalModal';
 import StockStatusModal from './StockStatusModal';
 import PRPreviewModal from './PRPreviewModal';
 import POPreviewModal from './POPreviewModal';
@@ -135,7 +136,7 @@ const KPICard: React.FC<{ label: string; value: string; subValue?: string }> = (
   <div className="bg-white p-2.5 rounded border border-gray-100 flex flex-col justify-start min-h-[64px] hover:shadow-sm transition-all group">
     <h3 className="text-[9px] text-gray-400 font-bold tracking-tight mb-0.5 uppercase">{label}</h3>
     <div className="flex items-baseline space-x-1">
-      <p className="text-xl font-black text-gray-700 tracking-tight group-hover:text-[#2d808e] transition-colors">{value}</p>
+      <p className="textxl font-black text-gray-700 tracking-tight group-hover:text-[#2d808e] transition-colors">{value}</p>
       {subValue && <p className="text-[12px] font-bold text-gray-300">({subValue})</p>}
     </div>
   </div>
@@ -178,7 +179,7 @@ const LiquidGauge: React.FC<{ label: string; value: number; subLabel: string; co
   );
 };
 
-const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () => void; onPreviewPr: (pr: any) => void; onPreviewPo: (po: any) => void }> = ({ onCheckStock, onMoveOrder, onPreviewPr, onPreviewPo }) => {
+const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () => void; onPreviewPr: (pr: any) => void; onPreviewPo: (po: any) => void; onPreviewMo: (mo: any) => void }> = ({ onCheckStock, onMoveOrder, onPreviewPr, onPreviewPo, onPreviewMo }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [dateTime, setDateTime] = useState(new Date());
@@ -239,10 +240,8 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
         if (octaneItem) setOctaneStock(Math.min(100, Math.round((octaneItem.on_hand_stock / 10000) * 100)));
       }
 
-      // FETCH REAL MOVE ORDER DATA FOR GRAPHS
       const { data: moveOrders } = await supabase.from('move_orders').select('*').order('created_at', { ascending: true });
       if (moveOrders) {
-        // Weekly Data (Last 7 Days)
         const weeklyAgg: any[] = [];
         const todayObj = new Date();
         for (let i = 6; i >= 0; i--) {
@@ -256,7 +255,6 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
         }
         setWeeklyData(weeklyAgg);
 
-        // Monthly Data (Current Year)
         const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
         const monthlyAgg = months.map((month, idx) => {
           const currentYear = new Date().getFullYear();
@@ -408,7 +406,12 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
                   <tr key={mo.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
                     <td className="px-3 py-1.5 text-center whitespace-nowrap">{new Date(mo.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</td>
                     <td className="px-3 py-1.5 text-center">
-                      <button className="text-blue-500 font-bold border border-blue-50 rounded px-1.5 py-0.5 hover:bg-blue-50 transition-all">{mo.mo_no}</button>
+                      <button 
+                        onClick={() => onPreviewMo(mo)}
+                        className="text-blue-500 font-bold border border-blue-50 rounded px-1.5 py-0.5 hover:bg-blue-50 transition-all"
+                      >
+                        {mo.mo_no}
+                      </button>
                     </td>
                     <td className="px-3 py-1.5 text-right font-black">{(mo.total_value || 0).toLocaleString()}</td>
                   </tr>
@@ -513,7 +516,7 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
                       <td className="px-4 py-3 text-center text-gray-400">{idx + 1}</td>
                       <td className="px-4 py-3 text-center whitespace-nowrap">{new Date(mo.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })}</td>
                       <td className="px-4 py-3 text-center">
-                        <button className="text-blue-500 font-bold hover:underline">{mo.mo_no}</button>
+                        <button onClick={() => onPreviewMo(mo)} className="text-blue-500 font-bold hover:underline">{mo.mo_no}</button>
                       </td>
                       <td className="px-4 py-3 uppercase truncate max-w-[180px] font-bold text-gray-700">{firstItem.name || 'N/A'}{mo.items?.length > 1 ? ` (+${mo.items.length - 1})` : ''}</td>
                       <td className="px-4 py-3 text-center font-black">{mo.items?.reduce((acc: number, i: any) => acc + (Number(i.reqQty) || 0), 0)}</td>
@@ -603,8 +606,8 @@ const Dashboard: React.FC = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [previewPr, setPreviewPr] = useState<any>(null);
   const [previewPo, setPreviewPo] = useState<any>(null);
+  const [previewMo, setPreviewMo] = useState<any>(null);
 
-  // SEARCH STATES
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{
     pr: any[],
@@ -616,7 +619,6 @@ const Dashboard: React.FC = () => {
   const [showSearchResults, setShowSearchResults] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
-  // SEARCH LOGIC
   useEffect(() => {
     const handleSearch = async () => {
       if (!searchQuery || searchQuery.length < 2) {
@@ -651,7 +653,6 @@ const Dashboard: React.FC = () => {
     return () => clearTimeout(timeoutId);
   }, [searchQuery]);
 
-  // Click outside listener for search results
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
@@ -668,12 +669,9 @@ const Dashboard: React.FC = () => {
     
     if (type === 'pr') setPreviewPr(data);
     else if (type === 'po') setPreviewPo(data);
-    else if (type === 'mo') {
-      // Move orders can also be previewed similarly if a modal exists
-      alert(`Move Order: ${data.mo_no}\nReference: ${data.reference}`);
-    } else if (type === 'item') {
+    else if (type === 'mo') setPreviewMo(data);
+    else if (type === 'item') {
       setIsStockStatusModalOpen(true);
-      // Logic could be added to highlight the specific item in StockStatusModal
     }
   };
   
@@ -729,7 +727,6 @@ const Dashboard: React.FC = () => {
         />
       )}
 
-      {/* LEFT SIDEBAR - COMPACT */}
       <aside className={`
         fixed inset-y-0 left-0 z-50 transform md:relative md:translate-x-0 transition-all duration-300 ease-in-out
         ${isMobileMenuOpen ? 'translate-x-0 w-[170px]' : '-translate-x-full md:translate-x-0'}
@@ -838,11 +835,9 @@ const Dashboard: React.FC = () => {
                 {isSearching ? <Loader2 size={10} className="animate-spin" /> : <ArrowUpRight size={10} />}
               </button>
 
-              {/* SEARCH RESULTS DROPDOWN */}
               {showSearchResults && (searchQuery.length >= 2) && (
                 <div className="absolute top-full left-0 w-full mt-1.5 bg-white rounded-lg shadow-2xl border border-gray-100 overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
                   <div className="max-h-[400px] overflow-y-auto scrollbar-thin">
-                    {/* Requisitions */}
                     {searchResults.pr.length > 0 && (
                       <div className="p-1">
                         <div className="px-3 py-1.5 text-[8px] font-black text-gray-400 uppercase tracking-widest bg-gray-50/50 flex items-center gap-1.5">
@@ -862,7 +857,6 @@ const Dashboard: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Purchase Orders */}
                     {searchResults.po.length > 0 && (
                       <div className="p-1 border-t border-gray-50">
                         <div className="px-3 py-1.5 text-[8px] font-black text-gray-400 uppercase tracking-widest bg-gray-50/50 flex items-center gap-1.5">
@@ -882,7 +876,6 @@ const Dashboard: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Move Orders */}
                     {searchResults.mo.length > 0 && (
                       <div className="p-1 border-t border-gray-50">
                         <div className="px-3 py-1.5 text-[8px] font-black text-gray-400 uppercase tracking-widest bg-gray-50/50 flex items-center gap-1.5">
@@ -899,7 +892,6 @@ const Dashboard: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Items */}
                     {searchResults.items.length > 0 && (
                       <div className="p-1 border-t border-gray-50">
                         <div className="px-3 py-1.5 text-[8px] font-black text-gray-400 uppercase tracking-widest bg-gray-50/50 flex items-center gap-1.5">
@@ -920,7 +912,6 @@ const Dashboard: React.FC = () => {
                       </div>
                     )}
 
-                    {/* No results */}
                     {!isSearching && searchResults.pr.length === 0 && searchResults.po.length === 0 && searchResults.mo.length === 0 && searchResults.items.length === 0 && (
                       <div className="p-8 text-center">
                         <FileSearch size={24} className="mx-auto text-gray-200 mb-2" />
@@ -966,7 +957,7 @@ const Dashboard: React.FC = () => {
         <main className="flex-1 overflow-y-auto p-3 md:p-5 bg-[#f8fafb] pb-6 scrollbar-thin">
           <div className="max-w-[1400px] mx-auto w-full">
             <Routes>
-              <Route path="/overview" element={<DashboardOverview onCheckStock={() => setIsStockStatusModalOpen(true)} onMoveOrder={() => setIsMoveOrderModalOpen(true)} onPreviewPr={(pr) => setPreviewPr(pr)} onPreviewPo={(po) => setPreviewPo(po)} />} />
+              <Route path="/overview" element={<DashboardOverview onCheckStock={() => setIsStockStatusModalOpen(true)} onMoveOrder={() => setIsMoveOrderModalOpen(true)} onPreviewPr={(pr) => setPreviewPr(pr)} onPreviewPo={(po) => setPreviewPo(po)} onPreviewMo={(mo) => setPreviewMo(mo)} />} />
               <Route path="/users" element={<UserManagement />} />
               <Route path="/requisition" element={<PurchaseRequisition />} />
               <Route path="/purchase-order" element={<PurchaseOrder />} />
@@ -999,6 +990,7 @@ const Dashboard: React.FC = () => {
       <StockStatusModal isOpen={isStockStatusModalOpen} onClose={() => setIsStockStatusModalOpen(false)} />
       {previewPr && <PRPreviewModal pr={previewPr} onClose={() => setPreviewPr(null)} />}
       {previewPo && <POPreviewModal po={previewPo} onClose={() => { setPreviewPo(null); }} />}
+      {previewMo && <MOApprovalModal mo={previewMo} isOpen={!!previewMo} onClose={() => setPreviewMo(null)} />}
 
       {isNotificationOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
