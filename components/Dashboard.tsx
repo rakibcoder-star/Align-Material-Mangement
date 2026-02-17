@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import UserManagement from './UserManagement';
@@ -60,7 +60,11 @@ import {
   Phone,
   Briefcase,
   IdCard,
-  CheckCircle2
+  CheckCircle2,
+  FileSearch,
+  Package,
+  ArrowUpRight,
+  Loader2
 } from 'lucide-react';
 
 const SidebarItem: React.FC<{ 
@@ -582,6 +586,79 @@ const Dashboard: React.FC = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [previewPr, setPreviewPr] = useState<any>(null);
   const [previewPo, setPreviewPo] = useState<any>(null);
+
+  // SEARCH STATES
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<{
+    pr: any[],
+    po: any[],
+    mo: any[],
+    items: any[]
+  }>({ pr: [], po: [], mo: [], items: [] });
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // SEARCH LOGIC
+  useEffect(() => {
+    const handleSearch = async () => {
+      if (!searchQuery || searchQuery.length < 2) {
+        setSearchResults({ pr: [], po: [], mo: [], items: [] });
+        return;
+      }
+
+      setIsSearching(true);
+      try {
+        const [prRes, poRes, moRes, itemRes] = await Promise.all([
+          supabase.from('requisitions').select('*').or(`pr_no.ilike.%${searchQuery}%,reference.ilike.%${searchQuery}%`).limit(5),
+          supabase.from('purchase_orders').select('*').or(`po_no.ilike.%${searchQuery}%,supplier_name.ilike.%${searchQuery}%`).limit(5),
+          supabase.from('move_orders').select('*').or(`mo_no.ilike.%${searchQuery}%,reference.ilike.%${searchQuery}%`).limit(5),
+          supabase.from('items').select('*').or(`sku.ilike.%${searchQuery}%,name.ilike.%${searchQuery}%`).limit(5)
+        ]);
+
+        setSearchResults({
+          pr: prRes.data || [],
+          po: poRes.data || [],
+          mo: moRes.data || [],
+          items: itemRes.data || []
+        });
+        setShowSearchResults(true);
+      } catch (err) {
+        console.error("Search terminal error:", err);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    const timeoutId = setTimeout(handleSearch, 300);
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
+
+  // Click outside listener for search results
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setShowSearchResults(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleResultClick = (type: string, data: any) => {
+    setShowSearchResults(false);
+    setSearchQuery('');
+    
+    if (type === 'pr') setPreviewPr(data);
+    else if (type === 'po') setPreviewPo(data);
+    else if (type === 'mo') {
+      // Move orders can also be previewed similarly if a modal exists
+      alert(`Move Order: ${data.mo_no}\nReference: ${data.reference}`);
+    } else if (type === 'item') {
+      setIsStockStatusModalOpen(true);
+      // Logic could be added to highlight the specific item in StockStatusModal
+    }
+  };
   
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
     purchase: location.pathname.includes('requisition') || location.pathname.includes('purchase-order') || location.pathname.includes('supplier') || location.pathname.includes('purchase-report'),
@@ -723,14 +800,127 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 w-full max-w-[280px]">
+          <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 w-full max-w-[280px]" ref={searchContainerRef}>
             <div className="relative w-full group">
               <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-[#2d808e] transition-colors" />
               <input 
                 type="text" 
-                placeholder="Terminal Search..." 
-                className="w-full pl-8 pr-2.5 py-1 bg-gray-50 border border-transparent focus:border-[#2d808e]/20 focus:bg-white rounded-md outline-none text-[9px] font-bold text-gray-600 transition-all shadow-inner" 
+                placeholder="Search PR, PO, MO, SKU, Item..." 
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  if (e.target.value) setShowSearchResults(true);
+                }}
+                onFocus={() => { if(searchQuery) setShowSearchResults(true); }}
+                className="w-full pl-8 pr-12 py-1 bg-gray-50 border border-transparent focus:border-[#2d808e]/20 focus:bg-white rounded-md outline-none text-[9px] font-bold text-gray-600 transition-all shadow-inner" 
               />
+              <button 
+                className="absolute right-1 top-1/2 -translate-y-1/2 p-1 bg-[#2d808e] text-white rounded hover:bg-[#256b78] transition-colors"
+                title="Execute Search"
+              >
+                {isSearching ? <Loader2 size={10} className="animate-spin" /> : <ArrowUpRight size={10} />}
+              </button>
+
+              {/* SEARCH RESULTS DROPDOWN */}
+              {showSearchResults && (searchQuery.length >= 2) && (
+                <div className="absolute top-full left-0 w-full mt-1.5 bg-white rounded-lg shadow-2xl border border-gray-100 overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="max-h-[400px] overflow-y-auto scrollbar-thin">
+                    {/* Requisitions */}
+                    {searchResults.pr.length > 0 && (
+                      <div className="p-1">
+                        <div className="px-3 py-1.5 text-[8px] font-black text-gray-400 uppercase tracking-widest bg-gray-50/50 flex items-center gap-1.5">
+                          <ClipboardList size={10} /> Requisitions (PR)
+                        </div>
+                        {searchResults.pr.map(item => (
+                          <button key={item.id} onClick={() => handleResultClick('pr', item)} className="w-full text-left px-3 py-2 hover:bg-cyan-50/50 flex items-center justify-between group transition-colors">
+                            <div>
+                              <p className="text-[10px] font-black text-[#2d808e] uppercase">{item.pr_no}</p>
+                              <p className="text-[8px] text-gray-400 font-bold truncate max-w-[180px]">{item.reference || 'No Reference'}</p>
+                            </div>
+                            <span className={`text-[7px] font-black px-1.5 py-0.5 rounded border ${item.status === 'Approved' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-orange-50 text-orange-600 border-orange-100'}`}>
+                              {item.status}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Purchase Orders */}
+                    {searchResults.po.length > 0 && (
+                      <div className="p-1 border-t border-gray-50">
+                        <div className="px-3 py-1.5 text-[8px] font-black text-gray-400 uppercase tracking-widest bg-gray-50/50 flex items-center gap-1.5">
+                          <ShoppingBag size={10} /> Purchase Orders (PO)
+                        </div>
+                        {searchResults.po.map(item => (
+                          <button key={item.id} onClick={() => handleResultClick('po', item)} className="w-full text-left px-3 py-2 hover:bg-cyan-50/50 flex items-center justify-between group transition-colors">
+                            <div>
+                              <p className="text-[10px] font-black text-[#2d808e] uppercase">{item.po_no}</p>
+                              <p className="text-[8px] text-gray-400 font-bold truncate max-w-[180px]">{item.supplier_name}</p>
+                            </div>
+                            <span className={`text-[7px] font-black px-1.5 py-0.5 rounded border ${item.status === 'Approved' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-orange-50 text-orange-600 border-orange-100'}`}>
+                              {item.status}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Move Orders */}
+                    {searchResults.mo.length > 0 && (
+                      <div className="p-1 border-t border-gray-50">
+                        <div className="px-3 py-1.5 text-[8px] font-black text-gray-400 uppercase tracking-widest bg-gray-50/50 flex items-center gap-1.5">
+                          <MoveHorizontal size={10} /> Move Orders (MO)
+                        </div>
+                        {searchResults.mo.map(item => (
+                          <button key={item.id} onClick={() => handleResultClick('mo', item)} className="w-full text-left px-3 py-2 hover:bg-cyan-50/50 flex items-center justify-between group transition-colors">
+                            <div>
+                              <p className="text-[10px] font-black text-[#2d808e] uppercase">{item.mo_no}</p>
+                              <p className="text-[8px] text-gray-400 font-bold truncate max-w-[180px]">{item.reference || item.department}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Items */}
+                    {searchResults.items.length > 0 && (
+                      <div className="p-1 border-t border-gray-50">
+                        <div className="px-3 py-1.5 text-[8px] font-black text-gray-400 uppercase tracking-widest bg-gray-50/50 flex items-center gap-1.5">
+                          <Package size={10} /> Items / Master SKU
+                        </div>
+                        {searchResults.items.map(item => (
+                          <button key={item.id} onClick={() => handleResultClick('item', item)} className="w-full text-left px-3 py-2 hover:bg-cyan-50/50 flex items-center justify-between group transition-colors">
+                            <div className="flex flex-col">
+                              <p className="text-[10px] font-black text-gray-800 uppercase">{item.name}</p>
+                              <p className="text-[8px] text-[#2d808e] font-black tracking-widest uppercase">SKU: {item.sku}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-[9px] font-black text-[#2d808e]">{item.on_hand_stock}</p>
+                              <p className="text-[7px] text-gray-400 uppercase font-bold">{item.uom}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* No results */}
+                    {!isSearching && searchResults.pr.length === 0 && searchResults.po.length === 0 && searchResults.mo.length === 0 && searchResults.items.length === 0 && (
+                      <div className="p-8 text-center">
+                        <FileSearch size={24} className="mx-auto text-gray-200 mb-2" />
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">No matching nodes found</p>
+                        <p className="text-[8px] text-gray-300 font-bold uppercase mt-1">Try PR- No, PO- No, or SKU ID</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {isSearching && (
+                    <div className="p-4 border-t border-gray-50 bg-gray-50/30 flex items-center justify-center space-x-2">
+                      <Loader2 size={12} className="animate-spin text-[#2d808e]" />
+                      <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Scanning Repository...</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
