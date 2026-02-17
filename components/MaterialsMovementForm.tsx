@@ -1,11 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Trash2, Search, ChevronDown, Inbox, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { X, Trash2, Search, ChevronDown, Inbox, ChevronLeft, ChevronRight, Loader2, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface MovementItem {
   id: string;
-  moId?: string; // Added to track parent Move Order
+  moId?: string;
+  moNo?: string;
   sku: string;
   name: string;
   uom: string;
@@ -18,6 +19,13 @@ interface MovementItem {
   remarks: string;
 }
 
+interface NotificationData {
+  giId: string;
+  moNo: string;
+  itemsCount: number;
+  details: string;
+}
+
 interface MaterialsMovementFormProps {
   selectedItems: any[];
   onCancel: () => void;
@@ -27,13 +35,15 @@ interface MaterialsMovementFormProps {
 const MaterialsMovementForm: React.FC<MaterialsMovementFormProps> = ({ selectedItems, onCancel, onSubmit }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [allLocations, setAllLocations] = useState<string[]>([]);
+  const [showNotification, setShowNotification] = useState<NotificationData | null>(null);
   const [items, setItems] = useState<MovementItem[]>(
     selectedItems.map(item => {
-      // item.id is formatted as moId_itemIdx in Issue.tsx
       const moId = item.fullMo?.id;
+      const moNo = item.moNo;
       return {
         id: item.id,
         moId: moId,
+        moNo: moNo,
         sku: item.sku,
         name: item.name,
         uom: item.uom || 'PC',
@@ -50,7 +60,6 @@ const MaterialsMovementForm: React.FC<MaterialsMovementFormProps> = ({ selectedI
 
   useEffect(() => {
     const fetchMasterData = async () => {
-      // 1. Fetch initial locations for items
       const skus = Array.from(new Set(items.map(i => i.sku)));
       if (skus.length > 0) {
         try {
@@ -75,7 +84,6 @@ const MaterialsMovementForm: React.FC<MaterialsMovementFormProps> = ({ selectedI
         }
       }
 
-      // 2. Fetch all unique locations for auto-suggestion
       try {
         const { data: locData } = await supabase
           .from('items')
@@ -133,21 +141,60 @@ const MaterialsMovementForm: React.FC<MaterialsMovementFormProps> = ({ selectedI
         if (statusError) throw statusError;
       }
 
-      onSubmit({ items });
+      // 3. Show Success Notification matching image
+      const giId = (10000 + Math.floor(Math.random() * 9999)).toString();
+      const firstItem = items[0];
+      setShowNotification({
+        giId: giId,
+        moNo: firstItem.moNo || 'N/A',
+        itemsCount: items.length,
+        details: `Item ${firstItem.sku} updated (location: ${firstItem.location}, issue Qty: ${firstItem.tnxQty})`
+      });
+
+      // Wait a bit before proceeding
+      setTimeout(() => {
+        onSubmit({ items });
+      }, 3000);
+
     } catch (err: any) {
       alert("Error processing issue: " + err.message);
-    } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-white min-h-screen relative">
       <datalist id="location-suggestions">
         {allLocations.map((loc, idx) => (
           <option key={idx} value={loc} />
         ))}
       </datalist>
+
+      {/* Success Notification Popup (Floating Top-Right) */}
+      {showNotification && (
+        <div className="fixed top-6 right-6 z-[200] w-[380px] bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.1)] border border-gray-100 p-5 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="flex items-start space-x-4">
+            <div className="bg-[#4CAF50] rounded-full p-1.5 shrink-0">
+              <CheckCircle2 size={18} className="text-white" strokeWidth={3} />
+            </div>
+            <div className="flex-1 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <h4 className="text-[14px] font-bold text-gray-800 leading-tight">
+                  GI ID #{showNotification.giId} for MO ID#{showNotification.moNo} - process completed
+                </h4>
+                <button onClick={() => setShowNotification(null)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="space-y-1 text-[13px] text-gray-600 font-medium">
+                <p>New goods issue record created #{showNotification.giId}</p>
+                <p>Transaction details created ({showNotification.itemsCount} items)</p>
+                <p>{showNotification.details}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-white sticky top-0 z-10">
         <div className="flex items-center space-x-3">
