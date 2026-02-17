@@ -121,9 +121,9 @@ const SubmenuItem: React.FC<{
 
 const KPICard: React.FC<{ label: string; value: string; subValue?: string }> = ({ label, value, subValue }) => (
   <div className="bg-white p-6 rounded shadow-sm border border-gray-100 flex flex-col justify-start min-h-[110px] hover:shadow-md transition-all group">
-    <h3 className="text-[14px] text-gray-400 font-medium tracking-tight mb-2">{label}</h3>
+    <h3 className="text-[15px] text-gray-400 font-medium tracking-tight mb-2">{label}</h3>
     <div className="flex items-baseline space-x-2">
-      <p className="text-3xl font-bold text-gray-700 tracking-tight group-hover:text-[#2d808e] transition-colors">{value}</p>
+      <p className="text-3xl font-bold text-gray-800 tracking-tight group-hover:text-[#2d808e] transition-colors">{value}</p>
       {subValue && <p className="text-[18px] font-medium text-gray-400">({subValue})</p>}
     </div>
   </div>
@@ -261,11 +261,13 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <KPICard label="Today Order(Qty)" value={stats.todayOrderQty} subValue={stats.todayOrderCount} />
         <KPICard label="Lastday Order(Qty)" value={stats.lastDayOrderQty} subValue={stats.lastDayOrderCount} />
         <KPICard label="Weekly Order(Qty)" value={stats.weeklyOrderQty} subValue={stats.weeklyOrderCount} />
         <KPICard label="Monthly Order(Qty)" value={stats.monthlyOrderQty} subValue={stats.monthlyOrderCount} />
+        <KPICard label="Weekly PR(Qty)" value={stats.weeklyPrQty} subValue={stats.weeklyPrCount} />
+        <KPICard label="Monthly PR(Qty)" value={stats.monthlyPrQty} subValue={stats.monthlyPrCount} />
       </div>
 
       {/* Row 2: Analytics Charts */}
