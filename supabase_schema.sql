@@ -1,62 +1,17 @@
 
 -- =========================================================
--- CRITICAL REPAIR SCRIPT: RUN THIS IN SUPABASE SQL EDITOR
+-- SYSTEM SCHEMA SYNCHRONIZATION & REPAIR
 -- =========================================================
 
 -- Ensure the extension exists
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Ensure the table exists
-CREATE TABLE IF NOT EXISTS suppliers (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name TEXT NOT NULL,
-    code TEXT UNIQUE NOT NULL,
-    tin TEXT NOT NULL,
-    type TEXT NOT NULL DEFAULT 'Local',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+-- 1. CLEANUP: Drop existing versions of update_item_stock to avoid signature conflicts
+-- We drop both the 2-parameter and 3-parameter versions to start fresh
+DROP FUNCTION IF EXISTS public.update_item_stock(text, integer);
+DROP FUNCTION IF EXISTS public.update_item_stock(text, integer, boolean);
 
--- FORCE-ADD ALL MISSING COLUMNS
-ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS phone_office TEXT;
-ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS phone_contact TEXT;
-ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS phone_alternate TEXT;
-ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS email_office TEXT;
-ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS email_contact TEXT;
-ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS email_alternate TEXT; 
-ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS tax_name TEXT;
-ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS tax_bin TEXT;
-ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS tax_address TEXT;
-ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS address_street TEXT;
-ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS address_city TEXT;
-ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS address_country TEXT;
-ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS address_postal TEXT;
-ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS pay_acc_name TEXT;
-ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS pay_acc_number TEXT;
-ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS pay_bank_name TEXT;
-ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS pay_branch_name TEXT;
-ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS pay_routing_number TEXT;
-ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS pay_swift_number TEXT;
-
--- FORCE CACHE RELOAD
-NOTIFY pgrst, 'reload schema';
-
--- =========================================================
--- FULL SYSTEM SCHEMA
--- =========================================================
-
-CREATE TABLE IF NOT EXISTS profiles (
-    id UUID PRIMARY KEY REFERENCES auth.users ON DELETE CASCADE,
-    email TEXT UNIQUE NOT NULL,
-    full_name TEXT,
-    username TEXT,
-    role TEXT DEFAULT 'USER',
-    status TEXT DEFAULT 'Active',
-    last_login TIMESTAMP WITH TIME ZONE,
-    granular_permissions JSONB DEFAULT '{}'::jsonb,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
+-- 2. Ensure the items table has all required columns for inventory tracking
 CREATE TABLE IF NOT EXISTS items (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     code TEXT UNIQUE NOT NULL,
@@ -70,49 +25,42 @@ CREATE TABLE IF NOT EXISTS items (
     avg_price DECIMAL DEFAULT 0,
     safety_stock INTEGER DEFAULT 0,
     on_hand_stock INTEGER DEFAULT 0,
+    issued_qty INTEGER DEFAULT 0,
+    received_qty INTEGER DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS requisitions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    pr_no TEXT UNIQUE NOT NULL,
-    reference TEXT,
-    type TEXT,
-    status TEXT DEFAULT 'Pending',
-    req_by_name TEXT,
-    contact TEXT,
-    email TEXT,
-    reqDpt TEXT,
-    note TEXT,
-    total_value DECIMAL DEFAULT 0,
-    items JSONB DEFAULT '[]'::jsonb,
-    images JSONB DEFAULT '[]'::jsonb,
-    justification JSONB DEFAULT '[]'::jsonb,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+-- Force-add missing columns if the table already existed without them
+ALTER TABLE items ADD COLUMN IF NOT EXISTS issued_qty INTEGER DEFAULT 0;
+ALTER TABLE items ADD COLUMN IF NOT EXISTS received_qty INTEGER DEFAULT 0;
+ALTER TABLE items ADD COLUMN IF NOT EXISTS location TEXT;
 
-CREATE TABLE IF NOT EXISTS purchase_orders (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    po_no TEXT UNIQUE NOT NULL,
-    type TEXT,
-    supplier_id UUID REFERENCES suppliers(id),
-    supplier_name TEXT,
-    supplier_address TEXT,
-    supplier_vat TEXT,
-    supplier_tin TEXT,
-    supplier_email TEXT,
-    supplier_contact TEXT,
-    currency TEXT DEFAULT 'BDT',
-    total_value DECIMAL DEFAULT 0,
-    status TEXT DEFAULT 'Pending',
-    items JSONB DEFAULT '[]'::jsonb,
-    terms JSONB DEFAULT '{}'::jsonb,
-    note TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+-- 3. Standardize the update_item_stock function
+-- This function handles both receives (is_receive = true) and issues (is_receive = false)
+CREATE OR REPLACE FUNCTION public.update_item_stock(item_sku text, qty_change integer, is_receive boolean)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
+BEGIN
+    IF is_receive THEN
+        -- Receipt: qty_change is positive. Increases on_hand and total received.
+        UPDATE items 
+        SET on_hand_stock = on_hand_stock + qty_change,
+            received_qty = COALESCE(received_qty, 0) + qty_change
+        WHERE sku = item_sku;
+    ELSE
+        -- Issue: qty_change is negative. Decreases on_hand and increases total issued.
+        -- We use ABS for issued_qty to ensure it's a positive increment of total issues.
+        UPDATE items 
+        SET on_hand_stock = on_hand_stock + qty_change,
+            issued_qty = COALESCE(issued_qty, 0) + ABS(qty_change)
+        WHERE sku = item_sku;
+    END IF;
+END;
+$function$;
 
--- ADDED: Move Orders Table
+-- 4. Move Orders Table
 CREATE TABLE IF NOT EXISTS move_orders (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     mo_no TEXT UNIQUE NOT NULL,
@@ -126,24 +74,15 @@ CREATE TABLE IF NOT EXISTS move_orders (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Row Level Security
+-- 5. Row Level Security setup
 ALTER TABLE items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE suppliers ENABLE ROW LEVEL SECURITY;
-ALTER TABLE requisitions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE purchase_orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE move_orders ENABLE ROW LEVEL SECURITY;
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Allow all" ON items;
-DROP POLICY IF EXISTS "Allow all" ON suppliers;
-DROP POLICY IF EXISTS "Allow all" ON requisitions;
-DROP POLICY IF EXISTS "Allow all" ON purchase_orders;
 DROP POLICY IF EXISTS "Allow all" ON move_orders;
-DROP POLICY IF EXISTS "Allow all" ON profiles;
 
 CREATE POLICY "Allow all" ON items FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all" ON suppliers FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all" ON requisitions FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all" ON purchase_orders FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all" ON move_orders FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all" ON profiles FOR ALL USING (true) WITH CHECK (true);
+
+-- FORCE CACHE RELOAD
+NOTIFY pgrst, 'reload schema';

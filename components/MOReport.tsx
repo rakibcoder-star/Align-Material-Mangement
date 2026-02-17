@@ -1,33 +1,101 @@
 
-import React, { useState } from 'react';
-import { Home, FileSpreadsheet, Filter, Inbox, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Home, FileSpreadsheet, Filter, Inbox, ChevronDown, Search, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { supabase } from '../lib/supabase';
 
 const MOReport: React.FC = () => {
-  const [dateStart, setDateStart] = useState('2026-01-30');
-  const [dateEnd, setDateEnd] = useState('2026-01-30');
-  const [itemsFilter, setItemsFilter] = useState('Items');
+  const today = new Date().toISOString().split('T')[0];
+  const [dateStart, setDateStart] = useState(today);
+  const [dateEnd, setDateEnd] = useState(today);
+  const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [loading, setLoading] = useState(false);
+  const [reportData, setReportData] = useState<any[]>([]);
 
-  const [reportData] = useState<any[]>([
-    { sl: 1, date: '2026-01-30', moRef: 'REF-12386', moNo: '100230', sku: '3100000121', name: 'AC GAS, R134A', uom: 'CYL', unitPrice: 16326.19, moQty: 1, moValue: 16326.19, issueQty: 1, issueValue: 16326.19, status: 'Completed', createdBy: 'Md. Rokun Zzaman', updatedBy: 'Md. Rokun Zzaman' },
-    { sl: 2, date: '2026-01-29', moRef: 'REF-13177', moNo: '100221', sku: '3300000032', name: 'TOILET TISSUE', uom: 'PACK', unitPrice: 145.00, moQty: 48, moValue: 6960.00, issueQty: 0, issueValue: 0.00, status: 'Pending', createdBy: 'Rakibul Hassan', updatedBy: 'Admin' }
-  ]);
+  const fetchReport = async () => {
+    setLoading(true);
+    try {
+      let query = supabase.from('move_orders').select('*');
+      
+      if (dateStart && dateEnd) {
+        query = query.gte('created_at', `${dateStart}T00:00:00`).lte('created_at', `${dateEnd}T23:59:59`);
+      }
+
+      if (statusFilter !== 'All') {
+        // Map UI labels to DB status if needed
+        let dbStatus = statusFilter;
+        if (statusFilter === 'In-Process') dbStatus = 'Pending';
+        if (statusFilter === 'Closed') dbStatus = 'Completed';
+        if (statusFilter === 'Hold') dbStatus = 'On Hold';
+        
+        query = query.eq('status', dbStatus);
+      }
+
+      const { data: moveOrders, error } = await query;
+
+      if (error) throw error;
+
+      if (moveOrders) {
+        const flattened: any[] = [];
+        let sl = 1;
+        
+        moveOrders.forEach(mo => {
+          const items = mo.items || [];
+          items.forEach((item: any) => {
+            const matchesSearch = !searchQuery || 
+              item.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+              item.sku?.toLowerCase().includes(searchQuery.toLowerCase());
+
+            if (!matchesSearch) return;
+
+            flattened.push({
+              sl: sl++,
+              date: new Date(mo.created_at).toLocaleDateString(),
+              moRef: mo.reference || 'N/A',
+              moNo: mo.mo_no,
+              sku: item.sku || 'N/A',
+              name: item.name || 'N/A',
+              uom: item.uom || 'N/A',
+              unitPrice: Number(item.unitPrice) || 0,
+              moQty: Number(item.reqQty) || 0,
+              moValue: (Number(item.reqQty) || 0) * (Number(item.unitPrice) || 0),
+              issueQty: Number(item.issuedQty || 0),
+              issueValue: (Number(item.issuedQty || 0)) * (Number(item.unitPrice) || 0),
+              status: mo.status,
+              createdBy: mo.requested_by || 'System',
+              updatedBy: 'System'
+            });
+          });
+        });
+        setReportData(flattened);
+      }
+    } catch (err) {
+      console.error("Error fetching MO report:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleExportExcel = () => {
     try {
-      const worksheet = XLSX.utils.json_to_sheet(reportData);
+      const exportData = reportData.length > 0 ? reportData : [{ Message: "No data found" }];
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "MO Report");
-      XLSX.writeFile(workbook, `MO_Report_${dateStart}.xlsx`);
-    } catch (err) { console.error(err); }
+      XLSX.writeFile(workbook, `MO_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
+    } catch (err) {
+      console.error("Export failed:", err);
+    }
   };
 
   const getStatusStyle = (status: string) => {
     switch (status?.toLowerCase()) {
-      case 'completed': return 'bg-green-100 text-green-700 border-green-200';
-      case 'pending': return 'bg-orange-100 text-orange-700 border-orange-200';
-      default: return 'bg-gray-100 text-gray-700 border-gray-200';
+      case 'completed': return 'bg-green-50 text-green-700 border-green-200';
+      case 'approved': return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'pending': return 'bg-orange-50 text-orange-700 border-orange-200';
+      case 'on hold': return 'bg-red-50 text-red-700 border-red-200';
+      default: return 'bg-gray-50 text-gray-700 border-gray-200';
     }
   };
 
@@ -39,81 +107,133 @@ const MOReport: React.FC = () => {
         <span className="text-[#2d808e] cursor-pointer">MO-REPORT</span>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 bg-transparent justify-end">
-        <div className="relative flex-1 min-w-[150px] md:flex-initial">
-          <select value={itemsFilter} onChange={(e) => setItemsFilter(e.target.value)} className="w-full appearance-none bg-white border border-gray-200 rounded px-3 py-1.5 text-[11px] text-gray-400 font-medium outline-none focus:border-[#2d808e]">
-            <option value="Items">Items</option>
-          </select>
-          <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
+      <div className="flex flex-wrap items-center gap-2 bg-white p-3 rounded-lg border border-gray-100 shadow-sm justify-end">
+        <div className="relative min-w-[200px]">
+          <input 
+            type="text" 
+            placeholder="Search Name or SKU..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-3 py-1.5 border border-gray-200 rounded text-[11px] font-medium outline-none focus:border-[#2d808e]"
+          />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
         </div>
 
-        <input type="date" value={dateStart} onChange={(e) => setDateStart(e.target.value)} className="flex-1 min-w-[130px] md:flex-initial border border-gray-200 rounded px-2 py-1.5 text-[11px] outline-none" />
-        <input type="date" value={dateEnd} onChange={(e) => setDateEnd(e.target.value)} className="flex-1 min-w-[130px] md:flex-initial border border-gray-200 rounded px-2 py-1.5 text-[11px] outline-none" />
-
-        <div className="relative flex-1 min-w-[100px] md:flex-initial">
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-full appearance-none bg-white border border-gray-200 rounded px-3 py-1.5 text-[11px] outline-none">
-            <option value="All">All</option>
-            <option value="Pending">Pending</option>
-          </select>
-          <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+        <div className="flex items-center space-x-2">
+          <input 
+            type="date" 
+            value={dateStart} 
+            onChange={(e) => setDateStart(e.target.value)} 
+            className="border border-gray-200 rounded px-2 py-1.5 text-[11px] outline-none focus:border-[#2d808e] w-[130px]" 
+          />
+          <span className="text-gray-300 text-[11px]">to</span>
+          <input 
+            type="date" 
+            value={dateEnd} 
+            onChange={(e) => setDateEnd(e.target.value)} 
+            className="border border-gray-200 rounded px-2 py-1.5 text-[11px] outline-none focus:border-[#2d808e] w-[130px]" 
+          />
         </div>
 
-        <button className="bg-[#2d808e] text-white px-6 py-1.5 rounded text-[11px] font-bold shadow-sm hover:bg-[#256b78] transition-all">Find</button>
-      </div>
+        <div className="relative min-w-[150px]">
+          <select 
+            value={statusFilter} 
+            onChange={(e) => setStatusFilter(e.target.value)} 
+            className="w-full appearance-none bg-white border border-gray-200 rounded px-3 py-1.5 text-[11px] font-bold outline-none focus:border-[#2d808e]"
+          >
+            <option value="All">All Status</option>
+            <option value="In-Process">In-Process</option>
+            <option value="Approved">Approved</option>
+            <option value="Hold">Hold</option>
+            <option value="Closed">Closed</option>
+          </select>
+          <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+        </div>
 
-      <div className="flex justify-end">
-        <button onClick={handleExportExcel} className="flex items-center space-x-1.5 border border-[#2d808e] bg-white px-3 py-1.5 rounded text-[11px] font-bold text-gray-700 hover:bg-gray-50 transition-all shadow-sm">
-          <FileSpreadsheet size={14} className="text-gray-900" />
-          <span>Excel</span>
+        <button 
+          onClick={fetchReport}
+          disabled={loading}
+          className="bg-[#2d808e] text-white px-8 py-1.5 rounded text-[11px] font-black shadow-sm hover:bg-[#256b78] transition-all flex items-center gap-2 uppercase"
+        >
+          {loading ? <Loader2 size={12} className="animate-spin" /> : null}
+          Find
         </button>
       </div>
 
-      <div className="bg-white rounded-sm shadow-sm border border-gray-100 overflow-hidden">
+      <div className="flex justify-end">
+        <button onClick={handleExportExcel} className="flex items-center space-x-1.5 border border-[#2d808e] bg-white px-4 py-1.5 rounded text-[11px] font-bold text-[#2d808e] hover:bg-cyan-50 transition-all shadow-sm uppercase tracking-tight">
+          <FileSpreadsheet size={14} />
+          <span>Export Excel</span>
+        </button>
+      </div>
+
+      <div className="bg-white rounded border border-gray-100 shadow-sm overflow-hidden min-h-[400px]">
         <div className="overflow-x-auto scrollbar-thin">
           <table className="w-full text-left border-collapse min-w-[1800px]">
-            <thead className="bg-[#fcfcfc]">
-              <tr className="text-[10px] font-bold text-gray-800 border-b border-gray-100 uppercase">
-                <th className="px-2 py-4 text-center w-12 border-r border-gray-50">SL</th>
-                <th className="px-2 py-4 border-r border-gray-50">Date</th>
-                <th className="px-2 py-4 border-r border-gray-50 relative">MO Ref <Filter size={10} className="inline-block ml-1 text-gray-200" /></th>
-                <th className="px-2 py-4 border-r border-gray-50 relative">MO No <Filter size={10} className="inline-block ml-1 text-gray-200" /></th>
-                <th className="px-2 py-4 border-r border-gray-50 relative">SKU <Filter size={10} className="inline-block ml-1 text-gray-200" /></th>
-                <th className="px-2 py-4 border-r border-gray-50 relative">Name <Filter size={10} className="inline-block ml-1 text-gray-200" /></th>
-                <th className="px-2 py-4 border-r border-gray-50">UOM</th>
-                <th className="px-2 py-4 border-r border-gray-50 text-right">Unit Price</th>
-                <th className="px-2 py-4 border-r border-gray-50 text-center">MO Qty</th>
-                <th className="px-2 py-4 border-r border-gray-50 text-right">MO Value</th>
-                <th className="px-2 py-4 border-r border-gray-50 text-center">Issue Qty</th>
-                <th className="px-2 py-4 border-r border-gray-50 text-right">Issue Value</th>
-                <th className="px-2 py-4 border-r border-gray-50 text-center">Status</th>
-                <th className="px-2 py-4 border-r border-gray-50 text-center">Created By</th>
-                <th className="px-2 py-4 text-center">Updated By</th>
+            <thead className="bg-[#fcfcfc] sticky top-0 z-10">
+              <tr className="text-[10px] font-black text-gray-500 border-b border-gray-100 uppercase tracking-widest">
+                <th className="px-3 py-4 text-center w-12 border-r border-gray-50">SL</th>
+                <th className="px-3 py-4 border-r border-gray-50">Date</th>
+                <th className="px-3 py-4 border-r border-gray-50">MO Ref</th>
+                <th className="px-3 py-4 border-r border-gray-50">MO No</th>
+                <th className="px-3 py-4 border-r border-gray-50">SKU</th>
+                <th className="px-3 py-4 border-r border-gray-50">Name</th>
+                <th className="px-3 py-4 border-r border-gray-50 text-center">UOM</th>
+                <th className="px-3 py-4 border-r border-gray-50 text-right">Unit Price</th>
+                <th className="px-3 py-4 border-r border-gray-50 text-center">MO Qty</th>
+                <th className="px-3 py-4 border-r border-gray-50 text-right">MO Value</th>
+                <th className="px-3 py-4 border-r border-gray-50 text-center">Issue Qty</th>
+                <th className="px-3 py-4 border-r border-gray-50 text-right">Issue Value</th>
+                <th className="px-3 py-4 border-r border-gray-50 text-center">Status</th>
+                <th className="px-3 py-4 border-r border-gray-50 text-center">Created By</th>
+                <th className="px-3 py-4 text-center">Updated By</th>
               </tr>
             </thead>
             <tbody>
-              {reportData.map((row) => (
-                <tr key={row.sl} className="border-b border-gray-50 text-[10px] hover:bg-gray-50/50 transition-colors">
-                  <td className="px-2 py-3 text-center border-r border-gray-50">{row.sl}</td>
-                  <td className="px-2 py-3 border-r border-gray-50">{row.date}</td>
-                  <td className="px-2 py-3 border-r border-gray-50">{row.moRef}</td>
-                  <td className="px-2 py-3 border-r border-gray-50 font-bold text-blue-500">{row.moNo}</td>
-                  <td className="px-2 py-3 border-r border-gray-50">{row.sku}</td>
-                  <td className="px-2 py-3 border-r border-gray-50 font-bold uppercase">{row.name}</td>
-                  <td className="px-2 py-3 border-r border-gray-50 text-center uppercase">{row.uom}</td>
-                  <td className="px-2 py-3 border-r border-gray-50 text-right">{row.unitPrice.toFixed(2)}</td>
-                  <td className="px-2 py-3 border-r border-gray-50 text-center font-bold">{row.moQty}</td>
-                  <td className="px-2 py-3 border-r border-gray-50 text-right font-bold">{row.moValue.toFixed(2)}</td>
-                  <td className="px-2 py-3 border-r border-gray-50 text-center font-bold text-blue-600">{row.issueQty}</td>
-                  <td className="px-2 py-3 border-r border-gray-50 text-right font-bold text-blue-600">{row.issueValue.toFixed(2)}</td>
-                  <td className="px-2 py-3 border-r border-gray-50 text-center">
-                    <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase border ${getStatusStyle(row.status)}`}>
-                      {row.status}
-                    </span>
+              {loading ? (
+                <tr>
+                  <td colSpan={15} className="py-32 text-center text-gray-400 uppercase font-black text-[11px] tracking-widest">
+                    <Loader2 size={32} className="animate-spin text-[#2d808e] mx-auto mb-4" />
+                    Scanning Database Records...
                   </td>
-                  <td className="px-2 py-3 border-r border-gray-50 text-center whitespace-nowrap">{row.createdBy}</td>
-                  <td className="px-2 py-3 text-center whitespace-nowrap">{row.updatedBy}</td>
                 </tr>
-              ))}
+              ) : reportData.length > 0 ? (
+                reportData.map((row) => (
+                  <tr key={row.sl} className="border-b border-gray-50 text-[10px] hover:bg-gray-50/50 transition-colors">
+                    <td className="px-3 py-3 text-center border-r border-gray-50 text-gray-400">{row.sl}</td>
+                    <td className="px-3 py-3 border-r border-gray-50 whitespace-nowrap">{row.date}</td>
+                    <td className="px-3 py-3 border-r border-gray-50 text-gray-500 font-medium">{row.moRef}</td>
+                    <td className="px-3 py-3 border-r border-gray-50 font-black text-blue-500">{row.moNo}</td>
+                    <td className="px-3 py-3 border-r border-gray-50 font-bold text-gray-600">{row.sku}</td>
+                    <td className="px-3 py-3 border-r border-gray-50 font-black uppercase text-gray-800 leading-tight">{row.name}</td>
+                    <td className="px-3 py-3 border-r border-gray-50 text-center uppercase font-bold text-gray-400">{row.uom}</td>
+                    <td className="px-3 py-3 border-r border-gray-50 text-right font-bold text-gray-700">{row.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                    <td className="px-3 py-3 border-r border-gray-50 text-center font-black text-gray-800">{row.moQty}</td>
+                    <td className="px-3 py-3 border-r border-gray-50 text-right font-black text-[#2d808e]">{row.moValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                    <td className="px-3 py-3 border-r border-gray-50 text-center font-black text-blue-600">{row.issueQty}</td>
+                    <td className="px-3 py-3 border-r border-gray-50 text-right font-black text-blue-600">{row.issueValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                    <td className="px-3 py-3 border-r border-gray-50 text-center">
+                      <span className={`px-3 py-0.5 rounded-full text-[8px] font-black uppercase border shadow-sm ${getStatusStyle(row.status)}`}>
+                        {row.status === 'Pending' ? 'In-Process' : row.status === 'Completed' ? 'Closed' : row.status === 'On Hold' ? 'Hold' : row.status}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 border-r border-gray-50 text-center whitespace-nowrap text-gray-400 font-bold uppercase">{row.createdBy}</td>
+                    <td className="px-3 py-3 text-center whitespace-nowrap text-gray-400 font-bold uppercase">{row.updatedBy}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={15} className="py-40">
+                    <div className="flex flex-col items-center justify-center text-gray-400">
+                      <div className="bg-gray-50 p-6 rounded-full mb-4 ring-1 ring-gray-100">
+                        <Inbox size={64} strokeWidth={1} className="text-gray-200" />
+                      </div>
+                      <p className="text-[12px] font-black uppercase tracking-[0.3em] text-gray-300">No Move Order History</p>
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-gray-200 mt-2">Filter and click Find to query</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
