@@ -33,7 +33,7 @@ const ItemList: React.FC = () => {
 
   const fetchItems = async () => {
     setLoading(true);
-    // INCREASED LIMIT: Increased limit from default to 5000 to handle larger CSV datasets
+    // INCREASED LIMIT: Increased limit to 5000 to handle large datasets seamlessly
     const { data, error } = await supabase
       .from('items')
       .select('*')
@@ -180,9 +180,6 @@ const ItemList: React.FC = () => {
             <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
           </button>
           <div className="h-6 w-px bg-gray-100 mx-2"></div>
-          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-            {filteredItems.length} Items found
-          </span>
         </div>
         <div className="flex items-center">
           <div className="relative flex">
@@ -262,7 +259,7 @@ const ItemList: React.FC = () => {
                     <button 
                       onClick={() => setHistoryItem(item)}
                       title="View Update History"
-                      className="p-2 text-blue-500 hover:bg-blue-500 hover:text-white border border-blue-100 rounded-md transition-all shadow-sm"
+                      className="p-2 text-blue-500 hover:bg-blue-50 hover:text-white border border-blue-100 rounded-md transition-all shadow-sm"
                     >
                       <ListFilter size={14} strokeWidth={2.5} />
                     </button>
