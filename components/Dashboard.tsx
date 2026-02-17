@@ -52,6 +52,9 @@ import {
   X,
   Plus,
   ShieldAlert,
+  Printer,
+  PackageSearch,
+  MoveHorizontal,
   LogOut as LogOutIcon
 } from 'lucide-react';
 
@@ -121,10 +124,10 @@ const SubmenuItem: React.FC<{
 
 const KPICard: React.FC<{ label: string; value: string; subValue?: string }> = ({ label, value, subValue }) => (
   <div className="bg-white p-6 rounded shadow-sm border border-gray-100 flex flex-col justify-start min-h-[110px] hover:shadow-md transition-all group">
-    <h3 className="text-[15px] text-gray-400 font-medium tracking-tight mb-2">{label}</h3>
+    <h3 className="text-[14px] text-gray-400 font-medium tracking-tight mb-3">{label}</h3>
     <div className="flex items-baseline space-x-2">
-      <p className="text-3xl font-bold text-gray-800 tracking-tight group-hover:text-[#2d808e] transition-colors">{value}</p>
-      {subValue && <p className="text-[18px] font-medium text-gray-400">({subValue})</p>}
+      <p className="text-4xl font-bold text-gray-700 tracking-tight group-hover:text-[#2d808e] transition-colors">{value}</p>
+      {subValue && <p className="text-[20px] font-medium text-gray-400">({subValue})</p>}
     </div>
   </div>
 );
@@ -249,19 +252,30 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
 
   return (
     <div className="space-y-8 animate-slide-up pb-20">
-      <div className="flex flex-col space-y-4">
-        <div>
+      {/* Redesigned Header: Actions moved to the right on the same line as the title */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col">
           <h1 className="text-[32px] font-bold text-[#2d808e] tracking-tight uppercase leading-tight">DASHBOARD ANALYTICS</h1>
-          <p className="text-[14px] font-medium text-gray-400 mt-1">{dateTime.toLocaleString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true })}</p>
+          <p className="text-[14px] font-medium text-gray-400 mt-1 uppercase tracking-widest">{dateTime.toLocaleString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true })}</p>
         </div>
-        <div className="flex items-center space-x-3">
-          <button onClick={() => navigate('/label')} className="px-10 py-4 bg-[#2d808e] text-white text-[14px] font-bold rounded shadow-sm hover:bg-[#256b78] uppercase tracking-wide transition-all leading-none">Code Print</button>
-          <button onClick={onCheckStock} className="px-10 py-4 bg-[#2d808e] text-white text-[14px] font-bold rounded shadow-sm hover:bg-[#256b78] uppercase tracking-wide transition-all leading-none">Check Stock</button>
-          <button onClick={onMoveOrder} className="px-10 py-4 bg-[#2d808e] text-white text-[14px] font-bold rounded shadow-sm hover:bg-[#256b78] uppercase tracking-wide transition-all leading-none">Move Order</button>
+        <div className="flex flex-wrap items-center gap-3">
+          <button onClick={() => navigate('/label')} className="px-6 py-3.5 bg-[#2d808e] text-white text-[13px] font-bold rounded shadow-sm hover:bg-[#256b78] uppercase tracking-wide transition-all flex items-center gap-2.5">
+            <Printer size={18} />
+            <span>Code Print</span>
+          </button>
+          <button onClick={onCheckStock} className="px-6 py-3.5 bg-[#2d808e] text-white text-[13px] font-bold rounded shadow-sm hover:bg-[#256b78] uppercase tracking-wide transition-all flex items-center gap-2.5">
+            <PackageSearch size={18} />
+            <span>Check Stock</span>
+          </button>
+          <button onClick={onMoveOrder} className="px-6 py-3.5 bg-[#2d808e] text-white text-[13px] font-bold rounded shadow-sm hover:bg-[#256b78] uppercase tracking-wide transition-all flex items-center gap-2.5">
+            <MoveHorizontal size={18} />
+            <span>Move Order</span>
+          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* KPI Cards: Single 6-column row as requested */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
         <KPICard label="Today Order(Qty)" value={stats.todayOrderQty} subValue={stats.todayOrderCount} />
         <KPICard label="Lastday Order(Qty)" value={stats.lastDayOrderQty} subValue={stats.lastDayOrderCount} />
         <KPICard label="Weekly Order(Qty)" value={stats.weeklyOrderQty} subValue={stats.weeklyOrderCount} />
@@ -270,7 +284,7 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
         <KPICard label="Monthly PR(Qty)" value={stats.monthlyPrQty} subValue={stats.monthlyPrCount} />
       </div>
 
-      {/* Row 2: Analytics Charts */}
+      {/* Analytics Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h3 className="text-[13px] font-black text-[#2d808e] uppercase tracking-tighter mb-6">Weekly Move Order</h3>
