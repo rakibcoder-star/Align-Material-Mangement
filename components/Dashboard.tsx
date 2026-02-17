@@ -55,7 +55,11 @@ import {
   Printer,
   PackageSearch,
   MoveHorizontal,
-  LogOut as LogOutIcon
+  LogOut as LogOutIcon,
+  Mail,
+  Phone,
+  Briefcase,
+  IdCard
 } from 'lucide-react';
 
 const SidebarItem: React.FC<{ 
@@ -86,7 +90,7 @@ const SidebarItem: React.FC<{
           <div className={`${active ? 'text-[#2d808e]' : danger ? 'text-red-400' : 'text-gray-500'} shrink-0`}>
             {icon && React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { size: 14 }) : icon}
           </div>
-          {!isCollapsed && <span className="text-[10px] font-bold leading-tight tracking-tight whitespace-nowrap overflow-hidden">{label}</span>}
+          {!isCollapsed && <span className="text-[11px] font-bold leading-tight tracking-tight whitespace-nowrap overflow-hidden text-left">{label}</span>}
         </div>
         {!isCollapsed && hasSubmenu && (
           <div className="text-gray-400 shrink-0 ml-1">
@@ -117,7 +121,7 @@ const SubmenuItem: React.FC<{
       <div className={`${active ? 'text-[#2d808e]' : 'text-gray-400'} shrink-0`}>
         {icon && React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { size: 12 }) : icon}
       </div>
-      <span className="truncate font-bold uppercase tracking-tight">{label}</span>
+      <span className="truncate font-bold tracking-tight">{label}</span>
     </button>
   </div>
 );
@@ -254,7 +258,9 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
     <div className="space-y-6 animate-slide-up pb-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
         <div className="flex flex-col">
-          <h1 className="text-xl font-black text-[#2d808e] tracking-tight uppercase leading-none italic">DASHBOARD ANALYTICS</h1>
+          <h1 className="text-xl font-black text-[#2d808e] tracking-tight uppercase leading-none italic">
+            {user?.fullName ? `${user.fullName}'S DASHBOARD` : 'DASHBOARD ANALYTICS'}
+          </h1>
           <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-widest">{dateTime.toLocaleString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true })}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -434,6 +440,8 @@ const Dashboard: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMoveOrderModalOpen, setIsMoveOrderModalOpen] = useState(false);
   const [isStockStatusModalOpen, setIsStockStatusModalOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [previewPr, setPreviewPr] = useState<any>(null);
   const [previewPo, setPreviewPo] = useState<any>(null);
   
@@ -471,7 +479,7 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-[#f8fafb] overflow-hidden font-sans no-print">
+    <div className="flex h-screen bg-[#f8fafb] overflow-hidden font-sans no-print" style={{ fontFamily: 'var(--ant-font-family)' }}>
       {isMobileMenuOpen && (
         <div 
           className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden animate-in fade-in duration-300"
@@ -486,8 +494,7 @@ const Dashboard: React.FC = () => {
         ${isSidebarCollapsed && !isMobileMenuOpen ? 'md:w-12' : 'md:w-[180px]'}
         bg-white border-r border-gray-100 flex flex-col h-full shadow-sm shrink-0
       `}>
-        <div className="flex justify-between items-center p-4 border-b border-gray-50 shrink-0">
-          <div className="text-[10px] font-black text-gray-300 uppercase tracking-widest">System</div>
+        <div className="flex justify-end items-center p-4 border-b border-gray-50 shrink-0 h-14">
           <button onClick={() => setIsMobileMenuOpen(false)} className="md:hidden p-1 text-gray-400 hover:text-gray-600 focus:outline-none">
             <X size={16} />
           </button>
@@ -552,7 +559,6 @@ const Dashboard: React.FC = () => {
       </aside>
 
       <div className="flex-1 flex flex-col overflow-hidden relative">
-        {/* REDUCED HEIGHT HEADER: h-12 md:h-14 */}
         <header className="h-12 md:h-14 bg-white border-b border-gray-100 flex items-center justify-between px-4 md:px-6 z-30 shrink-0 relative">
           <div className="flex items-center space-x-4">
             <button 
@@ -569,7 +575,6 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* CENTERED SEARCH BOX */}
           <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 w-full max-w-[320px]">
             <div className="relative w-full group">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-[#2d808e] transition-colors" />
@@ -582,16 +587,21 @@ const Dashboard: React.FC = () => {
           </div>
 
           <div className="flex items-center space-x-3">
-             <button className="p-1.5 text-gray-400 hover:text-[#2d808e] bg-gray-50 rounded-lg transition-all relative">
+             <button 
+              onClick={() => setIsNotificationOpen(true)}
+              className="p-1.5 text-gray-400 hover:text-[#2d808e] bg-gray-50 rounded-lg transition-all relative"
+             >
                <Bell size={16} />
                <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full border-2 border-white"></span>
              </button>
              <div className="w-px h-5 bg-gray-100"></div>
-             {/* REMOVED SYSTEM ADMIN TEXT, ONLY SHOWING AVATAR */}
              <div className="flex items-center pl-1">
-                <div className="w-8 h-8 rounded-lg bg-[#eef6f7] flex items-center justify-center border border-white shadow-sm ring-1 ring-[#eef6f7]">
+                <button 
+                  onClick={() => setIsProfileOpen(true)}
+                  className="w-8 h-8 rounded-lg bg-[#eef6f7] flex items-center justify-center border border-white shadow-sm ring-1 ring-[#eef6f7] hover:ring-[#2d808e] transition-all"
+                >
                   <UserIcon size={16} className="text-[#2d808e]" />
-                </div>
+                </button>
              </div>
           </div>
         </header>
@@ -621,7 +631,6 @@ const Dashboard: React.FC = () => {
           </div>
         </main>
 
-        {/* REDUCED HEIGHT FOOTER: h-10 */}
         <footer className="h-10 border-t border-gray-50 flex items-center justify-center bg-white/80 backdrop-blur px-6 shrink-0 sticky bottom-0 z-20">
            <div className="text-[8px] font-black uppercase tracking-[0.4em] text-gray-300">
              &copy; 2026 ALIGN - Proprietary Node
@@ -633,6 +642,97 @@ const Dashboard: React.FC = () => {
       <StockStatusModal isOpen={isStockStatusModalOpen} onClose={() => setIsStockStatusModalOpen(false)} />
       {previewPr && <PRPreviewModal pr={previewPr} onClose={() => setPreviewPr(null)} />}
       {previewPo && <POPreviewModal po={previewPo} onClose={() => { setPreviewPo(null); }} />}
+
+      {/* Notifications Modal */}
+      {isNotificationOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h3 className="font-black text-gray-800 uppercase tracking-tight text-sm">System Notifications</h3>
+              <button onClick={() => setIsNotificationOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="max-h-[400px] overflow-y-auto p-2">
+              <div className="p-4 bg-[#eef6f7] border border-[#2d808e]/10 rounded-xl mb-2">
+                <p className="text-[11px] font-bold text-gray-800">Welcome to ALIGN Node</p>
+                <p className="text-[10px] text-gray-500 mt-1">Terminal connection established successfully.</p>
+                <span className="text-[8px] text-gray-400 mt-2 block font-black">Just now</span>
+              </div>
+              <div className="p-4 bg-white border border-gray-100 rounded-xl mb-2">
+                <p className="text-[11px] font-bold text-gray-800">New PR Submitted</p>
+                <p className="text-[10px] text-gray-500 mt-1">PR-2000000018 requires your approval.</p>
+                <span className="text-[8px] text-gray-400 mt-2 block font-black">10 mins ago</span>
+              </div>
+            </div>
+            <div className="p-4 bg-gray-50 text-center">
+              <button className="text-[10px] font-black text-[#2d808e] uppercase tracking-widest">Clear All</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Profile Modal */}
+      {isProfileOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="bg-[#2d808e] p-8 text-center relative">
+              <button onClick={() => setIsProfileOpen(false)} className="absolute top-4 right-4 text-white/60 hover:text-white transition-colors">
+                <X size={20} />
+              </button>
+              <div className="w-20 h-20 bg-white/20 rounded-2xl mx-auto flex items-center justify-center border border-white/30 backdrop-blur shadow-xl mb-4">
+                <UserIcon size={32} className="text-white" />
+              </div>
+              <h3 className="text-white font-black text-xl tracking-tight uppercase">{user?.fullName || 'System Administrator'}</h3>
+              <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest mt-1">ID: {user?.id?.substring(0, 8) || 'N/A'}</p>
+            </div>
+            <div className="p-8 space-y-6">
+              <div className="flex items-center space-x-4 group">
+                <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center border border-gray-100 group-hover:border-[#2d808e]/30 transition-all">
+                  <Briefcase size={18} className="text-gray-400 group-hover:text-[#2d808e]" />
+                </div>
+                <div>
+                  <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Designation</p>
+                  <p className="text-sm font-bold text-gray-700">{user?.role || 'Administrator'}</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-4 group">
+                <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center border border-gray-100 group-hover:border-[#2d808e]/30 transition-all">
+                  <Mail size={18} className="text-gray-400 group-hover:text-[#2d808e]" />
+                </div>
+                <div>
+                  <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Email Node</p>
+                  <p className="text-sm font-bold text-gray-700">{user?.email || 'identity@fairtechnology.com'}</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-4 group">
+                <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center border border-gray-100 group-hover:border-[#2d808e]/30 transition-all">
+                  <Phone size={18} className="text-gray-400 group-hover:text-[#2d808e]" />
+                </div>
+                <div>
+                  <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Contact Terminal</p>
+                  <p className="text-sm font-bold text-gray-700">{user?.lastLogin ? 'Internal Node Connected' : '+880 1XXX-XXXXXX'}</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-4 group">
+                <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center border border-gray-100 group-hover:border-[#2d808e]/30 transition-all">
+                  <IdCard size={18} className="text-gray-400 group-hover:text-[#2d808e]" />
+                </div>
+                <div>
+                  <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Unique ID</p>
+                  <p className="text-sm font-bold text-gray-700">{user?.id || 'PROPRIETARY-ID'}</p>
+                </div>
+              </div>
+            </div>
+            <div className="px-8 py-6 bg-gray-50 flex justify-center space-x-4">
+               <button onClick={logout} className="w-full py-3 bg-red-50 text-red-600 border border-red-100 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-100 transition-all flex items-center justify-center gap-2">
+                 <LogOutIcon size={14} />
+                 <span>Terminate Session</span>
+               </button>
+            </div>
+          </div>
+        </div>
+      )}
       
       <style>{`
         @keyframes wave {
