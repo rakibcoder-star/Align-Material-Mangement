@@ -1,30 +1,30 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext.tsx';
-import UserManagement from './UserManagement.tsx';
-import MoveOrderModal from './MoveOrderModal.tsx';
-import MOApprovalModal from './MOApprovalModal.tsx';
-import StockStatusModal from './StockStatusModal.tsx';
-import PRPreviewModal from './PRPreviewModal.tsx';
-import POPreviewModal from './POPreviewModal.tsx';
-import PurchaseRequisition from './PurchaseRequisition.tsx';
-import PurchaseOrder from './PurchaseOrder.tsx';
-import Supplier from './Supplier.tsx';
-import PurchaseReport from './PurchaseReport.tsx';
-import Inventory from './Inventory.tsx';
-import Receive from './Receive.tsx';
-import Issue from './Issue.tsx';
-import TnxReport from './TnxReport.tsx';
-import MOReport from './MOReport.tsx';
-import ItemList from './ItemList.tsx';
-import ItemUOM from './ItemUOM.tsx';
-import ItemGroup from './ItemGroup.tsx';
-import ItemType from './ItemType.tsx';
-import CostCenter from './CostCenter.tsx';
-import LabelManagement from './LabelManagement.tsx';
-import TnxDetailsModal from './TnxDetailsModal.tsx';
-import { supabase } from '../lib/supabase.ts';
+import { useAuth } from '../context/AuthContext';
+import UserManagement from './UserManagement';
+import MoveOrderModal from './MoveOrderModal';
+import MOApprovalModal from './MOApprovalModal';
+import StockStatusModal from './StockStatusModal';
+import PRPreviewModal from './PRPreviewModal';
+import POPreviewModal from './POPreviewModal';
+import PurchaseRequisition from './PurchaseRequisition';
+import PurchaseOrder from './PurchaseOrder';
+import Supplier from './Supplier';
+import PurchaseReport from './PurchaseReport';
+import Inventory from './Inventory';
+import Receive from './Receive';
+import Issue from './Issue';
+import TnxReport from './TnxReport';
+import MOReport from './MOReport';
+import ItemList from './ItemList';
+import ItemUOM from './ItemUOM';
+import ItemGroup from './ItemGroup';
+import ItemType from './ItemType';
+import CostCenter from './CostCenter';
+import LabelManagement from './LabelManagement';
+import TnxDetailsModal from './TnxDetailsModal';
+import { supabase } from '../lib/supabase';
 import { 
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell
@@ -304,7 +304,6 @@ const DashboardOverview: React.FC<{
         <KPICard label="Monthly PR" value={stats.monthlyPrQty} subValue={stats.monthlyPrCount} />
       </div>
 
-      {/* Approvals Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col shadow-sm">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between"><h3 className="text-xs font-black text-gray-800 uppercase tracking-widest">PR Approvals</h3><span className="px-2 py-0.5 bg-orange-50 text-orange-600 text-[10px] font-black rounded-full uppercase">{pendingPrs.length} Pending</span></div>
@@ -409,9 +408,7 @@ const DashboardOverview: React.FC<{
         </div>
       </div>
       
-      {/* LATEST MOVE ORDERS & LATEST PR TABLES AS PER IMAGE */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Latest Move orders */}
         <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm flex flex-col min-h-[400px]">
           <h2 className="text-xl font-black text-[#2d808e] mb-6 tracking-tight">Latest Move orders</h2>
           <div className="overflow-x-auto">
@@ -447,17 +444,11 @@ const DashboardOverview: React.FC<{
                     </tr>
                   );
                 })}
-                {latestMOs.length === 0 && (
-                   <tr>
-                     <td colSpan={6} className="py-20 text-center text-gray-300 font-black uppercase tracking-widest">No recent move orders</td>
-                   </tr>
-                )}
               </tbody>
             </table>
           </div>
         </div>
 
-        {/* Latest PR */}
         <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm flex flex-col min-h-[400px]">
           <h2 className="text-xl font-black text-[#2d808e] mb-6 tracking-tight">Latest PR</h2>
           <div className="overflow-x-auto">
@@ -489,11 +480,6 @@ const DashboardOverview: React.FC<{
                     </tr>
                   );
                 })}
-                {latestPRs.length === 0 && (
-                   <tr>
-                     <td colSpan={6} className="py-20 text-center text-gray-300 font-black uppercase tracking-widest">No recent requisitions</td>
-                   </tr>
-                )}
               </tbody>
             </table>
           </div>
@@ -503,7 +489,6 @@ const DashboardOverview: React.FC<{
   );
 };
 
-// --- NEW COMPONENT: Profile Modal (Image 2) ---
 const ProfileModal: React.FC<{ user: any, isOpen: boolean, onClose: () => void, logout: () => void }> = ({ user, isOpen, onClose, logout }) => {
   if (!isOpen) return null;
   return (
@@ -512,22 +497,17 @@ const ProfileModal: React.FC<{ user: any, isOpen: boolean, onClose: () => void, 
         <button onClick={onClose} className="absolute top-4 right-4 text-white hover:text-gray-200 transition-colors z-20">
           <X size={24} />
         </button>
-        {/* Teal Header Section */}
         <div className="bg-[#2d808e] p-10 flex flex-col items-center justify-center text-white text-center relative overflow-hidden">
-           {/* Subtle background graphics */}
            <div className="absolute inset-0 opacity-10 pointer-events-none">
               <div className="absolute -top-10 -left-10 w-40 h-40 border-8 border-white rounded-full"></div>
               <div className="absolute -bottom-10 -right-10 w-60 h-60 border-4 border-white rounded-full"></div>
            </div>
-           
            <div className="w-24 h-24 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center mb-6 shadow-xl backdrop-blur-sm z-10">
              <UserIcon size={56} className="text-white" />
            </div>
            <h2 className="text-2xl font-black uppercase tracking-tighter mb-1 z-10">SYSTEM ADMINISTRATOR</h2>
            <p className="text-[10px] font-black text-white/60 uppercase tracking-widest z-10">NODE ID: {user?.id?.substring(0,8).toUpperCase() || 'N/A'}</p>
         </div>
-
-        {/* Content Section */}
         <div className="p-10 space-y-6">
           {[
             { icon: <Briefcase size={20} />, label: 'DESIGNATION', value: user?.role || 'Administrator' },
@@ -546,8 +526,6 @@ const ProfileModal: React.FC<{ user: any, isOpen: boolean, onClose: () => void, 
             </div>
           ))}
         </div>
-
-        {/* Action Footer */}
         <div className="px-10 pb-10">
           <button 
             onClick={logout}
@@ -562,14 +540,12 @@ const ProfileModal: React.FC<{ user: any, isOpen: boolean, onClose: () => void, 
   );
 };
 
-// --- NEW COMPONENT: Search Results Overlay ---
 const SearchResults: React.FC<{ 
   results: {pr: any[], po: any[], mo: any[], items: any[]}, 
   onClose: () => void,
   onNavigate: (type: string, obj: any) => void
 }> = ({ results, onClose, onNavigate }) => {
   const hasResults = results.pr.length > 0 || results.po.length > 0 || results.mo.length > 0 || results.items.length > 0;
-  
   return (
     <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-[80vh] overflow-y-auto z-[2000] scrollbar-thin">
       {!hasResults ? (
@@ -593,7 +569,6 @@ const SearchResults: React.FC<{
               ))}
             </div>
           )}
-          
           {results.pr.length > 0 && (
             <div className="space-y-1">
               <h4 className="px-3 py-1 text-[9px] font-black text-orange-500 uppercase tracking-widest border-b border-gray-50">Purchase Requisitions</h4>
@@ -608,7 +583,6 @@ const SearchResults: React.FC<{
               ))}
             </div>
           )}
-
           {results.po.length > 0 && (
             <div className="space-y-1">
               <h4 className="px-3 py-1 text-[9px] font-black text-blue-500 uppercase tracking-widest border-b border-gray-50">Purchase Orders</h4>
@@ -623,7 +597,6 @@ const SearchResults: React.FC<{
               ))}
             </div>
           )}
-
           {results.mo.length > 0 && (
             <div className="space-y-1">
               <h4 className="px-3 py-1 text-[9px] font-black text-emerald-500 uppercase tracking-widest border-b border-gray-50">Move Orders</h4>
@@ -659,7 +632,6 @@ const Dashboard: React.FC = () => {
   const [previewPo, setPreviewPo] = useState<any>(null);
   const [previewMo, setPreviewMo] = useState<any>(null);
   const [previewTnx, setPreviewTnx] = useState<any>(null);
-
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{pr: any[], po: any[], mo: any[], items: any[]}>({ pr: [], po: [], mo: [], items: [] });
   const [isSearching, setIsSearching] = useState(false);
@@ -680,7 +652,6 @@ const Dashboard: React.FC = () => {
           supabase.from('move_orders').select('*').or(`mo_no.ilike.%${searchQuery}%,reference.ilike.%${searchQuery}%`).limit(5),
           supabase.from('items').select('*').or(`sku.ilike.%${searchQuery}%,name.ilike.%${searchQuery}%`).limit(5)
         ]);
-        
         setSearchResults({
           pr: prRes.data || [],
           po: poRes.data || [],
@@ -694,12 +665,10 @@ const Dashboard: React.FC = () => {
         setIsSearching(false);
       }
     };
-
     const timeoutId = setTimeout(handleSearch, 300);
     return () => clearTimeout(timeoutId);
   }, [searchQuery]);
 
-  // Click outside to close search results
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
@@ -716,10 +685,7 @@ const Dashboard: React.FC = () => {
     if (type === 'pr') setPreviewPr(obj);
     if (type === 'po') setPreviewPo(obj);
     if (type === 'mo') setPreviewMo(obj);
-    if (type === 'item') {
-      navigate('/item-list');
-      // In a real app we might scroll to or highlight the item
-    }
+    if (type === 'item') navigate('/item-list');
   };
 
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
@@ -743,7 +709,6 @@ const Dashboard: React.FC = () => {
             </>
           )}
         </div>
-        
         <div className="flex-1 py-2 overflow-y-auto overflow-x-hidden space-y-1 scrollbar-thin scrollbar-thumb-gray-200">
           <SidebarItem icon={<Gauge />} label="Dashboard" active={activeTab === 'overview'} isCollapsed={isSidebarCollapsed} onClick={() => navigate('/overview')} />
           <SidebarItem icon={<ShoppingCart />} label="Purchase" hasSubmenu isOpen={openMenus.purchase} onClick={() => setOpenMenus({...openMenus, purchase: !openMenus.purchase})} isCollapsed={isSidebarCollapsed}>
@@ -774,14 +739,12 @@ const Dashboard: React.FC = () => {
           <button onClick={logout} className="w-full flex items-center space-x-3 px-3 py-2 text-red-500 font-black text-xs uppercase tracking-widest hover:bg-red-50 rounded-lg transition-all"><LogOutIcon size={18} />{!isSidebarCollapsed && <span>EXIT</span>}</button>
         </div>
       </aside>
-
       <div className="flex-1 flex flex-col overflow-hidden relative">
         <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-30 shrink-0">
           <div className="flex items-center gap-6">
             <button onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} className="p-2 hover:bg-gray-50 rounded-xl text-[#2d808e] transition-all"><Menu size={24} /></button>
             <div onClick={() => navigate('/overview')} className="text-2xl font-black text-gray-800 tracking-tighter cursor-pointer select-none">ALIGN</div>
           </div>
-
           <div ref={searchContainerRef} className="flex-1 max-w-[600px] mx-10 relative">
             <div className="bg-[#f8f9fa] rounded-2xl flex items-center px-4 py-1.5 border border-transparent focus-within:border-[#2d808e]/30 focus-within:bg-white focus-within:shadow-lg transition-all">
               <Search size={20} className="text-gray-300" />
@@ -800,36 +763,19 @@ const Dashboard: React.FC = () => {
                 <ArrowUpRight size={20} />
               </button>
             </div>
-            
-            {showSearchResults && (
-              <SearchResults 
-                results={searchResults} 
-                onClose={() => setShowSearchResults(false)} 
-                onNavigate={handleSearchResultNavigation}
-              />
-            )}
+            {showSearchResults && <SearchResults results={searchResults} onClose={() => setShowSearchResults(false)} onNavigate={handleSearchResultNavigation} />}
           </div>
-
           <div className="flex items-center gap-2">
-            <button 
-              onClick={() => setIsNotificationOpen(!isNotificationOpen)}
-              className="relative p-2.5 hover:bg-gray-50 rounded-xl text-[#2d808e] transition-all group"
-            >
+            <button onClick={() => setIsNotificationOpen(!isNotificationOpen)} className="relative p-2.5 hover:bg-gray-50 rounded-xl text-[#2d808e] transition-all group">
               <Bell size={24} />
               <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
             </button>
-
             <div className="h-8 w-px bg-gray-100 mx-2"></div>
-
-            <button 
-              onClick={() => setIsProfileOpen(true)}
-              className="w-11 h-11 rounded-xl bg-[#f0f9fa] border border-gray-100 flex items-center justify-center text-[#2d808e] shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group"
-            >
+            <button onClick={() => setIsProfileOpen(true)} className="w-11 h-11 rounded-xl bg-[#f0f9fa] border border-gray-100 flex items-center justify-center text-[#2d808e] shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group">
               <UserIcon size={24} className="group-hover:scale-110 transition-transform" />
             </button>
           </div>
         </header>
-
         <main className="flex-1 overflow-y-auto p-6 md:p-8 bg-[#f9fafb] pb-12 scrollbar-thin">
           <div className="max-w-[1600px] mx-auto w-full">
             <Routes>
@@ -839,21 +785,13 @@ const Dashboard: React.FC = () => {
           </div>
         </main>
       </div>
-
       <MoveOrderModal isOpen={isMoveOrderModalOpen} onClose={() => setIsMoveOrderModalOpen(false)} />
       <StockStatusModal isOpen={isStockStatusModalOpen} onClose={() => setIsStockStatusModalOpen(false)} />
       {previewPr && <PRPreviewModal pr={previewPr} onClose={() => setPreviewPr(null)} />}
       {previewPo && <POPreviewModal po={previewPo} onClose={() => setPreviewPo(null)} />}
       {previewMo && <MOApprovalModal mo={previewMo} isOpen={!!previewMo} onClose={() => setPreviewMo(null)} />}
       {previewTnx && <TnxDetailsModal tnx={previewTnx} onClose={() => setPreviewTnx(null)} />}
-      
-      <ProfileModal 
-        user={user} 
-        isOpen={isProfileOpen} 
-        onClose={() => setIsProfileOpen(false)} 
-        logout={logout}
-      />
-      
+      <ProfileModal user={user} isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} logout={logout} />
       {isNotificationOpen && (
         <div className="absolute top-16 right-20 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-[1001] animate-in fade-in slide-in-from-top-2">
            <div className="p-4 border-b border-gray-50 flex items-center justify-between">
@@ -866,14 +804,6 @@ const Dashboard: React.FC = () => {
                  <p className="text-[10px] text-gray-400 mt-1 font-bold">2000000001 requires your attention.</p>
                  <span className="text-[8px] font-black text-[#2d808e] uppercase mt-2 block">10 mins ago</span>
               </div>
-              <div className="p-3 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer">
-                 <p className="text-[11px] font-black text-gray-600 leading-tight">PO Completed</p>
-                 <p className="text-[10px] text-gray-400 mt-1 font-medium">3000000045 has been received.</p>
-                 <span className="text-[8px] font-black text-gray-300 uppercase mt-2 block">1 hour ago</span>
-              </div>
-           </div>
-           <div className="p-3 border-t border-gray-50 text-center">
-              <button className="text-[10px] font-black text-[#2d808e] uppercase tracking-widest hover:underline">Clear all node activity</button>
            </div>
         </div>
       )}

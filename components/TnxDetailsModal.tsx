@@ -18,7 +18,6 @@ const TnxDetailsModal: React.FC<TnxDetailsModalProps> = ({ tnx, onClose }) => {
   return (
     <div className="fixed inset-0 z-[160] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 overflow-y-auto no-print">
       <div className="bg-[#fcfcfc] w-full max-w-[1300px] rounded-xl shadow-[0_32px_64px_-12px_rgba(0,0,0,0.5)] overflow-hidden animate-in fade-in zoom-in-95 duration-300 flex flex-col my-auto max-h-[96vh]">
-        {/* Modal Header Actions */}
         <div className="flex items-center justify-between px-8 py-4 border-b border-gray-100 bg-white sticky top-0 z-10 shadow-sm">
           <div className="flex items-center space-x-4">
             <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 bg-gray-50 rounded-xl transition-colors">
@@ -38,14 +37,12 @@ const TnxDetailsModal: React.FC<TnxDetailsModalProps> = ({ tnx, onClose }) => {
           </button>
         </div>
 
-        {/* Report Content Wrapper */}
         <div className="flex-1 overflow-y-auto p-4 md:p-12 scrollbar-thin bg-gray-200/20">
            <div className="bg-white shadow-2xl border border-gray-200 rounded-sm">
              <TnxPrintTemplate tnx={tnx} />
            </div>
         </div>
 
-        {/* Actions Footer */}
         <div className="px-8 py-6 border-t border-gray-100 bg-white flex items-center space-x-4">
            <button 
              onClick={handlePrint}

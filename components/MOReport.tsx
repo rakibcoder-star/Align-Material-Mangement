@@ -242,13 +242,7 @@ const MOReport: React.FC = () => {
           </table>
         </div>
       </div>
-
-      {selectedMo && (
-        <MODetailsModal 
-          mo={selectedMo} 
-          onClose={() => setSelectedMo(null)} 
-        />
-      )}
+      {selectedMo && <MODetailsModal mo={selectedMo} onClose={() => setSelectedMo(null)} />}
     </div>
   );
 };
