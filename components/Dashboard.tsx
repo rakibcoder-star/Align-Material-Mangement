@@ -120,11 +120,11 @@ const SubmenuItem: React.FC<{
 );
 
 const KPICard: React.FC<{ label: string; value: string; subValue?: string }> = ({ label, value, subValue }) => (
-  <div className="bg-white p-4 rounded shadow-sm border border-gray-100 flex flex-col justify-center min-h-[90px] hover:shadow-md transition-all group">
-    <h3 className="text-[11px] text-gray-400 font-bold tracking-tight mb-1">{label}</h3>
-    <div className="flex items-baseline space-x-1">
-      <p className="text-xl font-black text-gray-700 tracking-tight group-hover:text-[#2d808e] transition-colors">{value}</p>
-      {subValue && <p className="text-[13px] font-bold text-gray-400">({subValue})</p>}
+  <div className="bg-white p-6 rounded shadow-sm border border-gray-100 flex flex-col justify-start min-h-[110px] hover:shadow-md transition-all group">
+    <h3 className="text-[14px] text-gray-400 font-medium tracking-tight mb-2">{label}</h3>
+    <div className="flex items-baseline space-x-2">
+      <p className="text-3xl font-bold text-gray-700 tracking-tight group-hover:text-[#2d808e] transition-colors">{value}</p>
+      {subValue && <p className="text-[18px] font-medium text-gray-400">({subValue})</p>}
     </div>
   </div>
 );
@@ -152,12 +152,10 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
   const { user } = useAuth();
   const [dateTime, setDateTime] = useState(new Date());
   
-  // Pending Approvals
   const [pendingPrs, setPendingPrs] = useState<any[]>([]);
   const [pendingPos, setPendingPos] = useState<any[]>([]);
   const [pendingMos, setPendingMos] = useState<any[]>([]);
   
-  // Historical logs
   const [latestPRs, setLatestPRs] = useState<any[]>([]);
   const [latestMOs, setLatestMOs] = useState<any[]>([]);
   
@@ -181,22 +179,14 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
     const timer = setInterval(() => setDateTime(new Date()), 1000);
     const fetchDashboardData = async () => {
       setLoading(true);
-      
-      // 1. Fetch Pending Approvals
       const { data: prApprovals } = await supabase.from('requisitions').select('*').eq('status', 'Pending').order('created_at', { ascending: false }).limit(5);
       if (prApprovals) setPendingPrs(prApprovals);
-
       const { data: poApprovals } = await supabase.from('purchase_orders').select('*').eq('status', 'Pending').order('created_at', { ascending: false }).limit(5);
       if (poApprovals) setPendingPos(poApprovals);
-
       const { data: moApprovals } = await supabase.from('move_orders').select('*').eq('status', 'Pending').order('created_at', { ascending: false }).limit(5);
       if (moApprovals) setPendingMos(moApprovals);
-
-      // 2. Fetch Latest Logs (Historical)
       const { data: prLogs } = await supabase.from('requisitions').select('*').order('created_at', { ascending: false }).limit(10);
       if (prLogs) setLatestPRs(prLogs);
-
-      // 3. Fetch Items for Stock Types Chart and Gauges
       const { data: items } = await supabase.from('items').select('*');
       if (items) {
         const types: Record<string, number> = {};
@@ -205,14 +195,11 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
           types[type] = (types[type] || 0) + 1;
         });
         setStockTypes(Object.entries(types).map(([name, value]) => ({ name, value })));
-
         const dieselItem = items.find(i => i.sku === '4492');
         const octaneItem = items.find(i => i.sku === '3121');
         if (dieselItem) setDieselStock(Math.min(100, Math.round((dieselItem.on_hand_stock / 10000) * 100)));
         if (octaneItem) setOctaneStock(Math.min(100, Math.round((octaneItem.on_hand_stock / 10000) * 100)));
       }
-
-      // 4. Mock Analytics (Typically would fetch from movement logs table)
       setWeeklyData([
         { name: '08-Sun', qty: 0, value: 0 },
         { name: '09-Mon', qty: 126, value: 20914 },
@@ -228,16 +215,12 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
         { name: 'MAR', value: 10000 },
         { name: 'APR', value: 0 }, { name: 'MAY', value: 0 }, { name: 'JUN', value: 0 }, { name: 'JUL', value: 0 }, { name: 'AUG', value: 0 }, { name: 'SEP', value: 0 }, { name: 'OCT', value: 0 }, { name: 'NOV', value: 0 }, { name: 'DEC', value: 0 },
       ]);
-
       setLatestMOs([
         { sl: 1, date: '09-Feb-26', tnx: '10404', name: 'GROOVE WHEEL-V, 2 INCH (SS)', qty: 4, value: 4200 }
       ]);
-
-      // 5. KPI Calculations
       const today = new Date(); today.setHours(0,0,0,0);
       const { data: allPo } = await supabase.from('purchase_orders').select('items, created_at');
       const { data: allPr } = await supabase.from('requisitions').select('items, created_at');
-
       const sumQty = (list: any[], dateLimit: Date) => {
         let qty = 0; let count = 0;
         list?.filter(entry => new Date(entry.created_at) >= dateLimit).forEach(entry => {
@@ -246,10 +229,8 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
         });
         return { qty: qty > 1000 ? (qty/1000).toFixed(1) + 'K' : qty.toString(), count: count.toString() };
       };
-
       const lastWeek = new Date(today); lastWeek.setDate(today.getDate() - 7);
       const lastMonth = new Date(today); lastMonth.setMonth(today.getMonth() - 1);
-
       setStats({
         todayOrderQty: sumQty(allPo || [], today).qty, todayOrderCount: sumQty(allPo || [], today).count,
         lastDayOrderQty: sumQty(allPo || [], new Date(today.getTime() - 86400000)).qty, lastDayOrderCount: sumQty(allPo || [], new Date(today.getTime() - 86400000)).count,
@@ -258,10 +239,8 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
         weeklyPrQty: sumQty(allPr || [], lastWeek).qty, weeklyPrCount: sumQty(allPr || [], lastWeek).count,
         monthlyPrQty: sumQty(allPr || [], lastMonth).qty, monthlyPrCount: sumQty(allPr || [], lastMonth).count
       });
-      
       setLoading(false);
     };
-    
     fetchDashboardData();
     return () => clearInterval(timer);
   }, []);
@@ -269,27 +248,24 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#ff7300', '#2d808e', '#1e293b'];
 
   return (
-    <div className="space-y-6 animate-slide-up pb-20">
-      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+    <div className="space-y-8 animate-slide-up pb-20">
+      <div className="flex flex-col space-y-4">
         <div>
-          <h1 className="text-2xl font-black text-[#2d808e] tracking-tight uppercase italic">Dashboard Analytics</h1>
-          <p className="text-[11px] font-bold text-gray-400 mt-0.5">{dateTime.toLocaleString()}</p>
+          <h1 className="text-[32px] font-bold text-[#2d808e] tracking-tight uppercase leading-tight">DASHBOARD ANALYTICS</h1>
+          <p className="text-[14px] font-medium text-gray-400 mt-1">{dateTime.toLocaleString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true })}</p>
         </div>
-        <div className="flex items-center space-x-2">
-          <button onClick={() => navigate('/label')} className="px-4 py-2 bg-[#2d808e] text-white text-[11px] font-bold rounded shadow-sm hover:bg-[#256b78] uppercase transition-all">Code Print</button>
-          <button onClick={onCheckStock} className="px-4 py-2 bg-[#2d808e] text-white text-[11px] font-bold rounded shadow-sm hover:bg-[#256b78] uppercase transition-all">Check Stock</button>
-          <button onClick={onMoveOrder} className="px-4 py-2 bg-[#2d808e] text-white text-[11px] font-bold rounded shadow-sm hover:bg-[#256b78] uppercase transition-all">Move Order</button>
+        <div className="flex items-center space-x-3">
+          <button onClick={() => navigate('/label')} className="px-10 py-4 bg-[#2d808e] text-white text-[14px] font-bold rounded shadow-sm hover:bg-[#256b78] uppercase tracking-wide transition-all leading-none">Code Print</button>
+          <button onClick={onCheckStock} className="px-10 py-4 bg-[#2d808e] text-white text-[14px] font-bold rounded shadow-sm hover:bg-[#256b78] uppercase tracking-wide transition-all leading-none">Check Stock</button>
+          <button onClick={onMoveOrder} className="px-10 py-4 bg-[#2d808e] text-white text-[14px] font-bold rounded shadow-sm hover:bg-[#256b78] uppercase tracking-wide transition-all leading-none">Move Order</button>
         </div>
       </div>
 
-      {/* Row 1: KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
         <KPICard label="Today Order(Qty)" value={stats.todayOrderQty} subValue={stats.todayOrderCount} />
         <KPICard label="Lastday Order(Qty)" value={stats.lastDayOrderQty} subValue={stats.lastDayOrderCount} />
         <KPICard label="Weekly Order(Qty)" value={stats.weeklyOrderQty} subValue={stats.weeklyOrderCount} />
         <KPICard label="Monthly Order(Qty)" value={stats.monthlyOrderQty} subValue={stats.monthlyOrderCount} />
-        <KPICard label="Weekly PR(Qty)" value={stats.weeklyPrQty} subValue={stats.weeklyPrCount} />
-        <KPICard label="Monthly PR(Qty)" value={stats.monthlyPrQty} subValue={stats.monthlyPrCount} />
       </div>
 
       {/* Row 2: Analytics Charts */}
@@ -326,7 +302,6 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
         </div>
       </div>
 
-      {/* Row 3: Gauges and Stock Types */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <LiquidGauge label="DIESEL" value={dieselStock} subLabel="4492" color="#3b82f6" />
         <LiquidGauge label="OCTANE" value={octaneStock} subLabel="3121" color="#0ea5e9" />
@@ -348,9 +323,8 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
         </div>
       </div>
 
-      {/* Row 4: Approval Command Center (PR, PO, MO Approvals) */}
+      {/* Row 4: Approval Command Center */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* PR Approval Queue */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
           <div className="px-5 py-4 border-b border-gray-100 bg-[#fafbfc]">
              <h3 className="text-[13px] font-black text-[#2d808e] uppercase tracking-tighter">PR Approval</h3>
@@ -374,13 +348,11 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
                     <td className="px-5 py-3 text-right font-black">{(pr.total_value || 0).toLocaleString()}</td>
                   </tr>
                 ))}
-                {pendingPrs.length === 0 && <tr><td colSpan={3} className="py-20 text-center text-gray-300 uppercase font-black text-[9px] tracking-widest">No PR Pending</td></tr>}
               </tbody>
             </table>
           </div>
         </div>
 
-        {/* PO Approval Queue */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
           <div className="px-5 py-4 border-b border-gray-100 bg-[#fafbfc]">
              <h3 className="text-[13px] font-black text-[#2d808e] uppercase tracking-tighter">PO Approval</h3>
@@ -404,13 +376,11 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
                     <td className="px-5 py-3 text-right font-black">{(po.total_value || 0).toLocaleString()}</td>
                   </tr>
                 ))}
-                {pendingPos.length === 0 && <tr><td colSpan={3} className="py-20 text-center text-gray-300 uppercase font-black text-[9px] tracking-widest">No PO Pending</td></tr>}
               </tbody>
             </table>
           </div>
         </div>
 
-        {/* MO Approval Queue (MATCHING REQUESTED DESIGN) */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
           <div className="px-5 py-4 border-b border-gray-100 bg-[#fafbfc]">
              <h3 className="text-[13px] font-black text-[#2d808e] uppercase tracking-tighter">MO Approval</h3>
@@ -434,79 +404,6 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
                     <td className="px-5 py-3 text-right font-black">{(mo.total_value || 0).toLocaleString()}</td>
                   </tr>
                 ))}
-                {pendingMos.length === 0 && <tr><td colSpan={3} className="py-20 text-center text-gray-300 uppercase font-black text-[9px] tracking-widest">No MO Pending</td></tr>}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      {/* Row 5: Latest Logs (Movement & PR) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100 bg-[#fafbfc]">
-             <h3 className="text-[13px] font-black text-[#2d808e] uppercase tracking-tighter">Latest Move orders</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-gray-50/50">
-                <tr className="text-[10px] font-bold text-gray-500 uppercase">
-                  <th className="px-5 py-3 w-12 text-center">#</th>
-                  <th className="px-5 py-3">Date</th>
-                  <th className="px-5 py-3">Tnx.No</th>
-                  <th className="px-5 py-3">Item Name</th>
-                  <th className="px-5 py-3 text-center">Qty</th>
-                  <th className="px-5 py-3 text-right">Value</th>
-                </tr>
-              </thead>
-              <tbody className="text-[11px] font-medium text-gray-600">
-                {latestMOs.map((mo, i) => (
-                  <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
-                    <td className="px-5 py-3 text-center font-bold text-gray-400">{i+1}</td>
-                    <td className="px-5 py-3 whitespace-nowrap">{mo.date}</td>
-                    <td className="px-5 py-3 text-blue-500 font-bold">{mo.tnx}</td>
-                    <td className="px-5 py-3 font-bold uppercase truncate max-w-[150px]">{mo.name}</td>
-                    <td className="px-5 py-3 text-center font-bold">{mo.qty}</td>
-                    <td className="px-5 py-3 text-right font-black text-gray-800">{mo.value.toLocaleString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100 bg-[#fafbfc]">
-             <h3 className="text-[13px] font-black text-[#2d808e] uppercase tracking-tighter">Latest PR</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-gray-50/50">
-                <tr className="text-[10px] font-bold text-gray-500 uppercase">
-                  <th className="px-5 py-3 w-12 text-center">#</th>
-                  <th className="px-5 py-3">Date</th>
-                  <th className="px-5 py-3">PR No</th>
-                  <th className="px-5 py-3">Requested By</th>
-                  <th className="px-5 py-3 text-center">Qty</th>
-                  <th className="px-5 py-3 text-right">Value</th>
-                </tr>
-              </thead>
-              <tbody className="text-[11px] font-medium text-gray-600">
-                {latestPRs.map((pr, i) => {
-                  const qty = (pr.items || []).reduce((acc: number, item: any) => acc + Number(item.reqQty || 0), 0);
-                  return (
-                    <tr key={pr.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
-                      <td className="px-5 py-3 text-center font-bold text-gray-400">{i+1}</td>
-                      <td className="px-5 py-3 whitespace-nowrap">{new Date(pr.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })}</td>
-                      <td className="px-5 py-3 text-blue-500 font-bold">
-                        <button onClick={() => onPreviewPr(pr)} className="hover:underline">{pr.pr_no}</button>
-                      </td>
-                      <td className="px-5 py-3 font-bold uppercase truncate max-w-[150px]">{pr.req_by_name}</td>
-                      <td className="px-5 py-3 text-center font-bold">{qty}</td>
-                      <td className="px-5 py-3 text-right font-black text-gray-800">{(pr.total_value || 0).toLocaleString()}</td>
-                    </tr>
-                  );
-                })}
               </tbody>
             </table>
           </div>
@@ -571,7 +468,7 @@ const Dashboard: React.FC = () => {
         />
       )}
 
-      {/* LEFT SIDEBAR - Reduced width to 210px */}
+      {/* LEFT SIDEBAR */}
       <aside className={`
         fixed inset-y-0 left-0 z-50 transform md:relative md:translate-x-0 transition-all duration-300 ease-in-out
         ${isMobileMenuOpen ? 'translate-x-0 w-[210px]' : '-translate-x-full md:translate-x-0'}
@@ -579,7 +476,7 @@ const Dashboard: React.FC = () => {
         bg-white border-r border-gray-100 flex flex-col h-full shadow-sm shrink-0
       `}>
         <div className="flex justify-between items-center p-6 border-b border-gray-50 shrink-0">
-          <button onClick={() => handleNav('/overview')} className="text-2xl font-black text-gray-800 tracking-tighter hover:text-[#2d808e] transition-colors">ALIGN</button>
+          <div className="text-[12px] font-black text-gray-300 uppercase tracking-widest">Navigation</div>
           <button onClick={() => setIsMobileMenuOpen(false)} className="md:hidden p-1.5 text-gray-400 hover:text-gray-600 focus:outline-none">
             <X size={20} />
           </button>
@@ -652,6 +549,12 @@ const Dashboard: React.FC = () => {
             >
               <Menu size={22} />
             </button>
+            <div 
+              onClick={() => handleNav('/overview')} 
+              className="text-2xl font-black text-gray-800 tracking-tighter hover:text-[#2d808e] transition-colors cursor-pointer select-none"
+            >
+              ALIGN
+            </div>
             <div className="hidden lg:block w-px h-8 bg-gray-100"></div>
             <div className="hidden lg:block relative group w-[400px]">
               <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-[#2d808e] transition-colors" />
