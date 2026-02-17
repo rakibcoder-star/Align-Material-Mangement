@@ -27,6 +27,8 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
   const [refText, setRefText] = useState('');
   const [headerText, setHeaderText] = useState('');
   const [department, setDepartment] = useState('');
+  const [costCenters, setCostCenters] = useState<string[]>([]);
+  const [loadingCenters, setLoadingCenters] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,8 +41,28 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
       setHeaderText('');
       setDepartment('');
       setShowSuccess(null);
+    } else {
+      fetchCostCenters();
     }
   }, [isOpen]);
+
+  const fetchCostCenters = async () => {
+    setLoadingCenters(true);
+    try {
+      const { data, error } = await supabase
+        .from('cost_centers')
+        .select('name')
+        .order('name', { ascending: true });
+      
+      if (data && !error) {
+        setCostCenters(data.map(cc => cc.name));
+      }
+    } catch (err) {
+      console.error("Error fetching centers:", err);
+    } finally {
+      setLoadingCenters(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -99,7 +121,6 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
 
     setIsSubmitting(true);
     try {
-      // 1. Get next MO Number
       const { data: lastMO } = await supabase
         .from('move_orders')
         .select('mo_no')
@@ -111,10 +132,8 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
         nextMoNo = (parseInt(lastMO[0].mo_no) + 1).toString();
       }
 
-      // 2. Calculate total value
       const totalValue = items.reduce((acc, i) => acc + (Number(i.reqQty) * i.unitPrice), 0);
 
-      // 3. Insert MO
       const { error } = await supabase.from('move_orders').insert([{
         mo_no: nextMoNo,
         reference: refText,
@@ -182,7 +201,6 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-10 px-4 bg-black/30 backdrop-blur-sm overflow-y-auto">
       <div className="bg-white w-full max-w-[1400px] rounded-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
         
-        {/* Success Centered Top-up Overlay */}
         {showSuccess && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
             <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
@@ -291,15 +309,16 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
                 <select 
                   value={department}
                   onChange={(e) => setDepartment(e.target.value)}
-                  className="w-full px-3 py-2.5 bg-white border border-cyan-700/30 rounded focus:border-[#2d808e] outline-none text-sm text-gray-700 appearance-none"
+                  disabled={loadingCenters}
+                  className="w-full px-3 py-2.5 bg-white border border-cyan-700/30 rounded focus:border-[#2d808e] outline-none text-sm text-gray-700 appearance-none disabled:bg-gray-50 font-bold uppercase"
                 >
-                  <option value="">Cost Center</option>
-                  <option value="Maintenance">Maintenance</option>
-                  <option value="Production">Production</option>
-                  <option value="Admin">Admin</option>
+                  <option value="">Select Cost Center</option>
+                  {costCenters.map(center => (
+                    <option key={center} value={center}>{center}</option>
+                  ))}
                 </select>
                 <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400">
-                  <ChevronDown size={14} />
+                  {loadingCenters ? <Loader2 size={14} className="animate-spin" /> : <ChevronDown size={14} />}
                 </div>
               </div>
             </div>
@@ -347,7 +366,7 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
                           type="text" 
                           value={item.uom}
                           readOnly
-                          className="w-full px-3 py-2 bg-[#f8f9fa] border border-transparent rounded text-xs text-gray-500 text-center"
+                          className="w-full px-3 py-2 bg-[#f8f9fa] border border-transparent rounded text-xs text-gray-500 text-center uppercase"
                         />
                       </td>
                       <td className="px-2 py-1">

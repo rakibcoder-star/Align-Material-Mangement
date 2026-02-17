@@ -13,6 +13,8 @@ interface IssueItem {
   name: string;
   moQty: number;
   issueQty: number;
+  unitPrice: number;
+  uom: string;
   reqDept: string;
   reqBy: string;
   fullMo?: any;
@@ -46,7 +48,9 @@ const Issue: React.FC = () => {
               sku: item.sku || 'N/A',
               name: item.name || 'N/A',
               moQty: Number(item.reqQty) || 0,
-              issueQty: 0,
+              issueQty: Number(item.issuedQty) || 0,
+              unitPrice: Number(item.unitPrice) || 0,
+              uom: item.uom || 'PC',
               reqDept: mo.department || 'N/A',
               reqBy: mo.requested_by || 'N/A',
               fullMo: mo
@@ -79,14 +83,12 @@ const Issue: React.FC = () => {
   };
 
   const handleMOIssueSubmit = (data: any) => {
-    alert("Materials Movement completed successfully!");
     setView('list');
     setSelectedIds(new Set());
     fetchApprovedMOs();
   };
 
   const handleManualIssueSubmit = (data: any) => {
-    alert("Goods Issue successfully recorded!");
     setView('list');
     fetchApprovedMOs();
   };

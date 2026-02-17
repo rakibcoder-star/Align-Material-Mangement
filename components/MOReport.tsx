@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Home, FileSpreadsheet, Filter, Inbox, ChevronDown, Search, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { supabase } from '../lib/supabase';
+import MODetailsModal from './MODetailsModal';
 
 const MOReport: React.FC = () => {
   const today = new Date().toISOString().split('T')[0];
@@ -12,6 +13,7 @@ const MOReport: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('All');
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState<any[]>([]);
+  const [selectedMo, setSelectedMo] = useState<any>(null);
 
   const fetchReport = async () => {
     setLoading(true);
@@ -23,30 +25,25 @@ const MOReport: React.FC = () => {
       }
 
       if (statusFilter !== 'All') {
-        // Map UI labels to DB status if needed
         let dbStatus = statusFilter;
         if (statusFilter === 'In-Process') dbStatus = 'Pending';
-        if (statusFilter === 'Closed') dbStatus = 'Completed';
         if (statusFilter === 'Hold') dbStatus = 'On Hold';
-        
+        if (statusFilter === 'ISSUED') dbStatus = 'Completed';
         query = query.eq('status', dbStatus);
       }
 
       const { data: moveOrders, error } = await query;
-
       if (error) throw error;
 
       if (moveOrders) {
         const flattened: any[] = [];
         let sl = 1;
-        
         moveOrders.forEach(mo => {
           const items = mo.items || [];
           items.forEach((item: any) => {
             const matchesSearch = !searchQuery || 
               item.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
               item.sku?.toLowerCase().includes(searchQuery.toLowerCase());
-
             if (!matchesSearch) return;
 
             flattened.push({
@@ -64,7 +61,7 @@ const MOReport: React.FC = () => {
               issueValue: (Number(item.issuedQty || 0)) * (Number(item.unitPrice) || 0),
               status: mo.status,
               createdBy: mo.requested_by || 'System',
-              updatedBy: 'System'
+              fullMo: mo // Keep reference to original object for details view
             });
           });
         });
@@ -91,7 +88,7 @@ const MOReport: React.FC = () => {
 
   const getStatusStyle = (status: string) => {
     switch (status?.toLowerCase()) {
-      case 'completed': return 'bg-green-50 text-green-700 border-green-200';
+      case 'completed': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       case 'approved': return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'pending': return 'bg-orange-50 text-orange-700 border-orange-200';
       case 'on hold': return 'bg-red-50 text-red-700 border-red-200';
@@ -144,8 +141,8 @@ const MOReport: React.FC = () => {
             <option value="All">All Status</option>
             <option value="In-Process">In-Process</option>
             <option value="Approved">Approved</option>
+            <option value="ISSUED">ISSUED</option>
             <option value="Hold">Hold</option>
-            <option value="Closed">Closed</option>
           </select>
           <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
         </div>
@@ -198,27 +195,34 @@ const MOReport: React.FC = () => {
                   </td>
                 </tr>
               ) : reportData.length > 0 ? (
-                reportData.map((row) => (
-                  <tr key={row.sl} className="border-b border-gray-50 text-[10px] hover:bg-gray-50/50 transition-colors">
+                reportData.map((row, idx) => (
+                  <tr key={idx} className="border-b border-gray-50 text-[10px] hover:bg-gray-50/50 transition-colors">
                     <td className="px-3 py-3 text-center border-r border-gray-50 text-gray-400">{row.sl}</td>
                     <td className="px-3 py-3 border-r border-gray-50 whitespace-nowrap">{row.date}</td>
                     <td className="px-3 py-3 border-r border-gray-50 text-gray-500 font-medium">{row.moRef}</td>
-                    <td className="px-3 py-3 border-r border-gray-50 font-black text-blue-500">{row.moNo}</td>
+                    <td className="px-3 py-3 border-r border-gray-50 font-black text-blue-500">
+                      <button 
+                        onClick={() => setSelectedMo(row.fullMo)} 
+                        className="hover:underline hover:text-blue-700 transition-all cursor-pointer"
+                      >
+                        {row.moNo}
+                      </button>
+                    </td>
                     <td className="px-3 py-3 border-r border-gray-50 font-bold text-gray-600">{row.sku}</td>
                     <td className="px-3 py-3 border-r border-gray-50 font-black uppercase text-gray-800 leading-tight">{row.name}</td>
                     <td className="px-3 py-3 border-r border-gray-50 text-center uppercase font-bold text-gray-400">{row.uom}</td>
                     <td className="px-3 py-3 border-r border-gray-50 text-right font-bold text-gray-700">{row.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                     <td className="px-3 py-3 border-r border-gray-50 text-center font-black text-gray-800">{row.moQty}</td>
                     <td className="px-3 py-3 border-r border-gray-50 text-right font-black text-[#2d808e]">{row.moValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                    <td className="px-3 py-3 border-r border-gray-50 text-center font-black text-blue-600">{row.issueQty}</td>
-                    <td className="px-3 py-3 border-r border-gray-50 text-right font-black text-blue-600">{row.issueValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                    <td className="px-3 py-3 border-r border-gray-50 text-center font-black text-emerald-600">{row.issueQty}</td>
+                    <td className="px-3 py-3 border-r border-gray-50 text-right font-black text-emerald-600">{row.issueValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                     <td className="px-3 py-3 border-r border-gray-50 text-center">
                       <span className={`px-3 py-0.5 rounded-full text-[8px] font-black uppercase border shadow-sm ${getStatusStyle(row.status)}`}>
-                        {row.status === 'Pending' ? 'In-Process' : row.status === 'Completed' ? 'Closed' : row.status === 'On Hold' ? 'Hold' : row.status}
+                        {row.status === 'Pending' ? 'In-Process' : row.status === 'Completed' ? 'ISSUED' : row.status === 'On Hold' ? 'Hold' : row.status}
                       </span>
                     </td>
                     <td className="px-3 py-3 border-r border-gray-50 text-center whitespace-nowrap text-gray-400 font-bold uppercase">{row.createdBy}</td>
-                    <td className="px-3 py-3 text-center whitespace-nowrap text-gray-400 font-bold uppercase">{row.updatedBy}</td>
+                    <td className="px-3 py-3 text-center whitespace-nowrap text-gray-400 font-bold uppercase">System</td>
                   </tr>
                 ))
               ) : (
@@ -238,6 +242,13 @@ const MOReport: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {selectedMo && (
+        <MODetailsModal 
+          mo={selectedMo} 
+          onClose={() => setSelectedMo(null)} 
+        />
+      )}
     </div>
   );
 };

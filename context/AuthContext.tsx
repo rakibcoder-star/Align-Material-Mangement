@@ -54,7 +54,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .from('profiles')
       .select('*')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
 
     if (data && !error) {
       const mappedUser: User = {
@@ -113,20 +113,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const addUser = async (userData: any) => {
-    // In a real app, you'd use a service role via an Edge Function to create users in Auth
-    // For this simulation, we'll create the profile which is enough for the UI to show it
-    const id = crypto.randomUUID();
-    const { error } = await supabase.from('profiles').insert([{
-      id,
+    // 1. Create the Auth User
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email: userData.email,
-      full_name: userData.fullName,
-      username: userData.username,
-      role: userData.role,
-      status: userData.status,
-      granular_permissions: userData.granularPermissions
-    }]);
+      password: userData.password || 'Fair@123456', // Default password if none provided
+      options: {
+        data: {
+          full_name: userData.fullName,
+          username: userData.username,
+        }
+      }
+    });
+
+    if (signUpError) throw signUpError;
+
+    // 2. Create the Database Profile if user creation was successful
+    if (data.user) {
+      const { error: profileError } = await supabase.from('profiles').insert([{
+        id: data.user.id,
+        email: userData.email,
+        full_name: userData.fullName,
+        username: userData.username,
+        role: userData.role,
+        status: userData.status,
+        granular_permissions: userData.granularPermissions
+      }]);
+      
+      if (profileError) throw profileError;
+    }
     
-    if (error) throw error;
     fetchUsers();
   };
 

@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Home, Search, Filter, Edit2, FileUp, Plus, Trash2, Loader2, ListFilter, RefreshCw } from 'lucide-react';
+import { Home, Search, Edit2, FileUp, Plus, Trash2, Loader2, ListFilter, RefreshCw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import NewItem from './NewItem';
 import ItemHistoryModal from './ItemHistoryModal';
 import * as XLSX from 'xlsx';
@@ -28,30 +28,62 @@ const ItemList: React.FC = () => {
   const [historyItem, setHistoryItem] = useState<any>(null);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [items, setItems] = useState<ItemEntry[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 1000;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchItems = async () => {
     setLoading(true);
-    // INCREASED LIMIT: Increased limit to 5000 to handle large datasets seamlessly
-    const { data, error } = await supabase
-      .from('items')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(5000); 
     
-    if (data && !error) {
-      setItems(data.map((item, index) => ({
-        ...item,
-        sl: index + 1
-      })));
+    try {
+      // 1. Get total count for pagination
+      let countQuery = supabase.from('items').select('*', { count: 'exact', head: true });
+      if (searchTerm) {
+        countQuery = countQuery.or(`name.ilike.%${searchTerm}%,sku.ilike.%${searchTerm}%,code.ilike.%${searchTerm}%`);
+      }
+      const { count } = await countQuery;
+      setTotalCount(count || 0);
+
+      // 2. Fetch paginated data
+      const from = (currentPage - 1) * pageSize;
+      const to = from + pageSize - 1;
+
+      let dataQuery = supabase
+        .from('items')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (searchTerm) {
+        dataQuery = dataQuery.or(`name.ilike.%${searchTerm}%,sku.ilike.%${searchTerm}%,code.ilike.%${searchTerm}%`);
+      }
+
+      const { data, error } = await dataQuery;
+      
+      if (data && !error) {
+        setItems(data.map((item, index) => ({
+          ...item,
+          sl: from + index + 1
+        })));
+      }
+    } catch (err) {
+      console.error("Fetch items error:", err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
     fetchItems();
-  }, []);
+  }, [currentPage, searchTerm]);
+
+  const handleSearch = () => {
+    setCurrentPage(1);
+    fetchItems();
+  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -120,11 +152,22 @@ const ItemList: React.FC = () => {
     setView('add');
   };
 
-  const filteredItems = items.filter(item => 
-    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.code.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const toggleSelect = (id: string) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedIds(next);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === items.length && items.length > 0) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(items.map(item => item.id!)));
+    }
+  };
+
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   if (view === 'add' || view === 'edit') {
     return (
@@ -140,8 +183,8 @@ const ItemList: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col h-[calc(100vh-140px)] space-y-4">
+      <div className="flex items-center justify-between shrink-0">
         <div className="flex items-center space-x-2 text-[11px] font-bold text-[#2d808e] uppercase tracking-wider">
           <Home size={14} className="text-gray-400" />
           <span className="text-gray-300">/</span>
@@ -174,12 +217,20 @@ const ItemList: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex items-center justify-between bg-white p-3 rounded border border-gray-100 shadow-sm">
+      <div className="flex items-center justify-between bg-white p-3 rounded border border-gray-100 shadow-sm shrink-0">
         <div className="flex items-center space-x-2">
           <button onClick={fetchItems} className="p-2 text-gray-400 hover:text-[#2d808e] transition-colors" title="Refresh Database">
             <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
           </button>
           <div className="h-6 w-px bg-gray-100 mx-2"></div>
+          {selectedIds.size > 0 && (
+            <span className="text-[10px] font-black text-[#2d808e] uppercase bg-[#e2eff1] px-3 py-1 rounded-full animate-in fade-in zoom-in duration-200">
+              {selectedIds.size} Selected
+            </span>
+          )}
+          <div className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-4">
+            Total Items: <span className="text-[#2d808e] font-black">{totalCount.toLocaleString()}</span>
+          </div>
         </div>
         <div className="flex items-center">
           <div className="relative flex">
@@ -188,19 +239,88 @@ const ItemList: React.FC = () => {
               placeholder="Search by name, SKU or code..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               className="w-96 px-4 py-2 bg-gray-50 border border-gray-100 rounded-l outline-none text-[12px] font-medium text-gray-600 focus:border-[#2d808e] focus:bg-white transition-all"
             />
-            <button className="bg-[#2d808e] text-white px-4 rounded-r flex items-center justify-center hover:bg-[#256b78]">
+            <button 
+              onClick={handleSearch}
+              className="bg-[#2d808e] text-white px-4 rounded-r flex items-center justify-center hover:bg-[#256b78]"
+            >
               <Search size={16} />
             </button>
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-x-auto scrollbar-thin">
+      {/* Pagination Footer - TOP VERSION */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-4 py-2 bg-white border border-gray-100 rounded shadow-sm">
+          <div className="text-[11px] font-bold text-gray-400 uppercase tracking-tighter">
+            Showing <span className="text-gray-700">{(currentPage - 1) * pageSize + 1}</span> to <span className="text-gray-700">{Math.min(currentPage * pageSize, totalCount)}</span> of <span className="text-gray-700">{totalCount}</span> items
+          </div>
+          <div className="flex items-center space-x-1">
+            <button 
+              onClick={() => setCurrentPage(1)} 
+              disabled={currentPage === 1 || loading}
+              className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors"
+            >
+              <ChevronsLeft size={16} className="text-gray-500" />
+            </button>
+            <button 
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} 
+              disabled={currentPage === 1 || loading}
+              className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors"
+            >
+              <ChevronLeft size={16} className="text-gray-500" />
+            </button>
+            
+            <div className="flex items-center px-4">
+              <span className="text-[11px] font-black uppercase text-gray-400 mr-2">Page</span>
+              <input 
+                type="number" 
+                value={currentPage}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  if (val > 0 && val <= totalPages) setCurrentPage(val);
+                }}
+                className="w-12 text-center border border-gray-200 rounded px-1 py-0.5 text-[11px] font-black text-[#2d808e] outline-none"
+              />
+              <span className="text-[11px] font-black uppercase text-gray-400 ml-2">of {totalPages}</span>
+            </div>
+
+            <button 
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} 
+              disabled={currentPage === totalPages || loading}
+              className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors"
+            >
+              <ChevronRight size={16} className="text-gray-500" />
+            </button>
+            <button 
+              onClick={() => setCurrentPage(totalPages)} 
+              disabled={currentPage === totalPages || loading}
+              className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors"
+            >
+              <ChevronsRight size={16} className="text-gray-500" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Main Table */}
+      <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-100 overflow-auto scrollbar-thin relative">
         <table className="w-full text-left border-collapse min-w-[1600px]">
-          <thead className="bg-[#fcfcfc] sticky top-0 z-10">
+          <thead className="bg-[#fcfcfc] sticky top-0 z-10 shadow-[0_1px_0_rgba(0,0,0,0.05)]">
             <tr className="text-[10px] font-black text-gray-500 border-b border-gray-100 uppercase tracking-widest">
+              <th className="px-4 py-5 text-center w-12 border-r border-gray-50">
+                <div className="flex items-center justify-center">
+                  <input 
+                    type="checkbox" 
+                    checked={selectedIds.size === items.length && items.length > 0}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 rounded border-gray-300 accent-[#2d808e]"
+                  />
+                </div>
+              </th>
               <th className="px-4 py-5 text-center w-16 border-r border-gray-50">SL</th>
               <th className="px-4 py-5 border-r border-gray-50 text-center">Code</th>
               <th className="px-4 py-5 border-r border-gray-50 text-center">SKU</th>
@@ -219,18 +339,32 @@ const ItemList: React.FC = () => {
           <tbody className="text-[11px] text-gray-600 font-medium">
             {loading ? (
               <tr>
-                <td colSpan={13} className="py-32 text-center text-gray-400">
+                <td colSpan={14} className="py-32 text-center text-gray-400">
                   <div className="flex flex-col items-center justify-center space-y-4">
                     <Loader2 className="animate-spin text-[#2d808e]" size={32} />
-                    <span className="font-black uppercase tracking-widest text-[10px]">Syncing with Database...</span>
+                    <span className="font-black uppercase tracking-widest text-[10px]">Querying Database Page {currentPage}...</span>
                   </div>
                 </td>
               </tr>
-            ) : filteredItems.map((item, idx) => (
-              <tr key={item.id} className="hover:bg-cyan-50/20 transition-colors border-b border-gray-50 last:border-0 group">
+            ) : items.map((item, idx) => (
+              <tr 
+                key={item.id} 
+                className={`hover:bg-cyan-50/20 transition-colors border-b border-gray-50 last:border-0 group ${selectedIds.has(item.id!) ? 'bg-cyan-50/40' : ''}`}
+                onClick={() => toggleSelect(item.id!)}
+              >
+                <td className="px-4 py-4 text-center border-r border-gray-50" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-center">
+                    <input 
+                      type="checkbox" 
+                      checked={selectedIds.has(item.id!)}
+                      onChange={() => toggleSelect(item.id!)}
+                      className="w-4 h-4 rounded border-gray-300 accent-[#2d808e]"
+                    />
+                  </div>
+                </td>
                 <td className="px-4 py-4 text-center border-r border-gray-50 text-gray-400">{item.sl}</td>
                 <td className="px-4 py-4 text-center border-r border-gray-50 font-black text-gray-800">{item.code}</td>
-                <td className="px-4 py-4 text-center border-r border-gray-50 text-gray-500">{item.sku}</td>
+                <td className="px-4 py-4 text-center border-r border-gray-50 text-gray-400">{item.sku}</td>
                 <td className="px-4 py-4 font-black uppercase text-[11px] leading-tight border-r border-gray-50 text-[#2d808e]">{item.name}</td>
                 <td className="px-4 py-4 text-center border-r border-gray-50"><span className="px-2 py-1 bg-gray-100 rounded text-[9px] font-black">{item.uom}</span></td>
                 <td className="px-4 py-4 text-center border-r border-gray-50 text-gray-400">{item.location}</td>
@@ -240,7 +374,7 @@ const ItemList: React.FC = () => {
                 <td className="px-4 py-4 text-right border-r border-gray-50 font-bold text-gray-700">{Number(item.avg_price).toFixed(2)}</td>
                 <td className="px-4 py-4 text-center border-r border-gray-50 font-black text-orange-600">{item.safety_stock}</td>
                 <td className="px-4 py-4 text-center border-r border-gray-50 font-black text-[#2d808e] text-[13px]">{item.on_hand_stock}</td>
-                <td className="px-4 py-4 text-center">
+                <td className="px-4 py-4 text-center" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-center space-x-2">
                     <button 
                       onClick={() => handleEdit(item)}
@@ -267,9 +401,60 @@ const ItemList: React.FC = () => {
                 </td>
               </tr>
             ))}
+            {!loading && items.length === 0 && (
+              <tr>
+                <td colSpan={14} className="py-32 text-center text-gray-300 uppercase font-black tracking-widest">No matching items found</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Footer - BOTTOM VERSION */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-4 py-3 bg-white border border-gray-100 rounded shadow-sm shrink-0">
+          <div className="text-[10px] font-black text-gray-300 uppercase tracking-widest">
+            Master SKU Registry • Page {currentPage} of {totalPages}
+          </div>
+          <div className="flex items-center space-x-2">
+            <button 
+              onClick={() => setCurrentPage(1)} 
+              disabled={currentPage === 1 || loading}
+              className="flex items-center space-x-1 px-3 py-1 border border-gray-200 rounded text-[10px] font-black text-gray-500 uppercase hover:bg-gray-50 disabled:opacity-30 transition-all"
+            >
+              <ChevronsLeft size={12} />
+              <span>First</span>
+            </button>
+            <button 
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} 
+              disabled={currentPage === 1 || loading}
+              className="flex items-center space-x-1 px-3 py-1 border border-gray-200 rounded text-[10px] font-black text-gray-500 uppercase hover:bg-gray-50 disabled:opacity-30 transition-all"
+            >
+              <ChevronLeft size={12} />
+              <span>Prev</span>
+            </button>
+            <div className="px-6 text-[11px] font-black text-[#2d808e]">
+              {currentPage}
+            </div>
+            <button 
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} 
+              disabled={currentPage === totalPages || loading}
+              className="flex items-center space-x-1 px-3 py-1 border border-gray-200 rounded text-[10px] font-black text-gray-500 uppercase hover:bg-gray-50 disabled:opacity-30 transition-all"
+            >
+              <span>Next</span>
+              <ChevronRight size={12} />
+            </button>
+            <button 
+              onClick={() => setCurrentPage(totalPages)} 
+              disabled={currentPage === totalPages || loading}
+              className="flex items-center space-x-1 px-3 py-1 border border-gray-200 rounded text-[10px] font-black text-gray-500 uppercase hover:bg-gray-50 disabled:opacity-30 transition-all"
+            >
+              <span>Last</span>
+              <ChevronsRight size={12} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {historyItem && (
         <ItemHistoryModal item={historyItem} onClose={() => setHistoryItem(null)} />

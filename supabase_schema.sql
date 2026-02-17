@@ -7,7 +7,6 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- 1. CLEANUP: Drop existing versions of update_item_stock to avoid signature conflicts
--- We drop both the 2-parameter and 3-parameter versions to start fresh
 DROP FUNCTION IF EXISTS public.update_item_stock(text, integer);
 DROP FUNCTION IF EXISTS public.update_item_stock(text, integer, boolean);
 
@@ -30,13 +29,11 @@ CREATE TABLE IF NOT EXISTS items (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Force-add missing columns if the table already existed without them
 ALTER TABLE items ADD COLUMN IF NOT EXISTS issued_qty INTEGER DEFAULT 0;
 ALTER TABLE items ADD COLUMN IF NOT EXISTS received_qty INTEGER DEFAULT 0;
 ALTER TABLE items ADD COLUMN IF NOT EXISTS location TEXT;
 
 -- 3. Standardize the update_item_stock function
--- This function handles both receives (is_receive = true) and issues (is_receive = false)
 CREATE OR REPLACE FUNCTION public.update_item_stock(item_sku text, qty_change integer, is_receive boolean)
  RETURNS void
  LANGUAGE plpgsql
@@ -44,14 +41,11 @@ CREATE OR REPLACE FUNCTION public.update_item_stock(item_sku text, qty_change in
 AS $function$
 BEGIN
     IF is_receive THEN
-        -- Receipt: qty_change is positive. Increases on_hand and total received.
         UPDATE items 
         SET on_hand_stock = on_hand_stock + qty_change,
             received_qty = COALESCE(received_qty, 0) + qty_change
         WHERE sku = item_sku;
     ELSE
-        -- Issue: qty_change is negative. Decreases on_hand and increases total issued.
-        -- We use ABS for issued_qty to ensure it's a positive increment of total issues.
         UPDATE items 
         SET on_hand_stock = on_hand_stock + qty_change,
             issued_qty = COALESCE(issued_qty, 0) + ABS(qty_change)
@@ -74,15 +68,49 @@ CREATE TABLE IF NOT EXISTS move_orders (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 5. Row Level Security setup
+-- 5. Cost Centers Table
+CREATE TABLE IF NOT EXISTS cost_centers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT UNIQUE NOT NULL,
+    department TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 6. Row Level Security setup
 ALTER TABLE items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE move_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE cost_centers ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Allow all" ON items;
 DROP POLICY IF EXISTS "Allow all" ON move_orders;
+DROP POLICY IF EXISTS "Allow all" ON cost_centers;
 
 CREATE POLICY "Allow all" ON items FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all" ON move_orders FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all" ON cost_centers FOR ALL USING (true) WITH CHECK (true);
+
+-- Initial Data for Cost Centers if empty
+INSERT INTO cost_centers (name, department)
+SELECT name, dept FROM (
+    VALUES 
+    ('Maintenance', 'Operations'),
+    ('Security', 'Admin'),
+    ('Safety', 'EHS'),
+    ('QC', 'Quality'),
+    ('PDI', 'Operations'),
+    ('Paint Shop', 'Production'),
+    ('Outbound Logistic', 'Supply Chain'),
+    ('MMT', 'Operations'),
+    ('Medical', 'HR'),
+    ('IT', 'Technology'),
+    ('HR', 'Human Resources'),
+    ('Finance', 'Accounts'),
+    ('Civil', 'Maintenance'),
+    ('Audit', 'Management'),
+    ('Assembly', 'Production'),
+    ('Admin', 'Administration')
+) AS t(name, dept)
+ON CONFLICT (name) DO NOTHING;
 
 -- FORCE CACHE RELOAD
 NOTIFY pgrst, 'reload schema';

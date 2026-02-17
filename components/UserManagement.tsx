@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Role, User, ModulePermissions } from '../types';
-import { X, User as UserIcon, Plus, Check, ChevronDown, Save } from 'lucide-react';
+import { X, User as UserIcon, Plus, Check, ChevronDown, Save, Eye, EyeOff } from 'lucide-react';
 
 interface PermissionCardProps {
   label: string;
@@ -40,8 +41,9 @@ const UserManagement: React.FC = () => {
   const { users, addUser, updateUser, deleteUser, user: currentUser } = useAuth();
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isAdding, setIsAdding] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   
-  const [formData, setFormData] = useState<Partial<User>>({});
+  const [formData, setFormData] = useState<any>({});
 
   const handleEditClick = (user: User) => {
     setEditingUser(user);
@@ -54,16 +56,16 @@ const UserManagement: React.FC = () => {
         await updateUser(editingUser.id, formData);
         setEditingUser(null);
       } else if (isAdding) {
-        if (!formData.email) {
-          alert("Email is required for new users");
+        if (!formData.email || !formData.fullName) {
+          alert("Full Name and Email are required for new users");
           return;
         }
         await addUser(formData);
         setIsAdding(false);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to save changes:", err);
-      alert("Error saving user access changes.");
+      alert("Error saving user access changes: " + err.message);
     }
   };
 
@@ -81,6 +83,7 @@ const UserManagement: React.FC = () => {
   };
 
   const formatDate = (dateStr: string) => {
+    if (!dateStr) return 'Never';
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-US', { 
       month: 'short', 
@@ -106,6 +109,7 @@ const UserManagement: React.FC = () => {
             setFormData({ 
               role: Role.USER, 
               status: 'Active',
+              password: '',
               granularPermissions: {
                 requisition: { view: true, edit: false, dl: false },
                 purchase_order: { view: true, edit: false, dl: false },
@@ -236,17 +240,16 @@ const UserManagement: React.FC = () => {
                       className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-medium transition-all" 
                     />
                   </div>
-                  {isAdding && (
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Email Address</label>
-                      <input 
-                        type="email" 
-                        value={formData.email || ''}
-                        onChange={(e) => setFormData({...formData, email: e.target.value})}
-                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-medium transition-all" 
-                      />
-                    </div>
-                  )}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Email Address</label>
+                    <input 
+                      type="email" 
+                      value={formData.email || ''}
+                      disabled={!isAdding}
+                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                      className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-medium transition-all disabled:bg-gray-50" 
+                    />
+                  </div>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Role Template</label>
                     <div className="relative">
@@ -262,13 +265,40 @@ const UserManagement: React.FC = () => {
                       <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
                     </div>
                   </div>
+                  {isAdding && (
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Initial Password</label>
+                      <div className="relative">
+                        <input 
+                          type={showPassword ? "text" : "password"} 
+                          placeholder="Set secure password"
+                          value={formData.password || ''}
+                          onChange={(e) => setFormData({...formData, password: e.target.value})}
+                          className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-medium transition-all" 
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-[#2d808e]"
+                        >
+                          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Password</label>
-                    <input 
-                      type="password" 
-                      placeholder="••••••••"
-                      className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-medium transition-all" 
-                    />
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Account Status</label>
+                    <div className="relative">
+                      <select 
+                        value={formData.status}
+                        onChange={(e) => setFormData({...formData, status: e.target.value})}
+                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-bold appearance-none transition-all"
+                      >
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                      </select>
+                      <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
+                    </div>
                   </div>
                 </div>
                 

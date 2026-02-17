@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { X, Trash2, Search, ChevronDown, Inbox, ChevronLeft, ChevronRight, Loader2, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -91,7 +90,8 @@ const MaterialsMovementForm: React.FC<MaterialsMovementFormProps> = ({ selectedI
           .not('location', 'is', null);
         
         if (locData) {
-          const uniqueLocs = Array.from(new Set(locData.map(l => l.location).filter(Boolean)));
+          // Fix: Explicitly cast mapping results to string to resolve 'unknown[]' type mismatch with string[] state
+          const uniqueLocs = Array.from(new Set(locData.map((l: any) => l.location as string).filter(Boolean)));
           setAllLocations(uniqueLocs);
         }
       } catch (err) {
@@ -134,16 +134,23 @@ const MaterialsMovementForm: React.FC<MaterialsMovementFormProps> = ({ selectedI
       // 2. Complete the issue task by updating Move Order status and item locations
       const uniqueMoIds = Array.from(new Set(items.map(i => i.moId).filter(Boolean)));
       for (const moId of uniqueMoIds) {
+        // Construct the new items array for the Move Order, preserving critical fields
         const moItems = items.filter(i => i.moId === moId).map(i => ({
-          ...i,
-          issuedQty: Number(i.issuedQty || 0) + Number(i.tnxQty)
+          sku: i.sku,
+          name: i.name,
+          uom: i.uom,
+          unitPrice: i.unitPrice, // Preserved
+          reqQty: i.reqQty,       // Preserved
+          issuedQty: Number(i.issuedQty || 0) + Number(i.tnxQty), // Updated
+          location: i.location,
+          remarks: i.remarks
         }));
 
         const { error: updateError } = await supabase
           .from('move_orders')
           .update({ 
             status: 'Completed',
-            items: moItems, // Save updated items with their transaction locations
+            items: moItems, 
             updated_at: new Date().toISOString()
           })
           .eq('id', moId);
