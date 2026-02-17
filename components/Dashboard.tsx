@@ -137,30 +137,42 @@ const KPICard: React.FC<{ label: string; value: string; subValue?: string }> = (
   </div>
 );
 
-const LiquidGauge: React.FC<{ label: string; value: number; subLabel: string; color?: string; colorLight?: string }> = ({ label, value, subLabel, color = "#3b82f6", colorLight = "#93c5fd" }) => (
-  <div className="bg-white p-3 rounded-lg border border-gray-100 flex flex-col items-center">
-    <h3 className="text-[8px] font-black text-[#2d808e] uppercase tracking-widest mb-2">{label} ({subLabel})</h3>
-    <div className="relative w-24 h-24 rounded-full border-2 border-gray-100 p-1 overflow-hidden flex items-center justify-center bg-gray-50 shadow-inner">
-      <div 
-        className="absolute bottom-0 left-0 w-[400%] h-full transition-all duration-1000 ease-in-out z-0"
-        style={{ transform: `translateY(${100 - value}%)` }}
-      >
-        {/* Secondary Wave (Back) */}
-        <svg viewBox="0 0 500 150" preserveAspectRatio="none" className="absolute top-0 left-0 w-full h-10 opacity-30 animate-wave-slow" style={{ transform: 'translateY(-100%)' }}>
-          <path d="M0,70 C150,150 350,0 500,70 L500,150 L0,150 Z" style={{ fill: colorLight }}></path>
-        </svg>
-        {/* Main Wave (Front) */}
-        <svg viewBox="0 0 500 150" preserveAspectRatio="none" className="absolute top-0 left-0 w-full h-10 opacity-80 animate-wave" style={{ transform: 'translateY(-100%)' }}>
-          <path d="M0,70 C150,150 350,0 500,70 L500,150 L0,150 Z" style={{ fill: color }}></path>
-        </svg>
-        <div className="w-full h-full" style={{ background: `linear-gradient(to bottom, ${color}, ${color}dd)` }}></div>
-      </div>
-      <div className="relative z-10 flex flex-col items-center">
-        <span className="text-lg font-black text-gray-800 drop-shadow-[0_2px_2px_rgba(255,255,255,0.8)]">{value}%</span>
+const LiquidGauge: React.FC<{ label: string; value: number; subLabel: string; color?: string; colorLight?: string }> = ({ label, value, subLabel, color = "#2589ff", colorLight = "#60a5fa" }) => {
+  return (
+    <div className="bg-white p-6 rounded-xl border border-gray-100 flex flex-col items-center group/gauge transition-all hover:shadow-md">
+      <h3 className="text-[11px] font-black text-[#2d808e] uppercase tracking-wider mb-4">{label} ({subLabel})</h3>
+      <div className="relative w-44 h-44 rounded-full border-[6px] border-[#e2eff1] p-1 overflow-hidden flex items-center justify-center bg-white shadow-[inset_0_4px_10px_rgba(0,0,0,0.03)] ring-1 ring-[#cbd5e1]/30">
+        <div 
+          className="absolute bottom-0 left-0 w-full transition-all duration-1000 ease-in-out z-0"
+          style={{ height: `${value}%`, backgroundColor: color }}
+        >
+          {/* Back Wave (Slow & Reversed) */}
+          <div className="absolute top-0 left-0 w-[200%] h-8 -translate-y-full opacity-30 animate-water-back" style={{ fill: colorLight }}>
+            <svg viewBox="0 0 1000 100" preserveAspectRatio="none" className="w-full h-full">
+              <path d="M0,50 C150,0 350,100 500,50 C650,0 850,100 1000,50 L1000,100 L0,100 Z" />
+            </svg>
+          </div>
+          {/* Front Wave (Fast) */}
+          <div className="absolute top-0 left-0 w-[200%] h-8 -translate-y-full opacity-90 animate-water-front" style={{ fill: color }}>
+            <svg viewBox="0 0 1000 100" preserveAspectRatio="none" className="w-full h-full">
+              <path d="M0,50 C150,100 350,0 500,50 C650,100 850,0 1000,50 L1000,100 L0,100 Z" />
+            </svg>
+          </div>
+        </div>
+        
+        {/* Gloss Effect Overlay */}
+        <div className="absolute inset-0 rounded-full pointer-events-none z-20 shadow-[inset_0_8px_16px_rgba(255,255,255,0.4)]"></div>
+        <div className="absolute top-4 left-6 w-12 h-6 bg-white/20 blur-[1px] rounded-full rotate-[-30deg] pointer-events-none z-20"></div>
+
+        <div className="relative z-30 flex flex-col items-center">
+          <span className="text-4xl font-black text-gray-800 drop-shadow-[0_2px_3px_rgba(255,255,255,0.9)]">
+            {value}%
+          </span>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () => void; onPreviewPr: (pr: any) => void; onPreviewPo: (po: any) => void }> = ({ onCheckStock, onMoveOrder, onPreviewPr, onPreviewPo }) => {
   const navigate = useNavigate();
@@ -170,6 +182,9 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
   const [pendingPrs, setPendingPrs] = useState<any[]>([]);
   const [pendingPos, setPendingPos] = useState<any[]>([]);
   const [pendingMos, setPendingMos] = useState<any[]>([]);
+  
+  const [latestPRs, setLatestPRs] = useState<any[]>([]);
+  const [latestMOs, setLatestMOs] = useState<any[]>([]);
   
   const [stockTypes, setStockTypes] = useState<any[]>([]);
   const [dieselStock, setDieselStock] = useState(41);
@@ -198,6 +213,12 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
       const { data: moApprovals } = await supabase.from('move_orders').select('*').eq('status', 'Pending').order('created_at', { ascending: false }).limit(5);
       if (moApprovals) setPendingMos(moApprovals);
       
+      const { data: prLogs } = await supabase.from('requisitions').select('*').order('created_at', { ascending: false }).limit(5);
+      if (prLogs) setLatestPRs(prLogs);
+      
+      const { data: moLogs } = await supabase.from('move_orders').select('*').order('created_at', { ascending: false }).limit(5);
+      if (moLogs) setLatestMOs(moLogs);
+
       const { data: items } = await supabase.from('items').select('*');
       if (items) {
         const types: Record<string, number> = {};
@@ -208,7 +229,7 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
         const mappedTypes = Object.entries(types).map(([name, value]) => ({ name, value }));
         setStockTypes(mappedTypes);
         
-        const dieselItem = items.find(i => i.sku === '4492');
+        const dieselItem = items.find(i => i.sku === '4492' || i.sku === '4457');
         const octaneItem = items.find(i => i.sku === '3121');
         if (dieselItem) setDieselStock(Math.min(100, Math.round((dieselItem.on_hand_stock / 10000) * 100)));
         if (octaneItem) setOctaneStock(Math.min(100, Math.round((octaneItem.on_hand_stock / 10000) * 100)));
@@ -291,6 +312,92 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
         <KPICard label="Monthly PR" value={stats.monthlyPrQty} subValue={stats.monthlyPrCount} />
       </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <div className="bg-white rounded border border-gray-100 overflow-hidden flex flex-col">
+          <div className="px-3 py-1.5 border-b border-gray-100 bg-[#fafbfc]">
+             <h3 className="text-[10px] font-black text-[#2d808e] uppercase tracking-tighter">PR Approval</h3>
+          </div>
+          <div className="overflow-y-auto max-h-[160px] scrollbar-thin">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-gray-50/50 sticky top-0">
+                <tr className="text-[8px] font-bold text-gray-400 uppercase border-b border-gray-50">
+                  <th className="px-3 py-1.5 text-center">Date</th>
+                  <th className="px-3 py-1.5 text-center">Ref.No</th>
+                  <th className="px-3 py-1.5 text-right">Value</th>
+                </tr>
+              </thead>
+              <tbody className="text-[9px] font-medium text-gray-600">
+                {pendingPrs.map((pr) => (
+                  <tr key={pr.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
+                    <td className="px-3 py-1.5 text-center">{new Date(pr.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</td>
+                    <td className="px-3 py-1.5 text-center">
+                      <button onClick={() => onPreviewPr(pr)} className="text-blue-500 font-bold border border-blue-50 rounded px-1.5 py-0.5 hover:bg-blue-50 transition-all">{pr.pr_no}</button>
+                    </td>
+                    <td className="px-3 py-1.5 text-right font-black">{(pr.total_value || 0).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="bg-white rounded border border-gray-100 overflow-hidden flex flex-col">
+          <div className="px-3 py-1.5 border-b border-gray-100 bg-[#fafbfc]">
+             <h3 className="text-[10px] font-black text-[#2d808e] uppercase tracking-tighter">PO Approval</h3>
+          </div>
+          <div className="overflow-y-auto max-h-[160px] scrollbar-thin">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-gray-50/50 sticky top-0">
+                <tr className="text-[8px] font-bold text-gray-400 uppercase border-b border-gray-50">
+                  <th className="px-3 py-1.5 text-center">Date</th>
+                  <th className="px-3 py-1.5 text-center">Ref.No</th>
+                  <th className="px-3 py-1.5 text-right">Value</th>
+                </tr>
+              </thead>
+              <tbody className="text-[10px] font-medium text-gray-600">
+                {pendingPos.map((po) => (
+                  <tr key={po.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
+                    <td className="px-3 py-1.5 text-center">{new Date(po.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</td>
+                    <td className="px-3 py-1.5 text-center">
+                      <button onClick={() => onPreviewPo(po)} className="text-blue-500 font-bold border border-blue-100 rounded px-2 py-0.5 hover:bg-blue-50 transition-all">{po.po_no}</button>
+                    </td>
+                    <td className="px-3 py-1.5 text-right font-black">{(po.total_value || 0).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="bg-white rounded border border-gray-100 overflow-hidden flex flex-col">
+          <div className="px-3 py-1.5 border-b border-gray-100 bg-[#fafbfc]">
+             <h3 className="text-[10px] font-black text-[#2d808e] uppercase tracking-tighter">MO Approval</h3>
+          </div>
+          <div className="overflow-y-auto max-h-[160px] scrollbar-thin">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-gray-50/50 sticky top-0">
+                <tr className="text-[8px] font-bold text-gray-400 uppercase border-b border-gray-50">
+                  <th className="px-3 py-1.5 text-center">Date</th>
+                  <th className="px-3 py-1.5 text-center">Ref.No</th>
+                  <th className="px-3 py-1.5 text-right">Value</th>
+                </tr>
+              </thead>
+              <tbody className="text-[10px] font-medium text-gray-600">
+                {pendingMos.map((mo) => (
+                  <tr key={mo.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
+                    <td className="px-3 py-1.5 text-center whitespace-nowrap">{new Date(mo.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</td>
+                    <td className="px-3 py-1.5 text-center">
+                      <button className="text-blue-500 font-bold border border-blue-50 rounded px-1.5 py-0.5 hover:bg-blue-50 transition-all">{mo.mo_no}</button>
+                    </td>
+                    <td className="px-3 py-1.5 text-right font-black">{(mo.total_value || 0).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <div className="bg-white p-3 rounded border border-gray-100">
           <h3 className="text-[10px] font-black text-[#2d808e] uppercase tracking-tighter mb-3">Weekly Move Order</h3>
@@ -325,10 +432,9 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <LiquidGauge label="DIESEL" value={dieselStock} subLabel="4492" color="#3b82f6" colorLight="#93c5fd" />
-        <LiquidGauge label="OCTANE" value={octaneStock} subLabel="3121" color="#0ea5e9" colorLight="#7dd3fc" />
+        <LiquidGauge label="DIESEL" value={dieselStock} subLabel="4457" color="#2589ff" colorLight="#93c5fd" />
+        <LiquidGauge label="OCTANE" value={octaneStock} subLabel="3121" color="#2589ff" colorLight="#93c5fd" />
         
-        {/* Stock Types with Side Breakdown List */}
         <div className="bg-white p-3 rounded border border-gray-100 flex flex-col">
           <h3 className="text-[8px] font-black text-[#2d808e] uppercase tracking-widest mb-2 text-center">Stock Types Distribution</h3>
           <div className="flex flex-1 items-center">
@@ -347,7 +453,7 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
             <div className="w-1/2 flex flex-col space-y-1 pl-2 border-l border-gray-50 overflow-y-auto max-h-[110px] scrollbar-thin">
               {stockTypes.map((type, index) => {
                 const total = stockTypes.reduce((acc, curr) => acc + curr.value, 0);
-                const percent = ((type.value / total) * 100).toFixed(0);
+                const percent = total > 0 ? ((type.value / total) * 100).toFixed(0) : 0;
                 return (
                   <div key={index} className="flex items-center justify-between group hover:bg-gray-50 p-1 rounded transition-colors">
                     <div className="flex items-center space-x-1.5 overflow-hidden">
@@ -363,91 +469,101 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <div className="bg-white rounded border border-gray-100 overflow-hidden flex flex-col">
-          <div className="px-3 py-1.5 border-b border-gray-100 bg-[#fafbfc]">
-             <h3 className="text-[10px] font-black text-[#2d808e] uppercase tracking-tighter">PR Approval</h3>
-          </div>
-          <div className="overflow-y-auto max-h-[160px]">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="bg-white p-5 rounded-lg border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+          <h3 className="text-lg font-black text-[#2d808e] mb-4 tracking-tight">Latest Move orders</h3>
+          <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
-              <thead className="bg-gray-50/50 sticky top-0">
-                <tr className="text-[8px] font-bold text-gray-400 uppercase border-b border-gray-50">
-                  <th className="px-3 py-1.5 text-center">Date</th>
-                  <th className="px-3 py-1.5 text-center">Ref.No</th>
-                  <th className="px-3 py-1.5 text-right">Value</th>
+              <thead className="bg-gray-50/50">
+                <tr className="text-[10px] font-black text-gray-500 uppercase tracking-tighter border-b border-gray-100">
+                  <th className="px-4 py-3 text-center w-12 border-r border-gray-100">#</th>
+                  <th className="px-4 py-3 text-center w-28 border-r border-gray-100">Date</th>
+                  <th className="px-4 py-3 text-center w-28 border-r border-gray-100">Tnx.No</th>
+                  <th className="px-4 py-3 text-left border-r border-gray-100">Item Name</th>
+                  <th className="px-4 py-3 text-center w-20 border-r border-gray-100">Qty</th>
+                  <th className="px-4 py-3 text-right w-24">Value</th>
                 </tr>
               </thead>
-              <tbody className="text-[9px] font-medium text-gray-600">
-                {pendingPrs.map((pr) => (
-                  <tr key={pr.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
-                    <td className="px-3 py-1.5 text-center">{new Date(pr.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</td>
-                    <td className="px-3 py-1.5 text-center">
-                      <button onClick={() => onPreviewPr(pr)} className="text-blue-500 font-bold border border-blue-50 rounded px-1.5 py-0.5 hover:bg-blue-50 transition-all">{pr.pr_no}</button>
-                    </td>
-                    <td className="px-3 py-1.5 text-right font-black">{(pr.total_value || 0).toLocaleString()}</td>
+              <tbody className="text-[11px] font-medium text-gray-600">
+                {latestMOs.map((mo, idx) => {
+                  const firstItem = mo.items?.[0] || {};
+                  return (
+                    <tr key={mo.id} className="hover:bg-gray-50/30 transition-colors border-b border-gray-50 last:border-0">
+                      <td className="px-4 py-3 text-center text-gray-400">{idx + 1}</td>
+                      <td className="px-4 py-3 text-center whitespace-nowrap">{new Date(mo.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })}</td>
+                      <td className="px-4 py-3 text-center">
+                        <button className="text-blue-500 font-bold hover:underline">{mo.mo_no}</button>
+                      </td>
+                      <td className="px-4 py-3 uppercase truncate max-w-[180px] font-bold text-gray-700">{firstItem.name || 'N/A'}{mo.items?.length > 1 ? ` (+${mo.items.length - 1})` : ''}</td>
+                      <td className="px-4 py-3 text-center font-black">{mo.items?.reduce((acc: number, i: any) => acc + (Number(i.reqQty) || 0), 0)}</td>
+                      <td className="px-4 py-3 text-right font-black text-gray-800">{(mo.total_value || 0).toLocaleString()}</td>
+                    </tr>
+                  );
+                })}
+                {latestMOs.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="py-12 text-center text-gray-300 uppercase font-black text-[10px] tracking-widest">No recent move orders</td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
         </div>
 
-        <div className="bg-white rounded border border-gray-100 overflow-hidden flex flex-col">
-          <div className="px-3 py-1.5 border-b border-gray-100 bg-[#fafbfc]">
-             <h3 className="text-[10px] font-black text-[#2d808e] uppercase tracking-tighter">PO Approval</h3>
-          </div>
-          <div className="overflow-y-auto max-h-[160px]">
+        <div className="bg-white p-5 rounded-lg border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+          <h3 className="text-lg font-black text-[#2d808e] mb-4 tracking-tight">Latest PR</h3>
+          <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
-              <thead className="bg-gray-50/50 sticky top-0">
-                <tr className="text-[8px] font-bold text-gray-400 uppercase border-b border-gray-50">
-                  <th className="px-3 py-1.5 text-center">Date</th>
-                  <th className="px-3 py-1.5 text-center">Ref.No</th>
-                  <th className="px-3 py-1.5 text-right">Value</th>
+              <thead className="bg-gray-50/50">
+                <tr className="text-[10px] font-black text-gray-500 uppercase tracking-tighter border-b border-gray-100">
+                  <th className="px-4 py-3 text-center w-12 border-r border-gray-100">#</th>
+                  <th className="px-4 py-3 text-center w-28 border-r border-gray-100">Date</th>
+                  <th className="px-4 py-3 text-center w-28 border-r border-gray-100">PR No</th>
+                  <th className="px-4 py-3 text-left border-r border-gray-100">Requested By</th>
+                  <th className="px-4 py-3 text-center w-20 border-r border-gray-100">Qty</th>
+                  <th className="px-4 py-3 text-right w-24">Value</th>
                 </tr>
               </thead>
-              <tbody className="text-[10px] font-medium text-gray-600">
-                {pendingPos.map((po) => (
-                  <tr key={po.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
-                    <td className="px-4 py-2 text-center">{new Date(po.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</td>
-                    <td className="px-4 py-2 text-center">
-                      <button onClick={() => onPreviewPo(po)} className="text-blue-500 font-bold border border-blue-100 rounded px-2 py-0.5 hover:bg-blue-50 transition-all">{po.po_no}</button>
+              <tbody className="text-[11px] font-medium text-gray-600">
+                {latestPRs.map((pr, idx) => (
+                  <tr key={pr.id} className="hover:bg-gray-50/30 transition-colors border-b border-gray-50 last:border-0">
+                    <td className="px-4 py-3 text-center text-gray-400">{idx + 1}</td>
+                    <td className="px-4 py-3 text-center whitespace-nowrap">{new Date(pr.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })}</td>
+                    <td className="px-4 py-3 text-center">
+                      <button onClick={() => onPreviewPr(pr)} className="text-blue-500 font-bold hover:underline">{pr.pr_no}</button>
                     </td>
-                    <td className="px-4 py-2 text-right font-black">{(po.total_value || 0).toLocaleString()}</td>
+                    <td className="px-4 py-3 uppercase truncate max-w-[150px] font-bold text-gray-700">{pr.req_by_name || 'N/A'}</td>
+                    <td className="px-4 py-3 text-center font-black">{pr.items?.reduce((acc: number, i: any) => acc + (Number(i.reqQty) || 0), 0)}</td>
+                    <td className="px-4 py-3 text-right font-black text-gray-800">{(pr.total_value || 0).toLocaleString()}</td>
                   </tr>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="bg-white rounded border border-gray-100 overflow-hidden flex flex-col">
-          <div className="px-3 py-1.5 border-b border-gray-100 bg-[#fafbfc]">
-             <h3 className="text-[10px] font-black text-[#2d808e] uppercase tracking-tighter">MO Approval</h3>
-          </div>
-          <div className="overflow-y-auto max-h-[160px]">
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-gray-50/50 sticky top-0">
-                <tr className="text-[9px] font-bold text-gray-400 uppercase border-b border-gray-50">
-                  <th className="px-4 py-2 text-center">Date</th>
-                  <th className="px-4 py-2 text-center">Ref.No</th>
-                  <th className="px-4 py-2 text-right">Value</th>
-                </tr>
-              </thead>
-              <tbody className="text-[10px] font-medium text-gray-600">
-                {pendingMos.map((mo) => (
-                  <tr key={mo.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
-                    <td className="px-4 py-2 text-center whitespace-nowrap">{new Date(mo.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</td>
-                    <td className="px-4 py-2 text-center">
-                      <button className="text-blue-500 font-bold border border-blue-50 rounded px-2 py-0.5 hover:bg-blue-50 transition-all">{mo.mo_no}</button>
-                    </td>
-                    <td className="px-4 py-2 text-right font-black">{(mo.total_value || 0).toLocaleString()}</td>
+                {latestPRs.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="py-12 text-center text-gray-300 uppercase font-black text-[10px] tracking-widest">No recent requisitions</td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
         </div>
       </div>
+      
+      <style>{`
+        @keyframes water-front {
+          0% { transform: translateX(0) translateY(-100%); }
+          100% { transform: translateX(-50%) translateY(-100%); }
+        }
+        @keyframes water-back {
+          0% { transform: translateX(-50%) translateY(-100%); }
+          100% { transform: translateX(0) translateY(-100%); }
+        }
+        .animate-water-front {
+          animation: water-front 3s cubic-bezier(0.36, 0.45, 0.63, 0.53) infinite;
+        }
+        .animate-water-back {
+          animation: water-back 5s cubic-bezier(0.36, 0.45, 0.63, 0.53) infinite;
+        }
+      `}</style>
     </div>
   );
 };
@@ -591,7 +707,6 @@ const Dashboard: React.FC = () => {
       </aside>
 
       <div className="flex-1 flex flex-col overflow-hidden relative">
-        {/* ULTRA COMPACT HEADER: h-9 md:h-10 */}
         <header className="h-9 md:h-10 bg-white border-b border-gray-100 flex items-center justify-between px-3 md:px-5 z-30 shrink-0 relative">
           <div className="flex items-center space-x-3">
             <button 
@@ -641,7 +756,7 @@ const Dashboard: React.FC = () => {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-3 md:p-5 bg-[#f8fafb] pb-6">
+        <main className="flex-1 overflow-y-auto p-3 md:p-5 bg-[#f8fafb] pb-6 scrollbar-thin">
           <div className="max-w-[1400px] mx-auto w-full">
             <Routes>
               <Route path="/overview" element={<DashboardOverview onCheckStock={() => setIsStockStatusModalOpen(true)} onMoveOrder={() => setIsMoveOrderModalOpen(true)} onPreviewPr={(pr) => setPreviewPr(pr)} onPreviewPo={(po) => setPreviewPo(po)} />} />
@@ -666,7 +781,6 @@ const Dashboard: React.FC = () => {
           </div>
         </main>
 
-        {/* ULTRA COMPACT FOOTER: h-7 */}
         <footer className="h-7 border-t border-gray-50 flex items-center justify-center bg-white/90 backdrop-blur px-5 shrink-0 sticky bottom-0 z-20">
            <div className="text-[7px] font-black uppercase tracking-[0.4em] text-gray-300">
              &copy; 2026 ALIGN Proprietary Node
@@ -679,7 +793,6 @@ const Dashboard: React.FC = () => {
       {previewPr && <PRPreviewModal pr={previewPr} onClose={() => setPreviewPr(null)} />}
       {previewPo && <POPreviewModal po={previewPo} onClose={() => { setPreviewPo(null); }} />}
 
-      {/* Notifications Modal - Dynamic Reader */}
       {isNotificationOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white w-full max-w-sm rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
@@ -711,7 +824,6 @@ const Dashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Profile Modal */}
       {isProfileOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
@@ -772,23 +884,6 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       )}
-      
-      <style>{`
-        @keyframes wave {
-          from { transform: translateX(0); }
-          to { transform: translateX(-50%); }
-        }
-        @keyframes wave-slow {
-          from { transform: translateX(-50%); }
-          to { transform: translateX(0); }
-        }
-        .animate-wave {
-          animation: wave 3s linear infinite;
-        }
-        .animate-wave-slow {
-          animation: wave-slow 6s linear infinite;
-        }
-      `}</style>
     </div>
   );
 };
