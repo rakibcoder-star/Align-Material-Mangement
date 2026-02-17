@@ -59,7 +59,8 @@ import {
   Mail,
   Phone,
   Briefcase,
-  IdCard
+  IdCard,
+  CheckCircle2
 } from 'lucide-react';
 
 const SidebarItem: React.FC<{ 
@@ -74,11 +75,11 @@ const SidebarItem: React.FC<{
   danger?: boolean;
 }> = ({ icon, label, active, hasSubmenu, isOpen, isCollapsed, onClick, children, danger }) => {
   return (
-    <div className="w-full px-2">
+    <div className="w-full px-1">
       <button
         onClick={onClick}
         title={isCollapsed ? label : ''}
-        className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} px-3 py-1.5 text-xs transition-all duration-200 rounded border ${
+        className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} px-2 py-1 text-[11px] transition-all duration-200 rounded border ${
           active 
             ? 'text-[#2d808e] bg-[#eef6f7] font-bold border-[#2d808e]' 
             : danger 
@@ -86,14 +87,14 @@ const SidebarItem: React.FC<{
               : 'text-gray-600 hover:bg-gray-50 border-transparent'
         }`}
       >
-        <div className="flex items-center space-x-2">
-          <div className={`${active ? 'text-[#2d808e]' : danger ? 'text-red-400' : 'text-gray-500'} shrink-0`}>
+        <div className="flex items-center space-x-1.5">
+          <div className={`${active ? 'text-[#2d808e]' : danger ? 'text-red-400' : 'text-gray-400'} shrink-0`}>
             {icon && React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { size: 14 }) : icon}
           </div>
-          {!isCollapsed && <span className="text-[11px] font-bold leading-tight tracking-tight whitespace-nowrap overflow-hidden text-left">{label}</span>}
+          {!isCollapsed && <span className="font-medium leading-tight whitespace-nowrap overflow-hidden text-left">{label}</span>}
         </div>
         {!isCollapsed && hasSubmenu && (
-          <div className="text-gray-400 shrink-0 ml-1">
+          <div className="text-gray-300 shrink-0">
             {isOpen ? <ChevronDown size={8} /> : <ChevronRight size={8} />}
           </div>
         )}
@@ -109,47 +110,47 @@ const SubmenuItem: React.FC<{
   active?: boolean;
   onClick?: () => void;
 }> = ({ icon, label, active, onClick }) => (
-  <div className="px-2">
+  <div className="px-1">
     <button
       onClick={onClick}
-      className={`w-full flex items-center space-x-2 pl-6 pr-2 py-1 text-[10px] transition-all duration-200 rounded border ${
+      className={`w-full flex items-center space-x-1.5 pl-5 pr-2 py-0.5 text-[10px] transition-all duration-200 rounded border ${
         active 
           ? 'text-[#2d808e] font-bold bg-[#eef6f7] border-[#2d808e]' 
           : 'text-gray-500 hover:text-[#2d808e] hover:bg-gray-50 border-transparent'
       }`}
     >
-      <div className={`${active ? 'text-[#2d808e]' : 'text-gray-400'} shrink-0`}>
+      <div className={`${active ? 'text-[#2d808e]' : 'text-gray-300'} shrink-0`}>
         {icon && React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { size: 12 }) : icon}
       </div>
-      <span className="truncate font-bold tracking-tight">{label}</span>
+      <span className="truncate font-medium">{label}</span>
     </button>
   </div>
 );
 
 const KPICard: React.FC<{ label: string; value: string; subValue?: string }> = ({ label, value, subValue }) => (
-  <div className="bg-white p-3 rounded border border-gray-100 flex flex-col justify-start min-h-[80px] hover:shadow transition-all group">
-    <h3 className="text-[10px] text-gray-400 font-bold tracking-tight mb-1 uppercase">{label}</h3>
-    <div className="flex items-baseline space-x-1.5">
-      <p className="text-2xl font-black text-gray-700 tracking-tight group-hover:text-[#2d808e] transition-colors">{value}</p>
-      {subValue && <p className="text-[14px] font-bold text-gray-300">({subValue})</p>}
+  <div className="bg-white p-2.5 rounded border border-gray-100 flex flex-col justify-start min-h-[64px] hover:shadow-sm transition-all group">
+    <h3 className="text-[9px] text-gray-400 font-bold tracking-tight mb-0.5 uppercase">{label}</h3>
+    <div className="flex items-baseline space-x-1">
+      <p className="text-xl font-black text-gray-700 tracking-tight group-hover:text-[#2d808e] transition-colors">{value}</p>
+      {subValue && <p className="text-[12px] font-bold text-gray-300">({subValue})</p>}
     </div>
   </div>
 );
 
 const LiquidGauge: React.FC<{ label: string; value: number; subLabel: string; color?: string }> = ({ label, value, subLabel, color = "#3b82f6" }) => (
-  <div className="bg-white p-4 rounded-xl border border-gray-100 flex flex-col items-center">
-    <h3 className="text-[9px] font-black text-[#2d808e] uppercase tracking-widest mb-3">{label} ({subLabel})</h3>
-    <div className="relative w-28 h-28 rounded-full border-2 border-[#3b82f6] p-1 overflow-hidden flex items-center justify-center">
+  <div className="bg-white p-3 rounded-lg border border-gray-100 flex flex-col items-center">
+    <h3 className="text-[8px] font-black text-[#2d808e] uppercase tracking-widest mb-2">{label} ({subLabel})</h3>
+    <div className="relative w-24 h-24 rounded-full border-2 border-[#3b82f6] p-1 overflow-hidden flex items-center justify-center">
       <div 
         className="absolute bottom-0 left-0 w-[200%] h-[120%] transition-all duration-1000 ease-in-out"
         style={{ transform: `translateY(${100 - value}%)`, left: '-50%' }}
       >
-        <svg viewBox="0 0 500 150" preserveAspectRatio="none" className="w-full h-12 opacity-80 animate-wave">
+        <svg viewBox="0 0 500 150" preserveAspectRatio="none" className="w-full h-10 opacity-80 animate-wave">
           <path d="M0.00,49.98 C150.00,150.00 349.20,-50.00 500.00,49.98 L500.00,150.00 L0.00,150.00 Z" style={{ fill: color }}></path>
         </svg>
         <div className="w-full h-full" style={{ background: color }}></div>
       </div>
-      <span className="relative z-10 text-xl font-black text-gray-800 drop-shadow-sm">{value} %</span>
+      <span className="relative z-10 text-lg font-black text-gray-800 drop-shadow-sm">{value} %</span>
     </div>
   </div>
 );
@@ -162,9 +163,6 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
   const [pendingPrs, setPendingPrs] = useState<any[]>([]);
   const [pendingPos, setPendingPos] = useState<any[]>([]);
   const [pendingMos, setPendingMos] = useState<any[]>([]);
-  
-  const [latestPRs, setLatestPRs] = useState<any[]>([]);
-  const [latestMOs, setLatestMOs] = useState<any[]>([]);
   
   const [stockTypes, setStockTypes] = useState<any[]>([]);
   const [dieselStock, setDieselStock] = useState(41);
@@ -192,8 +190,7 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
       if (poApprovals) setPendingPos(poApprovals);
       const { data: moApprovals } = await supabase.from('move_orders').select('*').eq('status', 'Pending').order('created_at', { ascending: false }).limit(5);
       if (moApprovals) setPendingMos(moApprovals);
-      const { data: prLogs } = await supabase.from('requisitions').select('*').order('created_at', { ascending: false }).limit(10);
-      if (prLogs) setLatestPRs(prLogs);
+      
       const { data: items } = await supabase.from('items').select('*');
       if (items) {
         const types: Record<string, number> = {};
@@ -221,9 +218,6 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
         { name: 'FEB', value: 300000 },
         { name: 'MAR', value: 10000 },
         { name: 'APR', value: 0 }, { name: 'MAY', value: 0 }, { name: 'JUN', value: 0 }, { name: 'JUL', value: 0 }, { name: 'AUG', value: 0 }, { name: 'SEP', value: 0 }, { name: 'OCT', value: 0 }, { name: 'NOV', value: 0 }, { name: 'DEC', value: 0 },
-      ]);
-      setLatestMOs([
-        { sl: 1, date: '09-Feb-26', tnx: '10404', name: 'GROOVE WHEEL-V, 2 INCH (SS)', qty: 4, value: 4200 }
       ]);
       const today = new Date(); today.setHours(0,0,0,0);
       const { data: allPo } = await supabase.from('purchase_orders').select('items, created_at');
@@ -255,114 +249,114 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#ff7300', '#2d808e', '#1e293b'];
 
   return (
-    <div className="space-y-6 animate-slide-up pb-10">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+    <div className="space-y-4 animate-slide-up pb-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-1.5">
         <div className="flex flex-col">
-          <h1 className="text-xl font-black text-[#2d808e] tracking-tight uppercase leading-none italic">
-            {user?.fullName ? `${user.fullName}'S DASHBOARD` : 'DASHBOARD ANALYTICS'}
+          <h1 className="text-xl font-black text-[#2d808e] tracking-tight leading-none">
+            Hi {user?.fullName?.split(' ')[0] || 'Administrator'}!
           </h1>
-          <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-widest">{dateTime.toLocaleString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true })}</p>
+          <p className="text-[9px] font-bold text-gray-400 mt-1 uppercase tracking-widest">{dateTime.toLocaleString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true })}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button onClick={() => navigate('/label')} className="px-4 py-2 bg-[#2d808e] text-white text-[10px] font-black rounded shadow-sm hover:bg-[#256b78] uppercase tracking-wider transition-all flex items-center gap-1.5">
-            <Printer size={14} />
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button onClick={() => navigate('/label')} className="px-3 py-1.5 bg-[#2d808e] text-white text-[9px] font-black rounded shadow-sm hover:bg-[#256b78] uppercase tracking-wider transition-all flex items-center gap-1">
+            <Printer size={12} />
             <span>Code Print</span>
           </button>
-          <button onClick={onCheckStock} className="px-4 py-2 bg-[#2d808e] text-white text-[10px] font-black rounded shadow-sm hover:bg-[#256b78] uppercase tracking-wider transition-all flex items-center gap-1.5">
-            <PackageSearch size={14} />
+          <button onClick={onCheckStock} className="px-3 py-1.5 bg-[#2d808e] text-white text-[9px] font-black rounded shadow-sm hover:bg-[#256b78] uppercase tracking-wider transition-all flex items-center gap-1">
+            <PackageSearch size={12} />
             <span>Check Stock</span>
           </button>
-          <button onClick={onMoveOrder} className="px-4 py-2 bg-[#2d808e] text-white text-[10px] font-black rounded shadow-sm hover:bg-[#256b78] uppercase tracking-wider transition-all flex items-center gap-1.5">
-            <MoveHorizontal size={14} />
+          <button onClick={onMoveOrder} className="px-3 py-1.5 bg-[#2d808e] text-white text-[9px] font-black rounded shadow-sm hover:bg-[#256b78] uppercase tracking-wider transition-all flex items-center gap-1">
+            <MoveHorizontal size={12} />
             <span>Move Order</span>
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <KPICard label="Today Order(Qty)" value={stats.todayOrderQty} subValue={stats.todayOrderCount} />
-        <KPICard label="Lastday Order(Qty)" value={stats.lastDayOrderQty} subValue={stats.lastDayOrderCount} />
-        <KPICard label="Weekly Order(Qty)" value={stats.weeklyOrderQty} subValue={stats.weeklyOrderCount} />
-        <KPICard label="Monthly Order(Qty)" value={stats.monthlyOrderQty} subValue={stats.monthlyOrderCount} />
-        <KPICard label="Weekly PR(Qty)" value={stats.weeklyPrQty} subValue={stats.weeklyPrCount} />
-        <KPICard label="Monthly PR(Qty)" value={stats.monthlyPrQty} subValue={stats.monthlyPrCount} />
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+        <KPICard label="Today Order" value={stats.todayOrderQty} subValue={stats.todayOrderCount} />
+        <KPICard label="Lastday Order" value={stats.lastDayOrderQty} subValue={stats.lastDayOrderCount} />
+        <KPICard label="Weekly Order" value={stats.weeklyOrderQty} subValue={stats.weeklyOrderCount} />
+        <KPICard label="Monthly Order" value={stats.monthlyOrderQty} subValue={stats.monthlyOrderCount} />
+        <KPICard label="Weekly PR" value={stats.weeklyPrQty} subValue={stats.weeklyPrCount} />
+        <KPICard label="Monthly PR" value={stats.monthlyPrQty} subValue={stats.monthlyPrCount} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white p-4 rounded border border-gray-100">
-          <h3 className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter mb-4">Weekly Move Order</h3>
-          <div className="h-48">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div className="bg-white p-3 rounded border border-gray-100">
+          <h3 className="text-[10px] font-black text-[#2d808e] uppercase tracking-tighter mb-3">Weekly Move Order</h3>
+          <div className="h-40">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={weeklyData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#94a3b8' }} />
-                <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#94a3b8' }} />
-                <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#94a3b8' }} />
-                <Tooltip contentStyle={{ fontSize: '10px', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                <Bar yAxisId="left" dataKey="qty" fill="#1e293b" radius={[2, 2, 0, 0]} barSize={24} />
-                <Line yAxisId="right" type="monotone" dataKey="value" stroke="#f97316" strokeWidth={2} dot={{ fill: '#f97316', r: 3 }} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 8, fill: '#94a3b8' }} />
+                <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 8, fill: '#94a3b8' }} />
+                <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 8, fill: '#94a3b8' }} />
+                <Tooltip contentStyle={{ fontSize: '8px', borderRadius: '4px', border: 'none', boxShadow: '0 2px 4px -1px rgb(0 0 0 / 0.1)' }} />
+                <Bar yAxisId="left" dataKey="qty" fill="#1e293b" radius={[1, 1, 0, 0]} barSize={16} />
+                <Line yAxisId="right" type="monotone" dataKey="value" stroke="#f97316" strokeWidth={1.5} dot={{ fill: '#f97316', r: 2 }} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
-        <div className="bg-white p-4 rounded border border-gray-100">
-          <h3 className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter mb-4">Monthly Move Order</h3>
-          <div className="h-48">
+        <div className="bg-white p-3 rounded border border-gray-100">
+          <h3 className="text-[10px] font-black text-[#2d808e] uppercase tracking-tighter mb-3">Monthly Move Order</h3>
+          <div className="h-40">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#94a3b8' }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#94a3b8' }} />
-                <Tooltip contentStyle={{ fontSize: '10px' }} />
-                <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} dot={{ fill: '#3b82f6', r: 3 }} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 8, fill: '#94a3b8' }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 8, fill: '#94a3b8' }} />
+                <Tooltip contentStyle={{ fontSize: '8px' }} />
+                <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={1.5} dot={{ fill: '#3b82f6', r: 2 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <LiquidGauge label="DIESEL" value={dieselStock} subLabel="4492" color="#3b82f6" />
         <LiquidGauge label="OCTANE" value={octaneStock} subLabel="3121" color="#0ea5e9" />
-        <div className="bg-white p-4 rounded border border-gray-100 flex flex-col items-center">
-          <h3 className="text-[9px] font-black text-[#2d808e] uppercase tracking-widest mb-1">Stock Types</h3>
-          <div className="h-32 w-full">
+        <div className="bg-white p-3 rounded border border-gray-100 flex flex-col items-center">
+          <h3 className="text-[8px] font-black text-[#2d808e] uppercase tracking-widest mb-1">Stock Types</h3>
+          <div className="h-28 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={stockTypes} innerRadius={35} outerRadius={50} paddingAngle={4} dataKey="value">
+                <Pie data={stockTypes} innerRadius={25} outerRadius={38} paddingAngle={3} dataKey="value">
                   {stockTypes.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={{ fontSize: '10px' }} />
+                <Tooltip contentStyle={{ fontSize: '8px' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <div className="bg-white rounded border border-gray-100 overflow-hidden flex flex-col">
-          <div className="px-4 py-2 border-b border-gray-100 bg-[#fafbfc]">
-             <h3 className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">PR Approval</h3>
+          <div className="px-3 py-1.5 border-b border-gray-100 bg-[#fafbfc]">
+             <h3 className="text-[10px] font-black text-[#2d808e] uppercase tracking-tighter">PR Approval</h3>
           </div>
-          <div className="overflow-y-auto max-h-[200px]">
+          <div className="overflow-y-auto max-h-[160px]">
             <table className="w-full text-left border-collapse">
               <thead className="bg-gray-50/50 sticky top-0">
-                <tr className="text-[9px] font-bold text-gray-400 uppercase border-b border-gray-50">
-                  <th className="px-4 py-2 text-center">Date</th>
-                  <th className="px-4 py-2 text-center">Ref.No</th>
-                  <th className="px-4 py-2 text-right">Value</th>
+                <tr className="text-[8px] font-bold text-gray-400 uppercase border-b border-gray-50">
+                  <th className="px-3 py-1.5 text-center">Date</th>
+                  <th className="px-3 py-1.5 text-center">Ref.No</th>
+                  <th className="px-3 py-1.5 text-right">Value</th>
                 </tr>
               </thead>
-              <tbody className="text-[10px] font-medium text-gray-600">
+              <tbody className="text-[9px] font-medium text-gray-600">
                 {pendingPrs.map((pr) => (
                   <tr key={pr.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
-                    <td className="px-4 py-2 text-center">{new Date(pr.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</td>
-                    <td className="px-4 py-2 text-center">
-                      <button onClick={() => onPreviewPr(pr)} className="text-blue-500 font-bold border border-blue-100 rounded px-2 py-0.5 hover:bg-blue-50 transition-all">{pr.pr_no}</button>
+                    <td className="px-3 py-1.5 text-center">{new Date(pr.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</td>
+                    <td className="px-3 py-1.5 text-center">
+                      <button onClick={() => onPreviewPr(pr)} className="text-blue-500 font-bold border border-blue-50 rounded px-1.5 py-0.5 hover:bg-blue-50 transition-all">{pr.pr_no}</button>
                     </td>
-                    <td className="px-4 py-2 text-right font-black">{(pr.total_value || 0).toLocaleString()}</td>
+                    <td className="px-3 py-1.5 text-right font-black">{(pr.total_value || 0).toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>
@@ -371,26 +365,26 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
         </div>
 
         <div className="bg-white rounded border border-gray-100 overflow-hidden flex flex-col">
-          <div className="px-4 py-2 border-b border-gray-100 bg-[#fafbfc]">
-             <h3 className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">PO Approval</h3>
+          <div className="px-3 py-1.5 border-b border-gray-100 bg-[#fafbfc]">
+             <h3 className="text-[10px] font-black text-[#2d808e] uppercase tracking-tighter">PO Approval</h3>
           </div>
-          <div className="overflow-y-auto max-h-[200px]">
+          <div className="overflow-y-auto max-h-[160px]">
             <table className="w-full text-left border-collapse">
               <thead className="bg-gray-50/50 sticky top-0">
-                <tr className="text-[9px] font-bold text-gray-400 uppercase border-b border-gray-50">
-                  <th className="px-4 py-2 text-center">Date</th>
-                  <th className="px-4 py-2 text-center">Ref.No</th>
-                  <th className="px-4 py-2 text-right">Value</th>
+                <tr className="text-[8px] font-bold text-gray-400 uppercase border-b border-gray-50">
+                  <th className="px-3 py-1.5 text-center">Date</th>
+                  <th className="px-3 py-1.5 text-center">Ref.No</th>
+                  <th className="px-3 py-1.5 text-right">Value</th>
                 </tr>
               </thead>
-              <tbody className="text-[10px] font-medium text-gray-600">
+              <tbody className="text-[9px] font-medium text-gray-600">
                 {pendingPos.map((po) => (
                   <tr key={po.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
-                    <td className="px-4 py-2 text-center">{new Date(po.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</td>
-                    <td className="px-4 py-2 text-center">
-                      <button onClick={() => onPreviewPo(po)} className="text-blue-500 font-bold border border-blue-100 rounded px-2 py-0.5 hover:bg-blue-50 transition-all">{po.po_no}</button>
+                    <td className="px-3 py-1.5 text-center">{new Date(po.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</td>
+                    <td className="px-3 py-1.5 text-center">
+                      <button onClick={() => onPreviewPo(po)} className="text-blue-500 font-bold border border-blue-100 rounded px-1.5 py-0.5 hover:bg-blue-50 transition-all">{po.po_no}</button>
                     </td>
-                    <td className="px-4 py-2 text-right font-black">{(po.total_value || 0).toLocaleString()}</td>
+                    <td className="px-3 py-1.5 text-right font-black">{(po.total_value || 0).toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>
@@ -399,26 +393,26 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
         </div>
 
         <div className="bg-white rounded border border-gray-100 overflow-hidden flex flex-col">
-          <div className="px-4 py-2 border-b border-gray-100 bg-[#fafbfc]">
-             <h3 className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">MO Approval</h3>
+          <div className="px-3 py-1.5 border-b border-gray-100 bg-[#fafbfc]">
+             <h3 className="text-[10px] font-black text-[#2d808e] uppercase tracking-tighter">MO Approval</h3>
           </div>
-          <div className="overflow-y-auto max-h-[200px]">
+          <div className="overflow-y-auto max-h-[160px]">
             <table className="w-full text-left border-collapse">
               <thead className="bg-gray-50/50 sticky top-0">
-                <tr className="text-[9px] font-bold text-gray-400 uppercase border-b border-gray-50">
-                  <th className="px-4 py-2 text-center">Date</th>
-                  <th className="px-4 py-2 text-center">Ref.No</th>
-                  <th className="px-4 py-2 text-right">Value</th>
+                <tr className="text-[8px] font-bold text-gray-400 uppercase border-b border-gray-50">
+                  <th className="px-3 py-1.5 text-center">Date</th>
+                  <th className="px-3 py-1.5 text-center">Ref.No</th>
+                  <th className="px-3 py-1.5 text-right">Value</th>
                 </tr>
               </thead>
-              <tbody className="text-[10px] font-medium text-gray-600">
+              <tbody className="text-[9px] font-medium text-gray-600">
                 {pendingMos.map((mo) => (
                   <tr key={mo.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
-                    <td className="px-4 py-2 text-center whitespace-nowrap">{new Date(mo.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</td>
-                    <td className="px-4 py-2 text-center">
-                      <button className="text-blue-500 font-bold border border-blue-50 rounded px-2 py-0.5 hover:bg-blue-50 transition-all">{mo.mo_no}</button>
+                    <td className="px-3 py-1.5 text-center whitespace-nowrap">{new Date(mo.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</td>
+                    <td className="px-3 py-1.5 text-center">
+                      <button className="text-blue-500 font-bold border border-blue-50 rounded px-1.5 py-0.5 hover:bg-blue-50 transition-all">{mo.mo_no}</button>
                     </td>
-                    <td className="px-4 py-2 text-right font-black">{(mo.total_value || 0).toLocaleString()}</td>
+                    <td className="px-3 py-1.5 text-right font-black">{(mo.total_value || 0).toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>
@@ -451,6 +445,16 @@ const Dashboard: React.FC = () => {
     itemMaster: location.pathname.includes('item-list') || location.pathname.includes('item-uom') || location.pathname.includes('item-group') || location.pathname.includes('item-type') || location.pathname.includes('cost-center'),
     admin: location.pathname.includes('users')
   });
+
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: 'Session Authenticated', desc: 'Secure node link established.', time: 'Just now', unread: true },
+    { id: 2, title: 'Approval Required', desc: 'PR-2000000018 waiting for signature.', time: '12m ago', unread: true },
+    { id: 3, title: 'Database Sync', desc: 'Master SKU list updated (124 items).', time: '1h ago', unread: false }
+  ]);
+
+  const markAllRead = () => {
+    setNotifications(notifications.map(n => ({ ...n, unread: false })));
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -487,36 +491,36 @@ const Dashboard: React.FC = () => {
         />
       )}
 
-      {/* LEFT SIDEBAR */}
+      {/* LEFT SIDEBAR - COMPACT */}
       <aside className={`
         fixed inset-y-0 left-0 z-50 transform md:relative md:translate-x-0 transition-all duration-300 ease-in-out
-        ${isMobileMenuOpen ? 'translate-x-0 w-[180px]' : '-translate-x-full md:translate-x-0'}
-        ${isSidebarCollapsed && !isMobileMenuOpen ? 'md:w-12' : 'md:w-[180px]'}
+        ${isMobileMenuOpen ? 'translate-x-0 w-[170px]' : '-translate-x-full md:translate-x-0'}
+        ${isSidebarCollapsed && !isMobileMenuOpen ? 'md:w-10' : 'md:w-[170px]'}
         bg-white border-r border-gray-100 flex flex-col h-full shadow-sm shrink-0
       `}>
-        <div className="flex justify-end items-center p-4 border-b border-gray-50 shrink-0 h-14">
+        <div className="flex justify-end items-center px-3 border-b border-gray-50 shrink-0 h-10">
           <button onClick={() => setIsMobileMenuOpen(false)} className="md:hidden p-1 text-gray-400 hover:text-gray-600 focus:outline-none">
-            <X size={16} />
+            <X size={14} />
           </button>
         </div>
 
-        <div className={`pt-4 pb-3 px-3 flex flex-col items-center space-y-3 shrink-0 ${isSidebarCollapsed && !isMobileMenuOpen ? 'md:px-1' : ''}`}>
-          <div className={`${isSidebarCollapsed && !isMobileMenuOpen ? 'w-8 h-8' : 'w-14 h-14'} rounded-full bg-[#eef6f7] flex items-center justify-center transition-all duration-500 shadow-inner border border-white ring-2 ring-[#eef6f7]/50`}>
-            <UserIcon size={isSidebarCollapsed && !isMobileMenuOpen ? 16 : 24} className="text-[#2d808e]" strokeWidth={1} />
+        <div className={`pt-3 pb-2 px-2 flex flex-col items-center space-y-2 shrink-0 ${isSidebarCollapsed && !isMobileMenuOpen ? 'md:px-0.5' : ''}`}>
+          <div className={`${isSidebarCollapsed && !isMobileMenuOpen ? 'w-6 h-6' : 'w-12 h-12'} rounded-full bg-[#eef6f7] flex items-center justify-center transition-all duration-500 shadow-inner border border-white ring-1 ring-[#eef6f7]/50`}>
+            <UserIcon size={isSidebarCollapsed && !isMobileMenuOpen ? 12 : 20} className="text-[#2d808e]" strokeWidth={1.5} />
           </div>
           {(!isSidebarCollapsed || isMobileMenuOpen) && (
             <div className="text-center overflow-hidden w-full space-y-0.5">
-              <span className="text-[11px] font-black text-gray-800 block truncate uppercase tracking-tight">
+              <span className="text-[10px] font-black text-gray-800 block truncate uppercase tracking-tight">
                 {user?.fullName || 'SYSTEM ADMIN'}
               </span>
-              <span className="text-[8px] text-gray-400 font-bold uppercase tracking-wider block">
+              <span className="text-[7px] text-gray-400 font-bold uppercase tracking-widest block">
                 {user?.role || 'ADMINISTRATOR'}
               </span>
             </div>
           )}
         </div>
 
-        <div className="flex-1 py-2 overflow-y-auto overflow-x-hidden space-y-1 scrollbar-thin">
+        <div className="flex-1 py-1 overflow-y-auto overflow-x-hidden space-y-0.5 scrollbar-thin">
           <SidebarItem icon={<Gauge />} label="Dashboard" active={activeTab === 'overview'} isCollapsed={isSidebarCollapsed && !isMobileMenuOpen} onClick={() => handleNav('/overview')} />
 
           <SidebarItem icon={<ShoppingCart />} label="Purchase" hasSubmenu isCollapsed={isSidebarCollapsed && !isMobileMenuOpen} isOpen={openMenus.purchase} onClick={() => toggleMenu('purchase')}>
@@ -547,66 +551,69 @@ const Dashboard: React.FC = () => {
           </SidebarItem>
         </div>
 
-        <div className="p-2 border-t border-gray-50 shrink-0">
+        <div className="p-1 border-t border-gray-50 shrink-0">
           <button 
             onClick={logout}
-            className={`w-full flex items-center ${isSidebarCollapsed && !isMobileMenuOpen ? 'justify-center' : 'space-x-2 px-3'} py-2 text-red-500 hover:bg-red-50 transition-all rounded group`}
+            className={`w-full flex items-center ${isSidebarCollapsed && !isMobileMenuOpen ? 'justify-center' : 'space-x-1.5 px-2'} py-1.5 text-red-500 hover:bg-red-50 transition-all rounded group`}
           >
-            <LogOutIcon size={16} className="group-hover:scale-110 transition-transform" />
-            {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="text-[10px] font-black uppercase tracking-widest">Sign Out</span>}
+            <LogOutIcon size={14} className="group-hover:scale-110 transition-transform" />
+            {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="text-[9px] font-black uppercase tracking-widest">Exit</span>}
           </button>
         </div>
       </aside>
 
       <div className="flex-1 flex flex-col overflow-hidden relative">
-        <header className="h-12 md:h-14 bg-white border-b border-gray-100 flex items-center justify-between px-4 md:px-6 z-30 shrink-0 relative">
-          <div className="flex items-center space-x-4">
+        {/* ULTRA COMPACT HEADER: h-9 md:h-10 */}
+        <header className="h-9 md:h-10 bg-white border-b border-gray-100 flex items-center justify-between px-3 md:px-5 z-30 shrink-0 relative">
+          <div className="flex items-center space-x-3">
             <button 
               onClick={() => window.innerWidth < 768 ? setIsMobileMenuOpen(true) : setIsSidebarCollapsed(!isSidebarCollapsed)} 
-              className="p-1.5 hover:bg-[#eef6f7] rounded-lg transition-all text-[#2d808e] focus:outline-none"
+              className="p-1 hover:bg-[#eef6f7] rounded-md transition-all text-[#2d808e] focus:outline-none"
             >
-              <Menu size={18} />
+              <Menu size={16} />
             </button>
             <div 
               onClick={() => handleNav('/overview')} 
-              className="text-lg font-black text-gray-800 tracking-tighter hover:text-[#2d808e] transition-colors cursor-pointer select-none"
+              className="text-sm font-black text-gray-800 tracking-tighter hover:text-[#2d808e] transition-colors cursor-pointer select-none"
             >
               ALIGN
             </div>
           </div>
 
-          <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 w-full max-w-[320px]">
+          <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 w-full max-w-[280px]">
             <div className="relative w-full group">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-[#2d808e] transition-colors" />
+              <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-[#2d808e] transition-colors" />
               <input 
                 type="text" 
                 placeholder="Terminal Search..." 
-                className="w-full pl-9 pr-3 py-1.5 bg-gray-50 border border-transparent focus:border-[#2d808e]/20 focus:bg-white rounded-lg outline-none text-[10px] font-bold text-gray-600 transition-all shadow-inner" 
+                className="w-full pl-8 pr-2.5 py-1 bg-gray-50 border border-transparent focus:border-[#2d808e]/20 focus:bg-white rounded-md outline-none text-[9px] font-bold text-gray-600 transition-all shadow-inner" 
               />
             </div>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2">
              <button 
               onClick={() => setIsNotificationOpen(true)}
-              className="p-1.5 text-gray-400 hover:text-[#2d808e] bg-gray-50 rounded-lg transition-all relative"
+              className="p-1 text-gray-400 hover:text-[#2d808e] bg-gray-50 rounded-md transition-all relative"
              >
-               <Bell size={16} />
-               <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full border-2 border-white"></span>
+               <Bell size={14} />
+               {notifications.some(n => n.unread) && (
+                 <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full border-2 border-white"></span>
+               )}
              </button>
-             <div className="w-px h-5 bg-gray-100"></div>
-             <div className="flex items-center pl-1">
+             <div className="w-px h-4 bg-gray-100"></div>
+             <div className="flex items-center pl-0.5">
                 <button 
                   onClick={() => setIsProfileOpen(true)}
-                  className="w-8 h-8 rounded-lg bg-[#eef6f7] flex items-center justify-center border border-white shadow-sm ring-1 ring-[#eef6f7] hover:ring-[#2d808e] transition-all"
+                  className="w-7 h-7 rounded-md bg-[#eef6f7] flex items-center justify-center border border-white shadow-sm ring-1 ring-[#eef6f7] hover:ring-[#2d808e] transition-all overflow-hidden"
                 >
-                  <UserIcon size={16} className="text-[#2d808e]" />
+                  <UserIcon size={14} className="text-[#2d808e]" />
                 </button>
              </div>
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-[#f8fafb] pb-10">
+        <main className="flex-1 overflow-y-auto p-3 md:p-5 bg-[#f8fafb] pb-6">
           <div className="max-w-[1400px] mx-auto w-full">
             <Routes>
               <Route path="/overview" element={<DashboardOverview onCheckStock={() => setIsStockStatusModalOpen(true)} onMoveOrder={() => setIsMoveOrderModalOpen(true)} onPreviewPr={(pr) => setPreviewPr(pr)} onPreviewPo={(po) => setPreviewPo(po)} />} />
@@ -631,9 +638,10 @@ const Dashboard: React.FC = () => {
           </div>
         </main>
 
-        <footer className="h-10 border-t border-gray-50 flex items-center justify-center bg-white/80 backdrop-blur px-6 shrink-0 sticky bottom-0 z-20">
-           <div className="text-[8px] font-black uppercase tracking-[0.4em] text-gray-300">
-             &copy; 2026 ALIGN - Proprietary Node
+        {/* ULTRA COMPACT FOOTER: h-7 */}
+        <footer className="h-7 border-t border-gray-50 flex items-center justify-center bg-white/90 backdrop-blur px-5 shrink-0 sticky bottom-0 z-20">
+           <div className="text-[7px] font-black uppercase tracking-[0.4em] text-gray-300">
+             &copy; 2026 ALIGN Proprietary Node
            </div>
         </footer>
       </div>
@@ -643,30 +651,33 @@ const Dashboard: React.FC = () => {
       {previewPr && <PRPreviewModal pr={previewPr} onClose={() => setPreviewPr(null)} />}
       {previewPo && <POPreviewModal po={previewPo} onClose={() => { setPreviewPo(null); }} />}
 
-      {/* Notifications Modal */}
+      {/* Notifications Modal - Dynamic Reader */}
       {isNotificationOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <h3 className="font-black text-gray-800 uppercase tracking-tight text-sm">System Notifications</h3>
-              <button onClick={() => setIsNotificationOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
-                <X size={18} />
+          <div className="bg-white w-full max-w-sm rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-gray-50/50">
+              <h3 className="font-black text-gray-800 uppercase tracking-tight text-[11px]">Recent Terminal Logs</h3>
+              <button onClick={() => setIsNotificationOpen(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={16} />
               </button>
             </div>
-            <div className="max-h-[400px] overflow-y-auto p-2">
-              <div className="p-4 bg-[#eef6f7] border border-[#2d808e]/10 rounded-xl mb-2">
-                <p className="text-[11px] font-bold text-gray-800">Welcome to ALIGN Node</p>
-                <p className="text-[10px] text-gray-500 mt-1">Terminal connection established successfully.</p>
-                <span className="text-[8px] text-gray-400 mt-2 block font-black">Just now</span>
-              </div>
-              <div className="p-4 bg-white border border-gray-100 rounded-xl mb-2">
-                <p className="text-[11px] font-bold text-gray-800">New PR Submitted</p>
-                <p className="text-[10px] text-gray-500 mt-1">PR-2000000018 requires your approval.</p>
-                <span className="text-[8px] text-gray-400 mt-2 block font-black">10 mins ago</span>
-              </div>
+            <div className="max-h-[350px] overflow-y-auto p-2 space-y-1">
+              {notifications.map(n => (
+                <div key={n.id} className={`p-3 border rounded-lg transition-all ${n.unread ? 'bg-[#eef6f7] border-[#2d808e]/10' : 'bg-white border-gray-50'}`}>
+                  <div className="flex justify-between items-start">
+                    <p className="text-[10px] font-black text-gray-800 uppercase">{n.title}</p>
+                    <span className="text-[7px] text-gray-400 font-bold uppercase">{n.time}</span>
+                  </div>
+                  <p className="text-[9px] text-gray-500 mt-1 leading-tight">{n.desc}</p>
+                </div>
+              ))}
             </div>
-            <div className="p-4 bg-gray-50 text-center">
-              <button className="text-[10px] font-black text-[#2d808e] uppercase tracking-widest">Clear All</button>
+            <div className="p-3 bg-white border-t border-gray-50 flex items-center justify-between">
+              <button onClick={markAllRead} className="text-[8px] font-black text-[#2d808e] uppercase tracking-widest hover:underline flex items-center gap-1">
+                <CheckCircle2 size={10} />
+                Mark all as read
+              </button>
+              <button onClick={() => setIsNotificationOpen(false)} className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Close</button>
             </div>
           </div>
         </div>
@@ -676,57 +687,57 @@ const Dashboard: React.FC = () => {
       {isProfileOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="bg-[#2d808e] p-8 text-center relative">
-              <button onClick={() => setIsProfileOpen(false)} className="absolute top-4 right-4 text-white/60 hover:text-white transition-colors">
-                <X size={20} />
+            <div className="bg-[#2d808e] p-6 text-center relative">
+              <button onClick={() => setIsProfileOpen(false)} className="absolute top-3 right-3 text-white/60 hover:text-white transition-colors">
+                <X size={18} />
               </button>
-              <div className="w-20 h-20 bg-white/20 rounded-2xl mx-auto flex items-center justify-center border border-white/30 backdrop-blur shadow-xl mb-4">
-                <UserIcon size={32} className="text-white" />
+              <div className="w-16 h-16 bg-white/20 rounded-2xl mx-auto flex items-center justify-center border border-white/30 backdrop-blur shadow-xl mb-3">
+                <UserIcon size={28} className="text-white" />
               </div>
-              <h3 className="text-white font-black text-xl tracking-tight uppercase">{user?.fullName || 'System Administrator'}</h3>
-              <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest mt-1">ID: {user?.id?.substring(0, 8) || 'N/A'}</p>
+              <h3 className="text-white font-black text-lg tracking-tight uppercase leading-none">{user?.fullName || 'System Administrator'}</h3>
+              <p className="text-white/60 text-[8px] font-bold uppercase tracking-widest mt-1">Node ID: {user?.id?.substring(0, 8) || 'N/A'}</p>
             </div>
-            <div className="p-8 space-y-6">
-              <div className="flex items-center space-x-4 group">
-                <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center border border-gray-100 group-hover:border-[#2d808e]/30 transition-all">
-                  <Briefcase size={18} className="text-gray-400 group-hover:text-[#2d808e]" />
+            <div className="p-6 space-y-4">
+              <div className="flex items-center space-x-3 group">
+                <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center border border-gray-100 group-hover:border-[#2d808e]/30 transition-all">
+                  <Briefcase size={14} className="text-gray-400" />
                 </div>
                 <div>
-                  <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Designation</p>
-                  <p className="text-sm font-bold text-gray-700">{user?.role || 'Administrator'}</p>
+                  <p className="text-[8px] font-black text-gray-300 uppercase tracking-widest">Designation</p>
+                  <p className="text-xs font-bold text-gray-700">{user?.role || 'Administrator'}</p>
                 </div>
               </div>
-              <div className="flex items-center space-x-4 group">
-                <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center border border-gray-100 group-hover:border-[#2d808e]/30 transition-all">
-                  <Mail size={18} className="text-gray-400 group-hover:text-[#2d808e]" />
+              <div className="flex items-center space-x-3 group">
+                <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center border border-gray-100 group-hover:border-[#2d808e]/30 transition-all">
+                  <Mail size={14} className="text-gray-400" />
                 </div>
                 <div>
-                  <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Email Node</p>
-                  <p className="text-sm font-bold text-gray-700">{user?.email || 'identity@fairtechnology.com'}</p>
+                  <p className="text-[8px] font-black text-gray-300 uppercase tracking-widest">Email Node</p>
+                  <p className="text-xs font-bold text-gray-700">{user?.email || 'identity@fairtechnology.com'}</p>
                 </div>
               </div>
-              <div className="flex items-center space-x-4 group">
-                <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center border border-gray-100 group-hover:border-[#2d808e]/30 transition-all">
-                  <Phone size={18} className="text-gray-400 group-hover:text-[#2d808e]" />
+              <div className="flex items-center space-x-3 group">
+                <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center border border-gray-100 group-hover:border-[#2d808e]/30 transition-all">
+                  <Phone size={14} className="text-gray-400" />
                 </div>
                 <div>
-                  <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Contact Terminal</p>
-                  <p className="text-sm font-bold text-gray-700">{user?.lastLogin ? 'Internal Node Connected' : '+880 1XXX-XXXXXX'}</p>
+                  <p className="text-[8px] font-black text-gray-300 uppercase tracking-widest">Contact Terminal</p>
+                  <p className="text-xs font-bold text-gray-700">{user?.lastLogin ? 'Internal Node Connected' : '+880 1XXX-XXXXXX'}</p>
                 </div>
               </div>
-              <div className="flex items-center space-x-4 group">
-                <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center border border-gray-100 group-hover:border-[#2d808e]/30 transition-all">
-                  <IdCard size={18} className="text-gray-400 group-hover:text-[#2d808e]" />
+              <div className="flex items-center space-x-3 group">
+                <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center border border-gray-100 group-hover:border-[#2d808e]/30 transition-all">
+                  <IdCard size={14} className="text-gray-400" />
                 </div>
                 <div>
-                  <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Unique ID</p>
-                  <p className="text-sm font-bold text-gray-700">{user?.id || 'PROPRIETARY-ID'}</p>
+                  <p className="text-[8px] font-black text-gray-300 uppercase tracking-widest">Unique ID</p>
+                  <p className="text-xs font-bold text-gray-700">{user?.id || 'PROPRIETARY-ID'}</p>
                 </div>
               </div>
             </div>
-            <div className="px-8 py-6 bg-gray-50 flex justify-center space-x-4">
-               <button onClick={logout} className="w-full py-3 bg-red-50 text-red-600 border border-red-100 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-100 transition-all flex items-center justify-center gap-2">
-                 <LogOutIcon size={14} />
+            <div className="px-6 py-4 bg-gray-50 flex justify-center">
+               <button onClick={logout} className="w-full py-2.5 bg-white text-red-600 border border-red-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-50 transition-all flex items-center justify-center gap-2 shadow-sm">
+                 <LogOutIcon size={12} />
                  <span>Terminate Session</span>
                </button>
             </div>
