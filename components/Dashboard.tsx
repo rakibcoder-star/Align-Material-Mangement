@@ -238,21 +238,38 @@ const DashboardOverview: React.FC<{ onCheckStock: () => void; onMoveOrder: () =>
         if (dieselItem) setDieselStock(Math.min(100, Math.round((dieselItem.on_hand_stock / 10000) * 100)));
         if (octaneItem) setOctaneStock(Math.min(100, Math.round((octaneItem.on_hand_stock / 10000) * 100)));
       }
-      setWeeklyData([
-        { name: '08-Sun', qty: 0, value: 0 },
-        { name: '09-Mon', qty: 126, value: 20914 },
-        { name: '10-Tue', qty: 0, value: 0 },
-        { name: '11-Wed', qty: 0, value: 0 },
-        { name: '12-Thu', qty: 0, value: 0 },
-        { name: '13-Fri', qty: 0, value: 0 },
-        { name: '14-Sat', qty: 0, value: 0 },
-      ]);
-      setMonthlyData([
-        { name: 'JAN', value: 5700000 },
-        { name: 'FEB', value: 300000 },
-        { name: 'MAR', value: 10000 },
-        { name: 'APR', value: 0 }, { name: 'MAY', value: 0 }, { name: 'JUN', value: 0 }, { name: 'JUL', value: 0 }, { name: 'AUG', value: 0 }, { name: 'SEP', value: 0 }, { name: 'OCT', value: 0 }, { name: 'NOV', value: 0 }, { name: 'DEC', value: 0 },
-      ]);
+
+      // FETCH REAL MOVE ORDER DATA FOR GRAPHS
+      const { data: moveOrders } = await supabase.from('move_orders').select('*').order('created_at', { ascending: true });
+      if (moveOrders) {
+        // Weekly Data (Last 7 Days)
+        const weeklyAgg: any[] = [];
+        const todayObj = new Date();
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(todayObj);
+          d.setDate(d.getDate() - i);
+          const dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+          const dayOrders = moveOrders.filter(mo => new Date(mo.created_at).toDateString() === d.toDateString());
+          const qty = dayOrders.reduce((acc, mo) => acc + (mo.items?.reduce((iAcc: number, item: any) => iAcc + (Number(item.reqQty) || 0), 0) || 0), 0);
+          const value = dayOrders.reduce((acc, mo) => acc + (Number(mo.total_value) || 0), 0);
+          weeklyAgg.push({ name: dateStr, qty, value });
+        }
+        setWeeklyData(weeklyAgg);
+
+        // Monthly Data (Current Year)
+        const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+        const monthlyAgg = months.map((month, idx) => {
+          const currentYear = new Date().getFullYear();
+          const monthOrders = moveOrders.filter(mo => {
+            const moDate = new Date(mo.created_at);
+            return moDate.getMonth() === idx && moDate.getFullYear() === currentYear;
+          });
+          const value = monthOrders.reduce((acc, mo) => acc + (Number(mo.total_value) || 0), 0);
+          return { name: month, value };
+        });
+        setMonthlyData(monthlyAgg);
+      }
+
       const today = new Date(); today.setHours(0,0,0,0);
       const { data: allPo } = await supabase.from('purchase_orders').select('items, created_at');
       const { data: allPr } = await supabase.from('requisitions').select('items, created_at');
@@ -1016,7 +1033,7 @@ const Dashboard: React.FC = () => {
 
       {isProfileOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white w-full max-md rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="bg-[#2d808e] p-6 text-center relative">
               <button onClick={() => setIsProfileOpen(false)} className="absolute top-3 right-3 text-white/60 hover:text-white transition-colors">
                 <X size={18} />

@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Home, Search, Filter, Edit2, FileUp, Plus, Trash2, Loader2, ListFilter, RefreshCw } from 'lucide-react';
 import NewItem from './NewItem';
@@ -32,10 +33,12 @@ const ItemList: React.FC = () => {
 
   const fetchItems = async () => {
     setLoading(true);
+    // INCREASED LIMIT: Increased limit from default to 5000 to handle larger CSV datasets
     const { data, error } = await supabase
       .from('items')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(5000); 
     
     if (data && !error) {
       setItems(data.map((item, index) => ({
@@ -78,18 +81,17 @@ const ItemList: React.FC = () => {
 
       if (mappedItems.length > 0) {
         setLoading(true);
-        // Using upsert on 'code' requires 'code' to be UNIQUE in Supabase
         const { error } = await supabase.from('items').upsert(mappedItems, { onConflict: 'code' });
         
         if (error) {
           console.error("Supabase Error:", error);
-          alert("Database Error: " + error.message + "\n\nTip: Ensure you have run the SQL schema to enable Public RLS access.");
+          alert("Database Error: " + error.message);
         } else {
           alert(`Success! Processed ${mappedItems.length} items to database.`);
           fetchItems();
         }
       } else {
-        alert("No valid items found in CSV. Ensure column headers match (CODE, NAME, etc.)");
+        alert("No valid items found in CSV.");
       }
       setLoading(false);
     };
@@ -139,7 +141,6 @@ const ItemList: React.FC = () => {
 
   return (
     <div className="flex flex-col space-y-4">
-      {/* Top Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2 text-[11px] font-bold text-[#2d808e] uppercase tracking-wider">
           <Home size={14} className="text-gray-400" />
@@ -173,7 +174,6 @@ const ItemList: React.FC = () => {
         </div>
       </div>
 
-      {/* Search and Filters */}
       <div className="flex items-center justify-between bg-white p-3 rounded border border-gray-100 shadow-sm">
         <div className="flex items-center space-x-2">
           <button onClick={fetchItems} className="p-2 text-gray-400 hover:text-[#2d808e] transition-colors" title="Refresh Database">
@@ -200,7 +200,6 @@ const ItemList: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-x-auto scrollbar-thin">
         <table className="w-full text-left border-collapse min-w-[1600px]">
           <thead className="bg-[#fcfcfc] sticky top-0 z-10">
@@ -271,16 +270,6 @@ const ItemList: React.FC = () => {
                 </td>
               </tr>
             ))}
-            {!loading && filteredItems.length === 0 && (
-              <tr>
-                <td colSpan={13} className="py-32">
-                  <div className="flex flex-col items-center justify-center space-y-3 opacity-30">
-                    <FileUp size={48} />
-                    <p className="font-black uppercase tracking-[0.2em] text-sm text-center">Database is empty.<br/><span className="text-[10px]">Upload CSV or Add Manually to begin.</span></p>
-                  </div>
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
       </div>
