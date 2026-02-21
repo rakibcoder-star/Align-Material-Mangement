@@ -629,8 +629,13 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const activeTab = location.pathname.substring(1) || 'overview';
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(window.innerWidth < 768);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const menuNavigate = (path: string) => {
+    navigate(path);
+    if (window.innerWidth < 768) setIsSidebarCollapsed(true);
+  };
   const [isMoveOrderModalOpen, setIsMoveOrderModalOpen] = useState(false);
   const [isStockStatusModalOpen, setIsStockStatusModalOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
@@ -704,7 +709,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-[#f3f4f6] overflow-hidden font-sans no-print">
-      <aside className={`fixed inset-y-0 left-0 z-50 transform md:relative md:translate-x-0 transition-all duration-300 ease-in-out ${isSidebarCollapsed && !isMobileMenuOpen ? 'md:w-20' : 'md:w-[240px]'} bg-white flex flex-col h-full shadow-2xl shrink-0 border-r border-gray-100`}>
+      <aside className={`relative z-50 transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'w-16 md:w-20' : 'w-[240px]'} bg-white flex flex-col h-full shadow-2xl shrink-0 border-r border-gray-100`}>
         <div className="p-6 flex flex-col items-center border-b border-gray-50 mb-4">
           <div className="w-16 h-16 rounded-full bg-[#f0f9fa] flex items-center justify-center mb-3 shadow-inner">
             <UserIcon size={32} className="text-[#2d808e]" />
@@ -717,29 +722,29 @@ const Dashboard: React.FC = () => {
           )}
         </div>
         <div className="flex-1 py-2 overflow-y-auto overflow-x-hidden space-y-1 scrollbar-thin scrollbar-thumb-gray-200">
-          <SidebarItem icon={<Gauge />} label="Dashboard" active={activeTab === 'overview'} isCollapsed={isSidebarCollapsed} onClick={() => navigate('/overview')} />
+          <SidebarItem icon={<Gauge />} label="Dashboard" active={activeTab === 'overview'} isCollapsed={isSidebarCollapsed} onClick={() => menuNavigate('/overview')} />
           <SidebarItem icon={<ShoppingCart />} label="Purchase" hasSubmenu isOpen={openMenus.purchase} onClick={() => setOpenMenus({...openMenus, purchase: !openMenus.purchase})} isCollapsed={isSidebarCollapsed}>
-            <SubmenuItem icon={<FileText />} label="Requisition" active={activeTab === 'requisition'} onClick={() => navigate('/requisition')} />
-            <SubmenuItem icon={<ShoppingBag />} label="Order" active={activeTab === 'purchase-order'} onClick={() => navigate('/purchase-order')} />
-            <SubmenuItem icon={<Truck />} label="Supplier" active={activeTab === 'supplier'} onClick={() => navigate('/supplier')} />
-            <SubmenuItem icon={<BarChart3 />} label="Report" active={activeTab === 'purchase-report'} onClick={() => navigate('/purchase-report')} />
+            <SubmenuItem icon={<FileText />} label="Requisition" active={activeTab === 'requisition'} onClick={() => menuNavigate('/requisition')} />
+            <SubmenuItem icon={<ShoppingBag />} label="Order" active={activeTab === 'purchase-order'} onClick={() => menuNavigate('/purchase-order')} />
+            <SubmenuItem icon={<Truck />} label="Supplier" active={activeTab === 'supplier'} onClick={() => menuNavigate('/supplier')} />
+            <SubmenuItem icon={<BarChart3 />} label="Report" active={activeTab === 'purchase-report'} onClick={() => menuNavigate('/purchase-report')} />
           </SidebarItem>
           <SidebarItem icon={<Warehouse />} label="Warehouse" hasSubmenu isOpen={openMenus.warehouse} onClick={() => setOpenMenus({...openMenus, warehouse: !openMenus.warehouse})} isCollapsed={isSidebarCollapsed}>
-            <SubmenuItem icon={<LayoutGrid />} label="Inventory" active={activeTab === 'inventory'} onClick={() => navigate('/inventory')} />
-            <SubmenuItem icon={<ArrowRight />} label="Receive" active={activeTab === 'receive'} onClick={() => navigate('/receive')} />
-            <SubmenuItem icon={<ArrowLeft />} label="Issue" active={activeTab === 'issue'} onClick={() => navigate('/issue')} />
-            <SubmenuItem icon={<FileText />} label="Tnx-Report" active={activeTab === 'tnx-report'} onClick={() => navigate('/tnx-report')} />
-            <SubmenuItem icon={<FileText />} label="MO-Report" active={activeTab === 'mo-report'} onClick={() => navigate('/mo-report')} />
+            <SubmenuItem icon={<LayoutGrid />} label="Inventory" active={activeTab === 'inventory'} onClick={() => menuNavigate('/inventory')} />
+            <SubmenuItem icon={<ArrowRight />} label="Receive" active={activeTab === 'receive'} onClick={() => menuNavigate('/receive')} />
+            <SubmenuItem icon={<ArrowLeft />} label="Issue" active={activeTab === 'issue'} onClick={() => menuNavigate('/issue')} />
+            <SubmenuItem icon={<FileText />} label="Tnx-Report" active={activeTab === 'tnx-report'} onClick={() => menuNavigate('/tnx-report')} />
+            <SubmenuItem icon={<FileText />} label="MO-Report" active={activeTab === 'mo-report'} onClick={() => menuNavigate('/mo-report')} />
           </SidebarItem>
           <SidebarItem icon={<LayoutGrid />} label="Item Master" hasSubmenu isOpen={openMenus.itemMaster} onClick={() => setOpenMenus({...openMenus, itemMaster: !openMenus.itemMaster})} isCollapsed={isSidebarCollapsed}>
-            <SubmenuItem icon={<FileText />} label="Item List" active={activeTab === 'item-list'} onClick={() => navigate('/item-list')} />
-            <SubmenuItem icon={<Boxes />} label="Item UOM" active={activeTab === 'item-uom'} onClick={() => navigate('/item-uom')} />
-            <SubmenuItem icon={<Layers />} label="Item Group" active={activeTab === 'item-group'} onClick={() => navigate('/item-group')} />
-            <SubmenuItem icon={<Tag />} label="Item Type" active={activeTab === 'item-type'} onClick={() => navigate('/item-type')} />
-            <SubmenuItem icon={<Home />} label="Cost Center" active={activeTab === 'cost-center'} onClick={() => navigate('/cost-center')} />
+            <SubmenuItem icon={<FileText />} label="Item List" active={activeTab === 'item-list'} onClick={() => menuNavigate('/item-list')} />
+            <SubmenuItem icon={<Boxes />} label="Item UOM" active={activeTab === 'item-uom'} onClick={() => menuNavigate('/item-uom')} />
+            <SubmenuItem icon={<Layers />} label="Item Group" active={activeTab === 'item-group'} onClick={() => menuNavigate('/item-group')} />
+            <SubmenuItem icon={<Tag />} label="Item Type" active={activeTab === 'item-type'} onClick={() => menuNavigate('/item-type')} />
+            <SubmenuItem icon={<Home />} label="Cost Center" active={activeTab === 'cost-center'} onClick={() => menuNavigate('/cost-center')} />
           </SidebarItem>
           <SidebarItem icon={<ShieldAlert />} label="Admin" active={activeTab === 'users'} hasSubmenu isOpen={openMenus.admin} onClick={() => setOpenMenus({...openMenus, admin: !openMenus.admin})} isCollapsed={isSidebarCollapsed}>
-            <SubmenuItem icon={<UserIcon />} label="Users" active={activeTab === 'users'} onClick={() => navigate('/users')} />
+            <SubmenuItem icon={<UserIcon />} label="Users" active={activeTab === 'users'} onClick={() => menuNavigate('/users')} />
           </SidebarItem>
         </div>
         <div className="p-4 border-t border-gray-50">
