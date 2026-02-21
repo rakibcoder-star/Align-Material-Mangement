@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
-import { Home, FileSpreadsheet, Search, List, Package, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Home, FileSpreadsheet, Search, List, Package, ChevronLeft, ChevronRight, ChevronDown, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { supabase } from '../lib/supabase';
 
 interface InventoryItem {
   id: string;
   code: string;
+  sku: string;
   name: string;
   uom: string;
   receivedQty: number;
@@ -19,20 +21,60 @@ const Inventory: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
 
-  // Mock data matching the screenshot
-  const [inventory] = useState<InventoryItem[]>([
-    { id: '1', code: '3100001439', name: 'TOUCH UP CUP', uom: 'PC', receivedQty: 6, issuedQty: 0, onHandQty: 6, safetyStock: 0, itemType: 'Consumables', itemDetails: 'Paint I' },
-    { id: '2', code: '3100001447', name: 'PTFE DIAPHRAGM REPAIR KIT SET (245065)', uom: 'SET', receivedQty: 8, issuedQty: 6, onHandQty: 2, safetyStock: 0, itemType: 'Spare Parts', itemDetails: 'Mainte Item' },
-    { id: '3', code: '3000011180', name: 'PADDLE AIR SUPPLY CONTROL JOINT5 OUTLET', uom: 'SET', receivedQty: 4, issuedQty: 0, onHandQty: 4, safetyStock: 0, itemType: 'Spare Parts', itemDetails: 'Mainte Item' },
-    { id: '4', code: '3000011178', name: 'VACUUM PAD SET', uom: 'SET', receivedQty: 8, issuedQty: 4, onHandQty: 4, safetyStock: 0, itemType: 'Spare Parts', itemDetails: 'Mainte Item' },
-    { id: '5', code: '3400000631', name: 'DRUM(200 LTR)', uom: 'PC', receivedQty: 5, issuedQty: 0, onHandQty: 5, safetyStock: 0, itemType: 'Stationary', itemDetails: 'Admir' },
-    { id: '6', code: '3400000625', name: 'TIN CUTTER 12 INCH', uom: 'PC', receivedQty: 3, issuedQty: 0, onHandQty: 3, safetyStock: 0, itemType: 'Tools & Equipment', itemDetails: 'Mainte Item' },
-    { id: '7', code: '3400000621', name: 'WOOD CUTTING DISC, 4 INCH', uom: 'PC', receivedQty: 4, issuedQty: 0, onHandQty: 4, safetyStock: 0, itemType: 'Spare Parts', itemDetails: 'Mainte Item' },
-    { id: '8', code: '3400000624', name: 'RATCHAT SPANNER, 17 MM', uom: 'PC', receivedQty: 1, issuedQty: 0, onHandQty: 1, safetyStock: 0, itemType: 'Tools & Equipment', itemDetails: 'Mainte Item' },
-    { id: '9', code: '3400000620', name: 'RECHARGEABLE IMPACT GUN', uom: 'SET', receivedQty: 1, issuedQty: 0, onHandQty: 1, safetyStock: 0, itemType: 'Tools & Equipment', itemDetails: 'Mainte Item' },
-    { id: '10', code: '3400000609', name: 'TOREX BIT, T40', uom: 'PC', receivedQty: 5, issuedQty: 0, onHandQty: 5, safetyStock: 4, itemType: 'Spare Parts', itemDetails: 'Mainte Item' },
-  ]);
+  const fetchInventory = async () => {
+    setLoading(true);
+    try {
+      let query = supabase
+        .from('items')
+        .select('*', { count: 'exact' });
+
+      if (searchTerm) {
+        query = query.or(`name.ilike.%${searchTerm}%,code.ilike.%${searchTerm}%,sku.ilike.%${searchTerm}%`);
+      }
+
+      const { data, count, error } = await query
+        .order('name', { ascending: true })
+        .range((currentPage - 1) * pageSize, currentPage * pageSize - 1);
+
+      if (error) throw error;
+
+      if (data) {
+        const mapped: InventoryItem[] = data.map(item => ({
+          id: item.id,
+          code: item.code || 'N/A',
+          sku: item.sku || 'N/A',
+          name: item.name,
+          uom: item.uom || 'N/A',
+          receivedQty: item.received_qty || 0,
+          issuedQty: item.issued_qty || 0,
+          onHandQty: item.on_hand_stock || 0,
+          safetyStock: item.safety_stock || 0,
+          itemType: item.type || 'N/A',
+          itemDetails: item.group_name || 'N/A'
+        }));
+        setInventory(mapped);
+        setTotalCount(count || 0);
+      }
+    } catch (err) {
+      console.error('Error fetching inventory:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInventory();
+  }, [currentPage, pageSize]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setCurrentPage(1);
+    fetchInventory();
+  };
 
   const handleExportExcel = () => {
     const worksheet = XLSX.utils.json_to_sheet(inventory);
@@ -70,18 +112,18 @@ const Inventory: React.FC = () => {
         </div>
 
         <div className="flex items-center">
-          <div className="relative flex">
+          <form onSubmit={handleSearch} className="relative flex">
             <input 
               type="text" 
-              placeholder="Search by Name"
+              placeholder="Search by Name or Code"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-64 px-4 py-1.5 border border-gray-200 rounded-l outline-none text-xs text-gray-600 focus:border-[#2d808e]"
             />
-            <button className="bg-[#2d808e] text-white px-3 rounded-r flex items-center justify-center hover:bg-[#256b78]">
+            <button type="submit" className="bg-[#2d808e] text-white px-3 rounded-r flex items-center justify-center hover:bg-[#256b78]">
               <Search size={14} />
             </button>
-          </div>
+          </form>
         </div>
       </div>
 
@@ -92,6 +134,7 @@ const Inventory: React.FC = () => {
             <thead className="bg-[#fcfcfc]">
               <tr className="text-[12px] font-bold text-gray-800 border-b border-gray-100">
                 <th className="px-6 py-4 text-left w-32">Code</th>
+                <th className="px-6 py-4 text-left w-32">SKU</th>
                 <th className="px-6 py-4 text-left">Name</th>
                 <th className="px-6 py-4 text-center w-20">UOM</th>
                 <th className="px-6 py-4 text-center w-32">Received Qty</th>
@@ -103,19 +146,37 @@ const Inventory: React.FC = () => {
               </tr>
             </thead>
             <tbody className="text-[12px] text-gray-700 font-medium">
-              {inventory.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0">
-                  <td className="px-6 py-4 text-left">{item.code}</td>
-                  <td className="px-6 py-4 font-bold uppercase">{item.name}</td>
-                  <td className="px-6 py-4 text-center">{item.uom}</td>
-                  <td className="px-6 py-4 text-center">{item.receivedQty}</td>
-                  <td className="px-6 py-4 text-center">{item.issuedQty}</td>
-                  <td className="px-6 py-4 text-center font-bold text-[#2d808e]">{item.onHandQty}</td>
-                  <td className="px-6 py-4 text-center">{item.safetyStock}</td>
-                  <td className="px-6 py-4 text-left whitespace-nowrap">{item.itemType}</td>
-                  <td className="px-6 py-4 text-left whitespace-nowrap">{item.itemDetails}</td>
+              {loading ? (
+                <tr>
+                  <td colSpan={9} className="px-6 py-12 text-center text-gray-400 uppercase tracking-widest">
+                    <div className="flex flex-col items-center space-y-2">
+                      <Loader2 size={24} className="animate-spin text-[#2d808e]" />
+                      <span>Loading Inventory...</span>
+                    </div>
+                  </td>
                 </tr>
-              ))}
+              ) : inventory.length > 0 ? (
+                inventory.map((item) => (
+                  <tr key={item.id} className="hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0">
+                    <td className="px-6 py-4 text-left">{item.code}</td>
+                    <td className="px-6 py-4 text-left font-mono text-xs">{item.sku}</td>
+                    <td className="px-6 py-4 font-bold uppercase">{item.name}</td>
+                    <td className="px-6 py-4 text-center">{item.uom}</td>
+                    <td className="px-6 py-4 text-center">{item.receivedQty}</td>
+                    <td className="px-6 py-4 text-center">{item.issuedQty}</td>
+                    <td className="px-6 py-4 text-center font-bold text-[#2d808e]">{item.onHandQty}</td>
+                    <td className="px-6 py-4 text-center">{item.safetyStock}</td>
+                    <td className="px-6 py-4 text-left whitespace-nowrap">{item.itemType}</td>
+                    <td className="px-6 py-4 text-left whitespace-nowrap">{item.itemDetails}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={9} className="px-6 py-12 text-center text-gray-400 uppercase tracking-widest">
+                    No items found in inventory
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -124,19 +185,27 @@ const Inventory: React.FC = () => {
       {/* Pagination Footer Section */}
       <div className="flex items-center justify-end space-x-4 pt-2 pb-6">
         <div className="flex items-center space-x-1">
-          <button className="p-1.5 text-gray-300 hover:text-gray-500"><ChevronLeft size={16} /></button>
-          {[1, 2, 3, 4, 5].map(page => (
-            <button 
-              key={page} 
-              onClick={() => setCurrentPage(page)}
-              className={`w-7 h-7 flex items-center justify-center text-xs font-bold rounded ${currentPage === page ? 'bg-white border border-[#2d808e] text-[#2d808e]' : 'text-gray-500 hover:bg-gray-50'}`}
-            >
-              {page}
-            </button>
-          ))}
-          <span className="text-gray-400 px-1">...</span>
-          <button className="w-7 h-7 flex items-center justify-center text-xs font-bold text-gray-500 hover:bg-gray-50 rounded">124</button>
-          <button className="p-1.5 text-gray-400 hover:text-[#2d808e]"><ChevronRight size={16} /></button>
+          <button 
+            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+            className="p-1.5 text-gray-300 hover:text-gray-500 disabled:opacity-50"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          
+          <div className="flex items-center space-x-1">
+            <span className="text-xs font-bold text-gray-500 px-2">
+              Page {currentPage} of {Math.ceil(totalCount / pageSize) || 1}
+            </span>
+          </div>
+
+          <button 
+            onClick={() => setCurrentPage(prev => Math.min(Math.ceil(totalCount / pageSize), prev + 1))}
+            disabled={currentPage >= Math.ceil(totalCount / pageSize)}
+            className="p-1.5 text-gray-400 hover:text-[#2d808e] disabled:opacity-50"
+          >
+            <ChevronRight size={16} />
+          </button>
         </div>
         
         <div className="flex items-center space-x-2 border border-gray-200 rounded bg-white px-2 py-1">
