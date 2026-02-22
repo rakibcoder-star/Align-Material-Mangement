@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
 import { 
   Home, 
@@ -8,7 +8,8 @@ import {
   Printer,
   Loader2,
   Trash2,
-  Eye
+  Eye,
+  Filter
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import NewPurchaseOrder from './NewPurchaseOrder';
@@ -16,6 +17,7 @@ import CreatePODetails from './CreatePODetails';
 import POPrintTemplate from './POPrintTemplate';
 import POPreviewModal from './POPreviewModal';
 import { supabase } from '../lib/supabase';
+import ColumnFilter from './ColumnFilter';
 
 const PurchaseOrder: React.FC = () => {
   const [view, setView] = useState<'list' | 'select-items' | 'create-details'>('list');
@@ -24,8 +26,9 @@ const PurchaseOrder: React.FC = () => {
   const [selectedPRItems, setSelectedPRItems] = useState<any[]>([]);
   const [editingPO, setEditingPO] = useState<any>(null);
   const [previewPo, setPreviewPo] = useState<any>(null);
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
 
-  const fetchOrders = async () => {
+  const fetchOrders = React.useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('purchase_orders')
@@ -34,11 +37,11 @@ const PurchaseOrder: React.FC = () => {
     
     if (data && !error) setOrders(data);
     setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
     fetchOrders();
-  }, []);
+  }, [fetchOrders]);
 
   const handleExportExcel = () => {
     const flattenedForExport = orders.flatMap(po => 
@@ -92,6 +95,27 @@ const PurchaseOrder: React.FC = () => {
     }
   };
 
+  const flattenedItems = useMemo(() => {
+    const items = orders.flatMap(po => 
+      (po.items || []).map((item: any) => ({
+        ...item,
+        po_no: po.po_no,
+        supplier_name: po.supplier_name,
+        po_status: po.status,
+        full_po_obj: po 
+      }))
+    );
+
+    // Apply column filters
+    return items.filter(item => {
+      return Object.entries(columnFilters).every(([column, value]) => {
+        if (!value) return true;
+        const itemValue = String(item[column] || '').toLowerCase();
+        return itemValue.includes(value.toLowerCase());
+      });
+    });
+  }, [orders, columnFilters]);
+
   if (view === 'select-items') {
     return <NewPurchaseOrder onBack={() => setView('list')} onSubmit={(items) => { setSelectedPRItems(items); setEditingPO(null); setView('create-details'); }} />;
   }
@@ -106,15 +130,9 @@ const PurchaseOrder: React.FC = () => {
     );
   }
 
-  const flattenedItems = orders.flatMap(po => 
-    (po.items || []).map((item: any) => ({
-      ...item,
-      po_no: po.po_no,
-      supplier_name: po.supplier_name,
-      po_status: po.status,
-      full_po_obj: po 
-    }))
-  );
+  const handleColumnFilter = (column: string, value: string) => {
+    setColumnFilters(prev => ({ ...prev, [column]: value }));
+  };
 
   return (
     <div className="flex flex-col space-y-4 font-sans">
@@ -147,17 +165,52 @@ const PurchaseOrder: React.FC = () => {
             <thead className="bg-[#fafbfc]">
               <tr className="text-[10px] font-black text-gray-700 uppercase tracking-widest border-b border-gray-100">
                 <th className="px-4 py-5 text-center w-12 border-r border-gray-50">SL</th>
-                <th className="px-4 py-5 text-center border-r border-gray-50">PO No</th>
-                <th className="px-4 py-5 text-center border-r border-gray-50 w-24">Status</th>
-                <th className="px-4 py-5 text-center border-r border-gray-50">PR No</th>
-                <th className="px-4 py-5 text-center border-r border-gray-50">SKU</th>
-                <th className="px-4 py-5 border-r border-gray-50">Name</th>
+                <th className="px-4 py-5 text-center border-r border-gray-50">
+                  <div className="flex items-center justify-center">
+                    <span>PO No</span>
+                    <ColumnFilter columnName="PO No" currentValue={columnFilters.po_no || ''} onFilter={(val) => handleColumnFilter('po_no', val)} />
+                  </div>
+                </th>
+                <th className="px-4 py-5 text-center border-r border-gray-50 w-24">
+                  <div className="flex items-center justify-center">
+                    <span>Status</span>
+                    <ColumnFilter columnName="Status" currentValue={columnFilters.po_status || ''} onFilter={(val) => handleColumnFilter('po_status', val)} />
+                  </div>
+                </th>
+                <th className="px-4 py-5 text-center border-r border-gray-50">
+                  <div className="flex items-center justify-center">
+                    <span>PR No</span>
+                    <ColumnFilter columnName="PR No" currentValue={columnFilters.prNo || ''} onFilter={(val) => handleColumnFilter('prNo', val)} />
+                  </div>
+                </th>
+                <th className="px-4 py-5 text-center border-r border-gray-50">
+                  <div className="flex items-center justify-center">
+                    <span>SKU</span>
+                    <ColumnFilter columnName="SKU" currentValue={columnFilters.sku || ''} onFilter={(val) => handleColumnFilter('sku', val)} />
+                  </div>
+                </th>
+                <th className="px-4 py-5 border-r border-gray-50">
+                  <div className="flex items-center">
+                    <span>Name</span>
+                    <ColumnFilter columnName="Name" currentValue={columnFilters.name || ''} onFilter={(val) => handleColumnFilter('name', val)} />
+                  </div>
+                </th>
                 <th className="px-4 py-5 text-right border-r border-gray-50">PO Price</th>
                 <th className="px-4 py-5 text-center border-r border-gray-50">PO Qty</th>
                 <th className="px-4 py-5 text-right border-r border-gray-50">PO Value</th>
                 <th className="px-4 py-5 text-center border-r border-gray-50">GRN Qty</th>
-                <th className="px-4 py-5 border-r border-gray-50">Req. By</th>
-                <th className="px-4 py-5 border-r border-gray-50">Supplier</th>
+                <th className="px-4 py-5 border-r border-gray-50">
+                  <div className="flex items-center">
+                    <span>Req. By</span>
+                    <ColumnFilter columnName="Req By" currentValue={columnFilters.reqBy || ''} onFilter={(val) => handleColumnFilter('reqBy', val)} />
+                  </div>
+                </th>
+                <th className="px-4 py-5 border-r border-gray-50">
+                  <div className="flex items-center">
+                    <span>Supplier</span>
+                    <ColumnFilter columnName="Supplier" currentValue={columnFilters.supplier_name || ''} onFilter={(val) => handleColumnFilter('supplier_name', val)} />
+                  </div>
+                </th>
                 <th className="px-4 py-5 text-center w-32">Action</th>
               </tr>
             </thead>

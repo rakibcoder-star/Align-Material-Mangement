@@ -1,9 +1,10 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Home, Filter, Search, ChevronLeft, ChevronRight, ChevronDown, Loader2, Inbox } from 'lucide-react';
 import MaterialsMovementForm from './MaterialsMovementForm';
 import ManualIssue from './ManualIssue';
 import { supabase } from '../lib/supabase';
+import ColumnFilter from './ColumnFilter';
 
 interface IssueItem {
   id: string;
@@ -27,6 +28,7 @@ const Issue: React.FC = () => {
   const [pageSize, setPageSize] = useState(10);
   const [issues, setIssues] = useState<IssueItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
 
   const fetchApprovedMOs = async () => {
     setLoading(true);
@@ -93,6 +95,22 @@ const Issue: React.FC = () => {
     fetchApprovedMOs();
   };
 
+  const filteredIssues = useMemo(() => {
+    return issues.filter(i => {
+      const matchesSearch = i.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           i.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           i.moNo.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesColumnFilters = Object.entries(columnFilters).every(([column, value]) => {
+        if (!value) return true;
+        const itemValue = String(i[column as keyof IssueItem] || '').toLowerCase();
+        return itemValue.includes(value.toLowerCase());
+      });
+
+      return matchesSearch && matchesColumnFilters;
+    });
+  }, [issues, searchTerm, columnFilters]);
+
   if (view === 'mo-issue') {
     const selectedItems = issues.filter(i => selectedIds.has(i.id));
     return (
@@ -113,11 +131,9 @@ const Issue: React.FC = () => {
     );
   }
 
-  const filteredIssues = issues.filter(i => 
-    i.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    i.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    i.moNo.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleColumnFilter = (column: string, value: string) => {
+    setColumnFilters(prev => ({ ...prev, [column]: value }));
+  };
 
   return (
     <div className="flex flex-col space-y-4 font-sans antialiased text-gray-800">
@@ -187,27 +203,42 @@ const Issue: React.FC = () => {
                 </th>
                 <th className="px-4 py-5 text-center border-r border-gray-50/50 w-32 relative">
                   <div className="flex items-center justify-center gap-2">
-                    MO No
-                    <Filter size={10} className="text-gray-300" />
+                    <span>MO No</span>
+                    <ColumnFilter columnName="MO No" currentValue={columnFilters.moNo || ''} onFilter={(val) => handleColumnFilter('moNo', val)} />
                   </div>
                 </th>
                 <th className="px-4 py-5 text-center border-r border-gray-50/50 w-32 relative">
                   <div className="flex items-center justify-center gap-2">
-                    Ref.No
-                    <Filter size={10} className="text-gray-300" />
+                    <span>Ref.No</span>
+                    <ColumnFilter columnName="Ref No" currentValue={columnFilters.refNo || ''} onFilter={(val) => handleColumnFilter('refNo', val)} />
                   </div>
                 </th>
                 <th className="px-4 py-5 text-center border-r border-gray-50/50 w-40 relative">
                   <div className="flex items-center justify-center gap-2">
-                    SKU
-                    <Filter size={10} className="text-gray-300" />
+                    <span>SKU</span>
+                    <ColumnFilter columnName="SKU" currentValue={columnFilters.sku || ''} onFilter={(val) => handleColumnFilter('sku', val)} />
                   </div>
                 </th>
-                <th className="px-4 py-5 border-r border-gray-50/50">Name</th>
+                <th className="px-4 py-5 border-r border-gray-50/50">
+                  <div className="flex items-center">
+                    <span>Name</span>
+                    <ColumnFilter columnName="Name" currentValue={columnFilters.name || ''} onFilter={(val) => handleColumnFilter('name', val)} />
+                  </div>
+                </th>
                 <th className="px-4 py-5 text-center border-r border-gray-50/50 w-28 uppercase">MO Qty</th>
                 <th className="px-4 py-5 text-center border-r border-gray-50/50 w-28 uppercase">Issue Qty</th>
-                <th className="px-4 py-5 text-center border-r border-gray-50/50 w-40 uppercase">Req. Dept.</th>
-                <th className="px-4 py-5 text-center w-48 uppercase">Req. By</th>
+                <th className="px-4 py-5 text-center border-r border-gray-50/50 w-40 uppercase">
+                  <div className="flex items-center justify-center">
+                    <span>Req. Dept.</span>
+                    <ColumnFilter columnName="Dept" currentValue={columnFilters.reqDept || ''} onFilter={(val) => handleColumnFilter('reqDept', val)} />
+                  </div>
+                </th>
+                <th className="px-4 py-5 text-center w-48 uppercase">
+                  <div className="flex items-center justify-center">
+                    <span>Req. By</span>
+                    <ColumnFilter columnName="Req By" currentValue={columnFilters.reqBy || ''} onFilter={(val) => handleColumnFilter('reqBy', val)} />
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody className="text-[11px] font-bold text-gray-600 uppercase tracking-tighter">

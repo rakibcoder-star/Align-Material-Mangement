@@ -1,10 +1,11 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Home, Search, Edit2, FileUp, Plus, Trash2, Loader2, ListFilter, RefreshCw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { Home, Search, Edit2, FileUp, Plus, Trash2, Loader2, ListFilter, RefreshCw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Filter } from 'lucide-react';
 import NewItem from './NewItem';
 import ItemHistoryModal from './ItemHistoryModal';
 import * as XLSX from 'xlsx';
 import { supabase } from '../lib/supabase';
+import ColumnFilter from './ColumnFilter';
 
 export interface ItemEntry {
   id?: string;
@@ -32,6 +33,7 @@ const ItemList: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
   const pageSize = 1000;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -44,6 +46,18 @@ const ItemList: React.FC = () => {
       if (searchTerm) {
         countQuery = countQuery.or(`name.ilike.%${searchTerm}%,sku.ilike.%${searchTerm}%,code.ilike.%${searchTerm}%`);
       }
+
+      // Apply column filters
+      Object.entries(columnFilters).forEach(([column, value]) => {
+        if (value) {
+          if (['code', 'sku', 'name', 'uom', 'location', 'type', 'group_name'].includes(column)) {
+            countQuery = countQuery.ilike(column, `%${value}%`);
+          } else if (['last_price', 'avg_price', 'safety_stock', 'on_hand_stock'].includes(column)) {
+            countQuery = countQuery.eq(column, parseFloat(value) || 0);
+          }
+        }
+      });
+
       const { count } = await countQuery;
       setTotalCount(count || 0);
 
@@ -60,6 +74,17 @@ const ItemList: React.FC = () => {
       if (searchTerm) {
         dataQuery = dataQuery.or(`name.ilike.%${searchTerm}%,sku.ilike.%${searchTerm}%,code.ilike.%${searchTerm}%`);
       }
+
+      // Apply column filters to data query too
+      Object.entries(columnFilters).forEach(([column, value]) => {
+        if (value) {
+          if (['code', 'sku', 'name', 'uom', 'location', 'type', 'group_name'].includes(column)) {
+            dataQuery = dataQuery.ilike(column, `%${value}%`);
+          } else if (['last_price', 'avg_price', 'safety_stock', 'on_hand_stock'].includes(column)) {
+            dataQuery = dataQuery.eq(column, parseFloat(value) || 0);
+          }
+        }
+      });
 
       const { data, error } = await dataQuery;
       
@@ -78,7 +103,12 @@ const ItemList: React.FC = () => {
 
   useEffect(() => {
     fetchItems();
-  }, [currentPage, searchTerm]);
+  }, [currentPage, searchTerm, columnFilters]);
+
+  const handleColumnFilter = (column: string, value: string) => {
+    setColumnFilters(prev => ({ ...prev, [column]: value }));
+    setCurrentPage(1);
+  };
 
   const handleSearch = () => {
     setCurrentPage(1);
@@ -322,17 +352,72 @@ const ItemList: React.FC = () => {
                 </div>
               </th>
               <th className="px-4 py-5 text-center w-16 border-r border-gray-50">SL</th>
-              <th className="px-4 py-5 border-r border-gray-50 text-center">Code</th>
-              <th className="px-4 py-5 border-r border-gray-50 text-center">SKU</th>
-              <th className="px-4 py-5 border-r border-gray-50 text-left w-80">Item Name</th>
-              <th className="px-4 py-5 border-r border-gray-50 text-center">UOM</th>
-              <th className="px-4 py-5 border-r border-gray-50 text-center">Location</th>
-              <th className="px-4 py-5 border-r border-gray-50 text-center">Type</th>
-              <th className="px-4 py-5 border-r border-gray-50 text-center">Group</th>
-              <th className="px-4 py-5 border-r border-gray-50 text-right">Last Price</th>
-              <th className="px-4 py-5 border-r border-gray-50 text-right">Avg. Price</th>
-              <th className="px-4 py-5 border-r border-gray-50 text-center">Safety</th>
-              <th className="px-4 py-5 border-r border-gray-50 text-center">On-Hand</th>
+              <th className="px-4 py-5 border-r border-gray-50 text-center">
+                <div className="flex items-center justify-center">
+                  <span>Code</span>
+                  <ColumnFilter columnName="Code" currentValue={columnFilters.code || ''} onFilter={(val) => handleColumnFilter('code', val)} />
+                </div>
+              </th>
+              <th className="px-4 py-5 border-r border-gray-50 text-center">
+                <div className="flex items-center justify-center">
+                  <span>SKU</span>
+                  <ColumnFilter columnName="SKU" currentValue={columnFilters.sku || ''} onFilter={(val) => handleColumnFilter('sku', val)} />
+                </div>
+              </th>
+              <th className="px-4 py-5 border-r border-gray-50 text-left w-80">
+                <div className="flex items-center">
+                  <span>Item Name</span>
+                  <ColumnFilter columnName="Name" currentValue={columnFilters.name || ''} onFilter={(val) => handleColumnFilter('name', val)} />
+                </div>
+              </th>
+              <th className="px-4 py-5 border-r border-gray-50 text-center">
+                <div className="flex items-center justify-center">
+                  <span>UOM</span>
+                  <ColumnFilter columnName="UOM" currentValue={columnFilters.uom || ''} onFilter={(val) => handleColumnFilter('uom', val)} />
+                </div>
+              </th>
+              <th className="px-4 py-5 border-r border-gray-50 text-center">
+                <div className="flex items-center justify-center">
+                  <span>Location</span>
+                  <ColumnFilter columnName="Location" currentValue={columnFilters.location || ''} onFilter={(val) => handleColumnFilter('location', val)} />
+                </div>
+              </th>
+              <th className="px-4 py-5 border-r border-gray-50 text-center">
+                <div className="flex items-center justify-center">
+                  <span>Type</span>
+                  <ColumnFilter columnName="Type" currentValue={columnFilters.type || ''} onFilter={(val) => handleColumnFilter('type', val)} />
+                </div>
+              </th>
+              <th className="px-4 py-5 border-r border-gray-50 text-center">
+                <div className="flex items-center justify-center">
+                  <span>Group</span>
+                  <ColumnFilter columnName="Group" currentValue={columnFilters.group_name || ''} onFilter={(val) => handleColumnFilter('group_name', val)} />
+                </div>
+              </th>
+              <th className="px-4 py-5 border-r border-gray-50 text-right">
+                <div className="flex items-center justify-end">
+                  <span>Last Price</span>
+                  <ColumnFilter columnName="Price" currentValue={columnFilters.last_price || ''} onFilter={(val) => handleColumnFilter('last_price', val)} />
+                </div>
+              </th>
+              <th className="px-4 py-5 border-r border-gray-50 text-right">
+                <div className="flex items-center justify-end">
+                  <span>Avg. Price</span>
+                  <ColumnFilter columnName="Avg Price" currentValue={columnFilters.avg_price || ''} onFilter={(val) => handleColumnFilter('avg_price', val)} />
+                </div>
+              </th>
+              <th className="px-4 py-5 border-r border-gray-50 text-center">
+                <div className="flex items-center justify-center">
+                  <span>Safety</span>
+                  <ColumnFilter columnName="Safety" currentValue={columnFilters.safety_stock || ''} onFilter={(val) => handleColumnFilter('safety_stock', val)} />
+                </div>
+              </th>
+              <th className="px-4 py-5 border-r border-gray-50 text-center">
+                <div className="flex items-center justify-center">
+                  <span>On-Hand</span>
+                  <ColumnFilter columnName="Stock" currentValue={columnFilters.on_hand_stock || ''} onFilter={(val) => handleColumnFilter('on_hand_stock', val)} />
+                </div>
+              </th>
               <th className="px-4 py-5 text-center">Actions</th>
             </tr>
           </thead>

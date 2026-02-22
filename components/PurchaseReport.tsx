@@ -1,8 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Home, FileSpreadsheet, Inbox, Filter, ChevronDown, Loader2, Search } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { supabase } from '../lib/supabase';
+import ColumnFilter from './ColumnFilter';
 
 interface PurchaseReportEntry {
   sl: number;
@@ -33,11 +34,12 @@ const PurchaseReport: React.FC = () => {
   
   const [reportData, setReportData] = useState<PurchaseReportEntry[]>([]);
   const [loading, setLoading] = useState(false);
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
 
   const fetchReport = async () => {
     setLoading(true);
     try {
-      let allData: PurchaseReportEntry[] = [];
+      const allData: PurchaseReportEntry[] = [];
       let slCount = 1;
 
       // Logic: If tnxType is 'All' or 'Purchase Requisition', fetch PRs
@@ -137,9 +139,23 @@ const PurchaseReport: React.FC = () => {
     }
   };
 
+  const filteredReportData = useMemo(() => {
+    return reportData.filter(row => {
+      return Object.entries(columnFilters).every(([column, value]) => {
+        if (!value) return true;
+        const itemValue = String(row[column as keyof PurchaseReportEntry] || '').toLowerCase();
+        return itemValue.includes(value.toLowerCase());
+      });
+    });
+  }, [reportData, columnFilters]);
+
+  const handleColumnFilter = (column: string, value: string) => {
+    setColumnFilters(prev => ({ ...prev, [column]: value }));
+  };
+
   const handleExportExcel = () => {
     try {
-      const exportData = reportData.length > 0 ? reportData : [{ Message: "No data found" }];
+      const exportData = filteredReportData.length > 0 ? filteredReportData : [{ Message: "No data found" }];
       const worksheet = XLSX.utils.json_to_sheet(exportData);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Purchase Report");
@@ -258,17 +274,52 @@ const PurchaseReport: React.FC = () => {
             <thead className="bg-[#fcfcfc]">
               <tr className="text-[10px] font-bold text-gray-800 border-b border-gray-100 uppercase tracking-tighter">
                 <th className="px-4 py-4 text-center w-12 border-r border-gray-50">SL</th>
-                <th className="px-4 py-4 text-left border-r border-gray-50">Tnx. Date</th>
-                <th className="px-4 py-4 text-left border-r border-gray-50">Tnx. Type</th>
-                <th className="px-4 py-4 text-left border-r border-gray-50">Doc.Ref</th>
-                <th className="px-4 py-4 text-left border-r border-gray-50">SKU</th>
-                <th className="px-4 py-4 text-left border-r border-gray-50">Name</th>
+                <th className="px-4 py-4 text-left border-r border-gray-50">
+                  <div className="flex items-center">
+                    <span>Tnx. Date</span>
+                    <ColumnFilter columnName="Date" currentValue={columnFilters.tnxDate || ''} onFilter={(val) => handleColumnFilter('tnxDate', val)} />
+                  </div>
+                </th>
+                <th className="px-4 py-4 text-left border-r border-gray-50">
+                  <div className="flex items-center">
+                    <span>Tnx. Type</span>
+                    <ColumnFilter columnName="Type" currentValue={columnFilters.tnxType || ''} onFilter={(val) => handleColumnFilter('tnxType', val)} />
+                  </div>
+                </th>
+                <th className="px-4 py-4 text-left border-r border-gray-50">
+                  <div className="flex items-center">
+                    <span>Doc.Ref</span>
+                    <ColumnFilter columnName="Doc Ref" currentValue={columnFilters.docRef || ''} onFilter={(val) => handleColumnFilter('docRef', val)} />
+                  </div>
+                </th>
+                <th className="px-4 py-4 text-left border-r border-gray-50">
+                  <div className="flex items-center">
+                    <span>SKU</span>
+                    <ColumnFilter columnName="SKU" currentValue={columnFilters.sku || ''} onFilter={(val) => handleColumnFilter('sku', val)} />
+                  </div>
+                </th>
+                <th className="px-4 py-4 text-left border-r border-gray-50">
+                  <div className="flex items-center">
+                    <span>Name</span>
+                    <ColumnFilter columnName="Name" currentValue={columnFilters.name || ''} onFilter={(val) => handleColumnFilter('name', val)} />
+                  </div>
+                </th>
                 <th className="px-4 py-4 text-center border-r border-gray-50">UOM</th>
                 <th className="px-4 py-4 text-right border-r border-gray-50">Unit Price</th>
                 <th className="px-4 py-4 text-center border-r border-gray-50">Qty</th>
                 <th className="px-4 py-4 text-right border-r border-gray-50">Trnx. Value</th>
-                <th className="px-4 py-4 text-center border-r border-gray-50">Status</th>
-                <th className="px-4 py-4 text-center border-r border-gray-50">Created By</th>
+                <th className="px-4 py-4 text-center border-r border-gray-50">
+                  <div className="flex items-center justify-center">
+                    <span>Status</span>
+                    <ColumnFilter columnName="Status" currentValue={columnFilters.status || ''} onFilter={(val) => handleColumnFilter('status', val)} />
+                  </div>
+                </th>
+                <th className="px-4 py-4 text-center border-r border-gray-50">
+                  <div className="flex items-center justify-center">
+                    <span>Created By</span>
+                    <ColumnFilter columnName="By" currentValue={columnFilters.createdBy || ''} onFilter={(val) => handleColumnFilter('createdBy', val)} />
+                  </div>
+                </th>
                 <th className="px-4 py-4 text-center">Updated By</th>
               </tr>
             </thead>
@@ -282,8 +333,8 @@ const PurchaseReport: React.FC = () => {
                     </div>
                   </td>
                 </tr>
-              ) : reportData.length > 0 ? (
-                reportData.map((row, idx) => (
+              ) : filteredReportData.length > 0 ? (
+                filteredReportData.map((row, idx) => (
                   <tr key={idx} className="border-b border-gray-50 text-[10px] hover:bg-gray-50/50">
                     <td className="px-4 py-3 text-center">{row.sl}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{row.tnxDate}</td>

@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Home, Inbox, Filter, ChevronDown, Search, Loader2 } from 'lucide-react';
 import ManualGRN from './ManualGRN';
 import { supabase } from '../lib/supabase';
+import ColumnFilter from './ColumnFilter';
 
 const Receive: React.FC = () => {
   const [view, setView] = useState<'list' | 'manual'>('list');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [pendingItems, setPendingItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
 
   const fetchPendingPOItems = async () => {
     setLoading(true);
@@ -54,11 +56,28 @@ const Receive: React.FC = () => {
     fetchPendingPOItems();
   };
 
+  const filteredPendingItems = useMemo(() => {
+    return pendingItems.filter(item => {
+      return Object.entries(columnFilters).every(([column, value]) => {
+        if (!value) return true;
+        const itemValue = String(item[column] || '').toLowerCase();
+        return itemValue.includes(value.toLowerCase());
+      });
+    });
+  }, [pendingItems, columnFilters]);
+
+  const handleColumnFilter = (column: string, value: string) => {
+    setColumnFilters(prev => ({ ...prev, [column]: value }));
+  };
+
   const toggleSelect = (id: string) => {
-    const next = new Set<string>(selectedItems);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    setSelectedItems(next);
+    const newSelected = new Set(selectedItems);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedItems(newSelected);
   };
 
   if (view === 'manual') {
@@ -107,19 +126,29 @@ const Receive: React.FC = () => {
                 <th className="px-4 py-4 text-center relative group w-48">
                    <div className="flex items-center justify-center space-x-2">
                      <span>PO No</span>
-                     <Filter size={10} className="text-gray-300" />
+                     <ColumnFilter columnName="PO No" currentValue={columnFilters.poNo || ''} onFilter={(val) => handleColumnFilter('poNo', val)} />
                    </div>
                 </th>
                 <th className="px-4 py-4 text-center relative group w-48">
                    <div className="flex items-center justify-center space-x-2">
                      <span>SKU</span>
-                     <Filter size={10} className="text-gray-300" />
+                     <ColumnFilter columnName="SKU" currentValue={columnFilters.sku || ''} onFilter={(val) => handleColumnFilter('sku', val)} />
                    </div>
                 </th>
-                <th className="px-4 py-4">Name</th>
+                <th className="px-4 py-4">
+                  <div className="flex items-center">
+                    <span>Name</span>
+                    <ColumnFilter columnName="Name" currentValue={columnFilters.name || ''} onFilter={(val) => handleColumnFilter('name', val)} />
+                  </div>
+                </th>
                 <th className="px-4 py-4 text-center w-32">PO Qty</th>
                 <th className="px-4 py-4 text-center w-32">GRN Qty</th>
-                <th className="px-4 py-4 text-center w-64">Req. By</th>
+                <th className="px-4 py-4 text-center w-64">
+                  <div className="flex items-center justify-center">
+                    <span>Req. By</span>
+                    <ColumnFilter columnName="Req By" currentValue={columnFilters.reqBy || ''} onFilter={(val) => handleColumnFilter('reqBy', val)} />
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody className="text-[11px] font-bold text-gray-600">
@@ -130,8 +159,8 @@ const Receive: React.FC = () => {
                     Synchronizing...
                   </td>
                 </tr>
-              ) : pendingItems.length > 0 ? (
-                pendingItems.map((item) => (
+              ) : filteredPendingItems.length > 0 ? (
+                filteredPendingItems.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50 transition-colors border-b border-gray-50">
                     <td className="px-4 py-4 text-center">
                       <input 

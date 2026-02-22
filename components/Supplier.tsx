@@ -1,7 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
-import { Home, Search, Edit2, ChevronDown, X, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Home, Search, Edit2, ChevronDown, X, Loader2, Filter } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import ColumnFilter from './ColumnFilter';
 
 interface SupplierData {
   id?: string;
@@ -36,6 +37,7 @@ const Supplier: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
 
   const initialFormState: SupplierData = {
     name: '',
@@ -126,10 +128,24 @@ const Supplier: React.FC = () => {
     }
   };
 
-  const filteredSuppliers = suppliers.filter(s => 
-    s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.code.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredSuppliers = useMemo(() => {
+    return suppliers.filter(s => {
+      const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           s.code.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesColumnFilters = Object.entries(columnFilters).every(([column, value]) => {
+        if (!value) return true;
+        const itemValue = String(s[column as keyof SupplierData] || '').toLowerCase();
+        return itemValue.includes(value.toLowerCase());
+      });
+
+      return matchesSearch && matchesColumnFilters;
+    });
+  }, [suppliers, searchTerm, columnFilters]);
+
+  const handleColumnFilter = (column: string, value: string) => {
+    setColumnFilters(prev => ({ ...prev, [column]: value }));
+  };
 
   if (view === 'add') {
     return (
@@ -301,11 +317,26 @@ const Supplier: React.FC = () => {
             <thead className="bg-[#fcfcfc]">
               <tr className="text-[11px] font-bold text-gray-800 border-b border-gray-100 uppercase text-center">
                 <th className="px-6 py-5 w-16">SL</th>
-                <th className="px-6 py-5">Code</th>
-                <th className="px-6 py-5">Name</th>
+                <th className="px-6 py-5">
+                  <div className="flex items-center justify-center">
+                    <span>Code</span>
+                    <ColumnFilter columnName="Code" currentValue={columnFilters.code || ''} onFilter={(val) => handleColumnFilter('code', val)} />
+                  </div>
+                </th>
+                <th className="px-6 py-5">
+                  <div className="flex items-center justify-center">
+                    <span>Name</span>
+                    <ColumnFilter columnName="Name" currentValue={columnFilters.name || ''} onFilter={(val) => handleColumnFilter('name', val)} />
+                  </div>
+                </th>
                 <th className="px-6 py-5">Email</th>
                 <th className="px-6 py-5">Phone</th>
-                <th className="px-6 py-5">Type</th>
+                <th className="px-6 py-5">
+                  <div className="flex items-center justify-center">
+                    <span>Type</span>
+                    <ColumnFilter columnName="Type" currentValue={columnFilters.type || ''} onFilter={(val) => handleColumnFilter('type', val)} />
+                  </div>
+                </th>
                 <th className="px-6 py-5 w-24">Action</th>
               </tr>
             </thead>

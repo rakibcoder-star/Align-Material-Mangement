@@ -1,9 +1,10 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Home, FileSpreadsheet, Filter, Inbox, ChevronDown, Search, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { supabase } from '../lib/supabase';
 import TnxDetailsModal from './TnxDetailsModal';
+import ColumnFilter from './ColumnFilter';
 
 const TnxReport: React.FC = () => {
   const today = new Date().toISOString().split('T')[0];
@@ -14,11 +15,12 @@ const TnxReport: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState<any[]>([]);
   const [selectedTnx, setSelectedTnx] = useState<any>(null);
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
 
   const fetchReport = async () => {
     setLoading(true);
     try {
-      let combinedData: any[] = [];
+      const combinedData: any[] = [];
       let slCount = 1;
 
       const { data: itemMaster } = await supabase.from('items').select('sku, name, location').limit(5000);
@@ -157,13 +159,30 @@ const TnxReport: React.FC = () => {
     }
   };
 
+  const filteredReportData = useMemo(() => {
+    return reportData.filter(row => {
+      return Object.entries(columnFilters).every(([column, value]) => {
+        if (!value) return true;
+        const itemValue = String(row[column] || '').toLowerCase();
+        return itemValue.includes(value.toLowerCase());
+      });
+    });
+  }, [reportData, columnFilters]);
+
+  const handleColumnFilter = (column: string, value: string) => {
+    setColumnFilters(prev => ({ ...prev, [column]: value }));
+  };
+
   const handleExportExcel = () => {
     try {
-      const worksheet = XLSX.utils.json_to_sheet(reportData.length > 0 ? reportData : [{ Message: "No data found" }]);
+      const exportData = filteredReportData.length > 0 ? filteredReportData : [{ Message: "No data found" }];
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Tnx Report");
-      XLSX.writeFile(workbook, `Tnx_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
-    } catch (err) { console.error(err); }
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Transaction Report");
+      XLSX.writeFile(workbook, `Transaction_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
+    } catch (err) {
+      console.error("Export failed:", err);
+    }
   };
 
   const getStatusStyle = (status: string) => {
@@ -230,22 +249,77 @@ const TnxReport: React.FC = () => {
             <thead className="bg-[#fcfcfc] sticky top-0 z-10">
               <tr className="text-[10px] font-black text-gray-500 border-b border-gray-100 uppercase tracking-widest">
                 <th className="px-4 py-4 text-center w-12 border-r border-gray-50">SL</th>
-                <th className="px-4 py-4 border-r border-gray-50">Tnx. Date</th>
-                <th className="px-4 py-4 border-r border-gray-50">Doc. Date</th>
-                <th className="px-4 py-4 border-r border-gray-50">Tnx. Ref.</th>
-                <th className="px-4 py-4 border-r border-gray-50">Tnx. Type</th>
-                <th className="px-4 py-4 border-r border-gray-50">Doc. Ref.</th>
-                <th className="px-4 py-4 border-r border-gray-50">SKU</th>
-                <th className="px-4 py-4 border-r border-gray-50">Name</th>
+                <th className="px-4 py-4 border-r border-gray-50">
+                  <div className="flex items-center">
+                    <span>Tnx. Date</span>
+                    <ColumnFilter columnName="Date" currentValue={columnFilters.tnxDate || ''} onFilter={(val) => handleColumnFilter('tnxDate', val)} />
+                  </div>
+                </th>
+                <th className="px-4 py-4 border-r border-gray-50">
+                  <div className="flex items-center">
+                    <span>Doc. Date</span>
+                    <ColumnFilter columnName="Doc Date" currentValue={columnFilters.docDate || ''} onFilter={(val) => handleColumnFilter('docDate', val)} />
+                  </div>
+                </th>
+                <th className="px-4 py-4 border-r border-gray-50">
+                  <div className="flex items-center">
+                    <span>Tnx. Ref.</span>
+                    <ColumnFilter columnName="Ref" currentValue={columnFilters.tnxRef || ''} onFilter={(val) => handleColumnFilter('tnxRef', val)} />
+                  </div>
+                </th>
+                <th className="px-4 py-4 border-r border-gray-50">
+                  <div className="flex items-center">
+                    <span>Tnx. Type</span>
+                    <ColumnFilter columnName="Type" currentValue={columnFilters.tnxType || ''} onFilter={(val) => handleColumnFilter('tnxType', val)} />
+                  </div>
+                </th>
+                <th className="px-4 py-4 border-r border-gray-50">
+                  <div className="flex items-center">
+                    <span>Doc. Ref.</span>
+                    <ColumnFilter columnName="Doc Ref" currentValue={columnFilters.docRef || ''} onFilter={(val) => handleColumnFilter('docRef', val)} />
+                  </div>
+                </th>
+                <th className="px-4 py-4 border-r border-gray-50">
+                  <div className="flex items-center">
+                    <span>SKU</span>
+                    <ColumnFilter columnName="SKU" currentValue={columnFilters.sku || ''} onFilter={(val) => handleColumnFilter('sku', val)} />
+                  </div>
+                </th>
+                <th className="px-4 py-4 border-r border-gray-50">
+                  <div className="flex items-center">
+                    <span>Name</span>
+                    <ColumnFilter columnName="Name" currentValue={columnFilters.name || ''} onFilter={(val) => handleColumnFilter('name', val)} />
+                  </div>
+                </th>
                 <th className="px-4 py-4 border-r border-gray-50 text-center">UOM</th>
                 <th className="px-4 py-4 border-r border-gray-50 text-right">Unit Price</th>
                 <th className="px-4 py-4 border-r border-gray-50 text-center">Tnx. Qty</th>
                 <th className="px-4 py-4 border-r border-gray-50 text-right">Tnx. Value</th>
-                <th className="px-4 py-4 border-r border-gray-50 text-center">Location</th>
+                <th className="px-4 py-4 border-r border-gray-50 text-center">
+                  <div className="flex items-center justify-center">
+                    <span>Location</span>
+                    <ColumnFilter columnName="Location" currentValue={columnFilters.location || ''} onFilter={(val) => handleColumnFilter('location', val)} />
+                  </div>
+                </th>
                 <th className="px-4 py-4 border-r border-gray-50">Remarks</th>
-                <th className="px-4 py-4 border-r border-gray-50">Used On</th>
-                <th className="px-4 py-4 border-r border-gray-50 text-center">Status</th>
-                <th className="px-4 py-4 text-center">Tnx. By</th>
+                <th className="px-4 py-4 border-r border-gray-50">
+                  <div className="flex items-center">
+                    <span>Used On</span>
+                    <ColumnFilter columnName="Used On" currentValue={columnFilters.usedOn || ''} onFilter={(val) => handleColumnFilter('usedOn', val)} />
+                  </div>
+                </th>
+                <th className="px-4 py-4 border-r border-gray-50 text-center">
+                  <div className="flex items-center justify-center">
+                    <span>Status</span>
+                    <ColumnFilter columnName="Status" currentValue={columnFilters.status || ''} onFilter={(val) => handleColumnFilter('status', val)} />
+                  </div>
+                </th>
+                <th className="px-4 py-4 text-center">
+                  <div className="flex items-center justify-center">
+                    <span>Tnx. By</span>
+                    <ColumnFilter columnName="By" currentValue={columnFilters.tnxBy || ''} onFilter={(val) => handleColumnFilter('tnxBy', val)} />
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -256,8 +330,8 @@ const TnxReport: React.FC = () => {
                     <span className="font-black uppercase tracking-widest text-[10px]">Filtering Transaction Node...</span>
                   </td>
                 </tr>
-              ) : reportData.length > 0 ? (
-                reportData.map((row) => (
+              ) : filteredReportData.length > 0 ? (
+                filteredReportData.map((row) => (
                   <tr key={row.sl} className="border-b border-gray-50 text-[10px] hover:bg-gray-50/50 transition-colors">
                     <td className="px-4 py-3 text-center border-r border-gray-50 text-gray-400">{row.sl}</td>
                     <td className="px-4 py-3 border-r border-gray-50 font-medium whitespace-nowrap">{row.tnxDate}</td>

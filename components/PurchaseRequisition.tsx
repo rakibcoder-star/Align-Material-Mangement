@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Home, Edit2, Trash2, Loader2 } from 'lucide-react';
+import { Home, Edit2, Trash2, Loader2, Filter } from 'lucide-react';
 import NewPurchaseRequisition from './NewPurchaseRequisition';
 import PRPreviewModal from './PRPreviewModal';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import ColumnFilter from './ColumnFilter';
 
 const PurchaseRequisition: React.FC = () => {
   const { user } = useAuth();
@@ -12,23 +13,38 @@ const PurchaseRequisition: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [previewPr, setPreviewPr] = useState<any>(null);
   const [editingPr, setEditingPr] = useState<any>(null);
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
 
-  const fetchRequisitions = async () => {
+  const fetchRequisitions = React.useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    let query = supabase
       .from('requisitions')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .select('*');
+
+    // Apply column filters
+    Object.entries(columnFilters).forEach(([column, value]) => {
+      if (value) {
+        if (['pr_no', 'reference', 'req_by_name', 'reqDpt'].includes(column)) {
+          query = query.ilike(column, `%${value}%`);
+        }
+      }
+    });
+
+    const { data, error } = await query.order('created_at', { ascending: false });
     
     if (data && !error) {
       setRequisitions(data);
     }
     setLoading(false);
-  };
+  }, [columnFilters]);
 
   useEffect(() => {
     fetchRequisitions();
-  }, []);
+  }, [fetchRequisitions]);
+
+  const handleColumnFilter = (column: string, value: string) => {
+    setColumnFilters(prev => ({ ...prev, [column]: value }));
+  };
 
   const handleCreateNew = () => {
     setEditingPr(null);
@@ -92,12 +108,32 @@ const PurchaseRequisition: React.FC = () => {
             <thead className="bg-[#fcfcfc]">
               <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
                 <th className="px-6 py-5 text-center w-16">SL</th>
-                <th className="px-6 py-5 text-center">PR NO</th>
+                <th className="px-6 py-5 text-center">
+                  <div className="flex items-center justify-center">
+                    <span>PR NO</span>
+                    <ColumnFilter columnName="PR No" currentValue={columnFilters.pr_no || ''} onFilter={(val) => handleColumnFilter('pr_no', val)} />
+                  </div>
+                </th>
                 <th className="px-6 py-5 text-center">SKU</th>
-                <th className="px-6 py-5 text-center">REF.NO</th>
+                <th className="px-6 py-5 text-center">
+                  <div className="flex items-center justify-center">
+                    <span>REF.NO</span>
+                    <ColumnFilter columnName="Ref No" currentValue={columnFilters.reference || ''} onFilter={(val) => handleColumnFilter('reference', val)} />
+                  </div>
+                </th>
                 <th className="px-6 py-5 text-center">REQ. QTY</th>
-                <th className="px-6 py-5 text-center">REQ. BY</th>
-                <th className="px-6 py-5 text-center">REQ. DEPT.</th>
+                <th className="px-6 py-5 text-center">
+                  <div className="flex items-center justify-center">
+                    <span>REQ. BY</span>
+                    <ColumnFilter columnName="Req By" currentValue={columnFilters.req_by_name || ''} onFilter={(val) => handleColumnFilter('req_by_name', val)} />
+                  </div>
+                </th>
+                <th className="px-6 py-5 text-center">
+                  <div className="flex items-center justify-center">
+                    <span>REQ. DEPT.</span>
+                    <ColumnFilter columnName="Dept" currentValue={columnFilters.reqDpt || ''} onFilter={(val) => handleColumnFilter('reqDpt', val)} />
+                  </div>
+                </th>
                 <th className="px-6 py-5 text-center w-32">ACTION</th>
               </tr>
             </thead>
