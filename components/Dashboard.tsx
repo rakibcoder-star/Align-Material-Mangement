@@ -24,6 +24,7 @@ import ItemType from './ItemType';
 import CostCenter from './CostCenter';
 import LabelManagement from './LabelManagement';
 import TnxDetailsModal from './TnxDetailsModal';
+import LocationTransferModal from './LocationTransferModal';
 import { supabase } from '../lib/supabase';
 import { 
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -60,7 +61,8 @@ import {
   Mail,
   Phone,
   Briefcase,
-  IdCard
+  IdCard,
+  MapPin
 } from 'lucide-react';
 
 const SidebarItem: React.FC<{ 
@@ -175,11 +177,12 @@ const LiquidGauge: React.FC<{ label: string; value: number; subLabel: string; co
 const DashboardOverview: React.FC<{ 
   onCheckStock: () => void; 
   onMoveOrder: () => void; 
+  onLocTransfer: () => void;
   onPreviewPr: (pr: any) => void; 
   onPreviewPo: (po: any) => void; 
   onPreviewMo: (mo: any) => void; 
   onPreviewTnx: (tnx: any) => void 
-}> = ({ onCheckStock, onMoveOrder, onPreviewPr, onPreviewPo, onPreviewMo, onPreviewTnx }) => {
+}> = ({ onCheckStock, onMoveOrder, onPreviewPr, onPreviewPo, onPreviewMo, onPreviewTnx, onLocTransfer }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [dateTime, setDateTime] = useState(new Date());
@@ -292,6 +295,7 @@ const DashboardOverview: React.FC<{
           <button onClick={() => navigate('/label')} className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 text-xs font-black rounded-xl shadow-sm hover:bg-gray-50 uppercase tracking-widest transition-all flex items-center gap-2"><Printer size={16} /><span>Print Labels</span></button>
           <button onClick={onCheckStock} className="px-5 py-2.5 bg-[#2d808e] text-white text-xs font-black rounded-xl shadow-lg shadow-[#2d808e]/10 hover:bg-[#256b78] uppercase tracking-widest transition-all flex items-center gap-2"><PackageSearch size={16} /><span>Check Stock</span></button>
           <button onClick={onMoveOrder} className="px-5 py-2.5 bg-emerald-600 text-white text-xs font-black rounded-xl shadow-lg shadow-emerald-900/10 hover:bg-emerald-700 uppercase tracking-widest transition-all flex items-center gap-2"><MoveHorizontal size={16} /><span>Move Order</span></button>
+          <button onClick={onLocTransfer} className="px-5 py-2.5 bg-[#2d808e] text-white text-xs font-black rounded-xl shadow-lg shadow-[#2d808e]/10 hover:bg-[#256b78] uppercase tracking-widest transition-all flex items-center gap-2"><MapPin size={16} /><span>Loc. Transfer</span></button>
         </div>
       </div>
 
@@ -628,6 +632,7 @@ const Dashboard: React.FC = () => {
     if (window.innerWidth < 768) setIsSidebarCollapsed(true);
   };
   const [isMoveOrderModalOpen, setIsMoveOrderModalOpen] = useState(false);
+  const [isLocationTransferModalOpen, setIsLocationTransferModalOpen] = useState(false);
   const [isStockStatusModalOpen, setIsStockStatusModalOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -713,28 +718,78 @@ const Dashboard: React.FC = () => {
           )}
         </div>
         <div className="flex-1 py-2 overflow-y-auto overflow-x-hidden space-y-1 scrollbar-thin scrollbar-thumb-gray-200">
-          <SidebarItem icon={<Gauge />} label="Dashboard" active={activeTab === 'overview'} isCollapsed={isSidebarCollapsed} onClick={() => menuNavigate('/overview')} />
-          <SidebarItem icon={<ShoppingCart />} label="Purchase" hasSubmenu isOpen={openMenus.purchase} onClick={() => setOpenMenus({...openMenus, purchase: !openMenus.purchase})} isCollapsed={isSidebarCollapsed}>
+          <SidebarItem 
+            icon={<Gauge />} 
+            label="Dashboard" 
+            active={activeTab === 'overview'} 
+            isCollapsed={isSidebarCollapsed} 
+            onClick={() => {
+              if (isSidebarCollapsed) setIsSidebarCollapsed(false);
+              menuNavigate('/overview');
+            }} 
+          />
+          <SidebarItem 
+            icon={<ShoppingCart />} 
+            label="Purchase" 
+            hasSubmenu 
+            isOpen={openMenus.purchase} 
+            onClick={() => {
+              if (isSidebarCollapsed) setIsSidebarCollapsed(false);
+              setOpenMenus({...openMenus, purchase: !openMenus.purchase});
+            }} 
+            isCollapsed={isSidebarCollapsed}
+          >
             <SubmenuItem icon={<FileText />} label="Requisition" active={activeTab === 'requisition'} onClick={() => menuNavigate('/requisition')} />
             <SubmenuItem icon={<ShoppingBag />} label="Order" active={activeTab === 'purchase-order'} onClick={() => menuNavigate('/purchase-order')} />
             <SubmenuItem icon={<Truck />} label="Supplier" active={activeTab === 'supplier'} onClick={() => menuNavigate('/supplier')} />
             <SubmenuItem icon={<BarChart3 />} label="Report" active={activeTab === 'purchase-report'} onClick={() => menuNavigate('/purchase-report')} />
           </SidebarItem>
-          <SidebarItem icon={<Warehouse />} label="Warehouse" hasSubmenu isOpen={openMenus.warehouse} onClick={() => setOpenMenus({...openMenus, warehouse: !openMenus.warehouse})} isCollapsed={isSidebarCollapsed}>
+          <SidebarItem 
+            icon={<Warehouse />} 
+            label="Warehouse" 
+            hasSubmenu 
+            isOpen={openMenus.warehouse} 
+            onClick={() => {
+              if (isSidebarCollapsed) setIsSidebarCollapsed(false);
+              setOpenMenus({...openMenus, warehouse: !openMenus.warehouse});
+            }} 
+            isCollapsed={isSidebarCollapsed}
+          >
             <SubmenuItem icon={<LayoutGrid />} label="Inventory" active={activeTab === 'inventory'} onClick={() => menuNavigate('/inventory')} />
             <SubmenuItem icon={<ArrowRight />} label="Receive" active={activeTab === 'receive'} onClick={() => menuNavigate('/receive')} />
             <SubmenuItem icon={<ArrowLeft />} label="Issue" active={activeTab === 'issue'} onClick={() => menuNavigate('/issue')} />
             <SubmenuItem icon={<FileText />} label="Tnx-Report" active={activeTab === 'tnx-report'} onClick={() => menuNavigate('/tnx-report')} />
             <SubmenuItem icon={<FileText />} label="MO-Report" active={activeTab === 'mo-report'} onClick={() => menuNavigate('/mo-report')} />
           </SidebarItem>
-          <SidebarItem icon={<LayoutGrid />} label="Item Master" hasSubmenu isOpen={openMenus.itemMaster} onClick={() => setOpenMenus({...openMenus, itemMaster: !openMenus.itemMaster})} isCollapsed={isSidebarCollapsed}>
+          <SidebarItem 
+            icon={<LayoutGrid />} 
+            label="Item Master" 
+            hasSubmenu 
+            isOpen={openMenus.itemMaster} 
+            onClick={() => {
+              if (isSidebarCollapsed) setIsSidebarCollapsed(false);
+              setOpenMenus({...openMenus, itemMaster: !openMenus.itemMaster});
+            }} 
+            isCollapsed={isSidebarCollapsed}
+          >
             <SubmenuItem icon={<FileText />} label="Item List" active={activeTab === 'item-list'} onClick={() => menuNavigate('/item-list')} />
             <SubmenuItem icon={<Boxes />} label="Item UOM" active={activeTab === 'item-uom'} onClick={() => menuNavigate('/item-uom')} />
             <SubmenuItem icon={<Layers />} label="Item Group" active={activeTab === 'item-group'} onClick={() => menuNavigate('/item-group')} />
             <SubmenuItem icon={<Tag />} label="Item Type" active={activeTab === 'item-type'} onClick={() => menuNavigate('/item-type')} />
             <SubmenuItem icon={<Home />} label="Cost Center" active={activeTab === 'cost-center'} onClick={() => menuNavigate('/cost-center')} />
           </SidebarItem>
-          <SidebarItem icon={<ShieldAlert />} label="Admin" active={activeTab === 'users'} hasSubmenu isOpen={openMenus.admin} onClick={() => setOpenMenus({...openMenus, admin: !openMenus.admin})} isCollapsed={isSidebarCollapsed}>
+          <SidebarItem 
+            icon={<ShieldAlert />} 
+            label="Admin" 
+            active={activeTab === 'users'} 
+            hasSubmenu 
+            isOpen={openMenus.admin} 
+            onClick={() => {
+              if (isSidebarCollapsed) setIsSidebarCollapsed(false);
+              setOpenMenus({...openMenus, admin: !openMenus.admin});
+            }} 
+            isCollapsed={isSidebarCollapsed}
+          >
             <SubmenuItem icon={<UserIcon />} label="Users" active={activeTab === 'users'} onClick={() => menuNavigate('/users')} />
           </SidebarItem>
         </div>
@@ -782,13 +837,14 @@ const Dashboard: React.FC = () => {
         <main className="flex-1 overflow-y-auto p-6 md:p-8 bg-[#f9fafb] pb-12 scrollbar-thin">
           <div className="max-w-[1600px] mx-auto w-full">
             <Routes>
-              <Route path="/overview" element={<DashboardOverview onCheckStock={() => setIsStockStatusModalOpen(true)} onMoveOrder={() => setIsMoveOrderModalOpen(true)} onPreviewPr={setPreviewPr} onPreviewPo={setPreviewPo} onPreviewMo={setPreviewMo} onPreviewTnx={setPreviewTnx} />} />
+              <Route path="/overview" element={<DashboardOverview onCheckStock={() => setIsStockStatusModalOpen(true)} onMoveOrder={() => setIsMoveOrderModalOpen(true)} onLocTransfer={() => setIsLocationTransferModalOpen(true)} onPreviewPr={setPreviewPr} onPreviewPo={setPreviewPo} onPreviewMo={setPreviewMo} onPreviewTnx={setPreviewTnx} />} />
               <Route path="/users" element={<UserManagement />} /><Route path="/requisition" element={<PurchaseRequisition />} /><Route path="/purchase-order" element={<PurchaseOrder />} /><Route path="/supplier" element={<Supplier />} /><Route path="/purchase-report" element={<PurchaseReport />} /><Route path="/inventory" element={<Inventory />} /><Route path="/receive" element={<Receive />} /><Route path="/issue" element={<Issue />} /><Route path="/tnx-report" element={<TnxReport />} /><Route path="/mo-report" element={<MOReport />} /><Route path="/item-list" element={<ItemList />} /><Route path="/item-uom" element={<ItemUOM />} /><Route path="/item-group" element={<ItemGroup />} /><Route path="/item-type" element={<ItemType />} /><Route path="/cost-center" element={<CostCenter />} /><Route path="/label" element={<LabelManagement />} /><Route path="/" element={<Navigate to="/overview" replace />} />
             </Routes>
           </div>
         </main>
       </div>
       <MoveOrderModal isOpen={isMoveOrderModalOpen} onClose={() => setIsMoveOrderModalOpen(false)} />
+      <LocationTransferModal isOpen={isLocationTransferModalOpen} onClose={() => setIsLocationTransferModalOpen(false)} />
       <StockStatusModal isOpen={isStockStatusModalOpen} onClose={() => setIsStockStatusModalOpen(false)} />
       {previewPr && <PRPreviewModal pr={previewPr} onClose={() => setPreviewPr(null)} />}
       {previewPo && <POPreviewModal po={previewPo} onClose={() => setPreviewPo(null)} />}
