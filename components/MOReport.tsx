@@ -90,6 +90,20 @@ const MOReport: React.FC = () => {
     setColumnFilters(prev => ({ ...prev, [column]: value }));
   };
 
+  const columnSuggestions = useMemo(() => {
+    const suggestions: Record<string, string[]> = {};
+    const columns = ['date', 'moRef', 'moNo', 'sku', 'name', 'uom', 'status', 'createdBy'];
+    
+    columns.forEach(col => {
+      const uniqueValues = Array.from(new Set(reportData.map(item => String(item[col] || ''))))
+        .filter(val => val && val !== 'N/A')
+        .sort();
+      suggestions[col] = uniqueValues;
+    });
+    
+    return suggestions;
+  }, [reportData]);
+
   const handleExportExcel = () => {
     try {
       const exportData = filteredReportData.length > 0 ? filteredReportData : [{ Message: "No data found" }];
@@ -189,31 +203,31 @@ const MOReport: React.FC = () => {
                 <th className="px-3 py-4 border-r border-gray-50">
                   <div className="flex items-center">
                     <span>Date</span>
-                    <ColumnFilter columnName="Date" currentValue={columnFilters.date || ''} onFilter={(val) => handleColumnFilter('date', val)} />
+                    <ColumnFilter columnName="Date" currentValue={columnFilters.date || ''} onFilter={(val) => handleColumnFilter('date', val)} suggestions={columnSuggestions.date} />
                   </div>
                 </th>
                 <th className="px-3 py-4 border-r border-gray-50">
                   <div className="flex items-center">
                     <span>MO Ref</span>
-                    <ColumnFilter columnName="Ref" currentValue={columnFilters.moRef || ''} onFilter={(val) => handleColumnFilter('moRef', val)} />
+                    <ColumnFilter columnName="Ref" currentValue={columnFilters.moRef || ''} onFilter={(val) => handleColumnFilter('moRef', val)} suggestions={columnSuggestions.moRef} />
                   </div>
                 </th>
                 <th className="px-3 py-4 border-r border-gray-50">
                   <div className="flex items-center">
                     <span>MO No</span>
-                    <ColumnFilter columnName="MO No" currentValue={columnFilters.moNo || ''} onFilter={(val) => handleColumnFilter('moNo', val)} />
+                    <ColumnFilter columnName="MO No" currentValue={columnFilters.moNo || ''} onFilter={(val) => handleColumnFilter('moNo', val)} suggestions={columnSuggestions.moNo} />
                   </div>
                 </th>
                 <th className="px-3 py-4 border-r border-gray-50">
                   <div className="flex items-center">
                     <span>SKU</span>
-                    <ColumnFilter columnName="SKU" currentValue={columnFilters.sku || ''} onFilter={(val) => handleColumnFilter('sku', val)} />
+                    <ColumnFilter columnName="SKU" currentValue={columnFilters.sku || ''} onFilter={(val) => handleColumnFilter('sku', val)} suggestions={columnSuggestions.sku} />
                   </div>
                 </th>
                 <th className="px-3 py-4 border-r border-gray-50">
                   <div className="flex items-center">
                     <span>Name</span>
-                    <ColumnFilter columnName="Name" currentValue={columnFilters.name || ''} onFilter={(val) => handleColumnFilter('name', val)} />
+                    <ColumnFilter columnName="Name" currentValue={columnFilters.name || ''} onFilter={(val) => handleColumnFilter('name', val)} suggestions={columnSuggestions.name} />
                   </div>
                 </th>
                 <th className="px-3 py-4 border-r border-gray-50 text-center">UOM</th>
@@ -225,13 +239,13 @@ const MOReport: React.FC = () => {
                 <th className="px-3 py-4 border-r border-gray-50 text-center">
                   <div className="flex items-center justify-center">
                     <span>Status</span>
-                    <ColumnFilter columnName="Status" currentValue={columnFilters.status || ''} onFilter={(val) => handleColumnFilter('status', val)} />
+                    <ColumnFilter columnName="Status" currentValue={columnFilters.status || ''} onFilter={(val) => handleColumnFilter('status', val)} suggestions={columnSuggestions.status} />
                   </div>
                 </th>
                 <th className="px-3 py-4 border-r border-gray-50 text-center">
                   <div className="flex items-center justify-center">
                     <span>Created By</span>
-                    <ColumnFilter columnName="By" currentValue={columnFilters.createdBy || ''} onFilter={(val) => handleColumnFilter('createdBy', val)} />
+                    <ColumnFilter columnName="By" currentValue={columnFilters.createdBy || ''} onFilter={(val) => handleColumnFilter('createdBy', val)} suggestions={columnSuggestions.createdBy} />
                   </div>
                 </th>
                 <th className="px-3 py-4 text-center">Updated By</th>

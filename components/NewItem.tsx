@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Home, ChevronDown, Save, ArrowLeft, Loader2 } from 'lucide-react';
+import { Home, Save, ArrowLeft, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface NewItemProps {
@@ -26,19 +26,22 @@ const NewItem: React.FC<NewItemProps> = ({ onBack, onSuccess, initialData }) => 
 
   useEffect(() => {
     if (initialData) {
-      setFormData({
-        code: initialData.code || '',
-        name: initialData.name || '',
-        sku: initialData.sku || '',
-        uom: initialData.uom || '',
-        location: initialData.location || '',
-        group_name: initialData.group_name || '',
-        type: initialData.type || '',
-        last_price: String(initialData.last_price || '0.00'),
-        avg_price: String(initialData.avg_price || '0.00'),
-        safety_stock: String(initialData.safety_stock || '0'),
-        on_hand_stock: String(initialData.on_hand_stock || '0')
-      });
+      const timer = setTimeout(() => {
+        setFormData({
+          code: initialData.code || '',
+          name: initialData.name || '',
+          sku: initialData.sku || '',
+          uom: initialData.uom || '',
+          location: initialData.location || '',
+          group_name: initialData.group_name || '',
+          type: initialData.type || '',
+          last_price: String(initialData.last_price || '0.00'),
+          avg_price: String(initialData.avg_price || '0.00'),
+          safety_stock: String(initialData.safety_stock || '0'),
+          on_hand_stock: String(initialData.on_hand_stock || '0')
+        });
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [initialData]);
 

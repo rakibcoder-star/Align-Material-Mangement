@@ -3,9 +3,9 @@ import { createClient } from '@supabase/supabase-js';
 // Helper to safely get environment variables in Vite
 const getEnv = (key: string): string => {
   try {
-    // @ts-ignore
+    // @ts-expect-error
     return import.meta.env[key] || '';
-  } catch (e) {
+  } catch {
     return '';
   }
 };

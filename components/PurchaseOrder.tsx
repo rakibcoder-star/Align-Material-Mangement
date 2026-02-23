@@ -8,8 +8,7 @@ import {
   Printer,
   Loader2,
   Trash2,
-  Eye,
-  Filter
+  Eye
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import NewPurchaseOrder from './NewPurchaseOrder';
@@ -40,7 +39,10 @@ const PurchaseOrder: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    fetchOrders();
+    const timer = setTimeout(() => {
+      fetchOrders();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [fetchOrders]);
 
   const handleExportExcel = () => {

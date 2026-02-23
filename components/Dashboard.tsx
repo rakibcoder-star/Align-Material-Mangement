@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import UserManagement from './UserManagement';
 import MoveOrderModal from './MoveOrderModal';
@@ -35,23 +35,18 @@ import {
   Warehouse, 
   LayoutGrid, 
   ChevronDown, 
-  ChevronRight, 
   User as UserIcon,
   Search,
   Menu,
   FileText,
   Bell,
   Home,
-  ClipboardList,
   ShoppingBag,
   ShieldAlert,
   Printer,
   PackageSearch,
   MoveHorizontal,
   LogOut as LogOutIcon,
-  Settings,
-  X,
-  Package,
   Loader2,
   Truck,
   BarChart3,
@@ -549,9 +544,8 @@ const ProfileModal: React.FC<{ user: any, isOpen: boolean, onClose: () => void, 
 
 const SearchResults: React.FC<{ 
   results: {pr: any[], po: any[], mo: any[], items: any[]}, 
-  onClose: () => void,
   onNavigate: (type: string, obj: any) => void
-}> = ({ results, onClose, onNavigate }) => {
+}> = ({ results, onNavigate }) => {
   const hasResults = results.pr.length > 0 || results.po.length > 0 || results.mo.length > 0 || results.items.length > 0;
   return (
     <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-[80vh] overflow-y-auto z-[2000] scrollbar-thin">
@@ -630,7 +624,6 @@ const Dashboard: React.FC = () => {
   const location = useLocation();
   const activeTab = location.pathname.substring(1) || 'overview';
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(window.innerWidth < 768);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const menuNavigate = (path: string) => {
     navigate(path);
@@ -775,7 +768,7 @@ const Dashboard: React.FC = () => {
                 <ArrowUpRight size={20} />
               </button>
             </div>
-            {showSearchResults && <SearchResults results={searchResults} onClose={() => setShowSearchResults(false)} onNavigate={handleSearchResultNavigation} />}
+            {showSearchResults && <SearchResults results={searchResults} onNavigate={handleSearchResultNavigation} />}
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => setIsNotificationOpen(!isNotificationOpen)} className="relative p-2.5 hover:bg-gray-50 rounded-xl text-[#2d808e] transition-all group">

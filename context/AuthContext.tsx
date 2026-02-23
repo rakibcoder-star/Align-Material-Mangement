@@ -22,33 +22,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
   const [users, setUsers] = useState<User[]>([]);
 
-  useEffect(() => {
-    // Check current session
-    const initAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        await fetchUserProfile(session.user.id);
-      }
-      setLoading(false);
-    };
-
-    initAuth();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session) {
-        await fetchUserProfile(session.user.id);
-      } else {
-        setUser(null);
-        setIsAuthenticated(false);
-      }
-    });
-
-    fetchUsers();
-
-    return () => subscription.unsubscribe();
-  }, []);
-
   const fetchUserProfile = async (userId: string) => {
     const { data, error } = await supabase
       .from('profiles')
@@ -95,6 +68,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       })));
     }
   };
+
+  useEffect(() => {
+    // Check current session
+    const initAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await fetchUserProfile(session.user.id);
+      }
+      setLoading(false);
+    };
+
+    initAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session) {
+        await fetchUserProfile(session.user.id);
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
+      }
+    });
+
+    fetchUsers();
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const login = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });

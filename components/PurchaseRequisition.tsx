@@ -39,7 +39,10 @@ const PurchaseRequisition: React.FC = () => {
   }, [columnFilters]);
 
   useEffect(() => {
-    fetchRequisitions();
+    const timer = setTimeout(() => {
+      fetchRequisitions();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [fetchRequisitions]);
 
   const handleColumnFilter = (column: string, value: string) => {

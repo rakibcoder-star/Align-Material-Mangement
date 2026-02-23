@@ -94,6 +94,21 @@ const Inventory: React.FC = () => {
     fetchInventory();
   };
 
+  const columnSuggestions = React.useMemo(() => {
+    const suggestions: Record<string, string[]> = {};
+    const columns = ['code', 'sku', 'name', 'uom', 'type', 'group_name'];
+    
+    columns.forEach(col => {
+      const key = col === 'type' ? 'itemType' : col === 'group_name' ? 'itemDetails' : col;
+      const uniqueValues = Array.from(new Set(inventory.map(item => String((item as any)[key] || ''))))
+        .filter(val => val && val !== 'N/A')
+        .sort();
+      suggestions[col] = uniqueValues;
+    });
+    
+    return suggestions;
+  }, [inventory]);
+
   const handleExportExcel = () => {
     const worksheet = XLSX.utils.json_to_sheet(inventory);
     const workbook = XLSX.utils.book_new();
@@ -154,25 +169,25 @@ const Inventory: React.FC = () => {
                 <th className="px-6 py-4 text-left w-32">
                   <div className="flex items-center">
                     <span>Code</span>
-                    <ColumnFilter columnName="Code" currentValue={columnFilters.code || ''} onFilter={(val) => handleColumnFilter('code', val)} />
+                    <ColumnFilter columnName="Code" currentValue={columnFilters.code || ''} onFilter={(val) => handleColumnFilter('code', val)} suggestions={columnSuggestions.code} />
                   </div>
                 </th>
                 <th className="px-6 py-4 text-left w-32">
                   <div className="flex items-center">
                     <span>SKU</span>
-                    <ColumnFilter columnName="SKU" currentValue={columnFilters.sku || ''} onFilter={(val) => handleColumnFilter('sku', val)} />
+                    <ColumnFilter columnName="SKU" currentValue={columnFilters.sku || ''} onFilter={(val) => handleColumnFilter('sku', val)} suggestions={columnSuggestions.sku} />
                   </div>
                 </th>
                 <th className="px-6 py-4 text-left">
                   <div className="flex items-center">
                     <span>Name</span>
-                    <ColumnFilter columnName="Name" currentValue={columnFilters.name || ''} onFilter={(val) => handleColumnFilter('name', val)} />
+                    <ColumnFilter columnName="Name" currentValue={columnFilters.name || ''} onFilter={(val) => handleColumnFilter('name', val)} suggestions={columnSuggestions.name} />
                   </div>
                 </th>
                 <th className="px-6 py-4 text-center w-20">
                   <div className="flex items-center justify-center">
                     <span>UOM</span>
-                    <ColumnFilter columnName="UOM" currentValue={columnFilters.uom || ''} onFilter={(val) => handleColumnFilter('uom', val)} />
+                    <ColumnFilter columnName="UOM" currentValue={columnFilters.uom || ''} onFilter={(val) => handleColumnFilter('uom', val)} suggestions={columnSuggestions.uom} />
                   </div>
                 </th>
                 <th className="px-6 py-4 text-center w-32">
@@ -202,13 +217,13 @@ const Inventory: React.FC = () => {
                 <th className="px-6 py-4 text-left w-40">
                   <div className="flex items-center">
                     <span>Item Type</span>
-                    <ColumnFilter columnName="Type" currentValue={columnFilters.type || ''} onFilter={(val) => handleColumnFilter('type', val)} />
+                    <ColumnFilter columnName="Type" currentValue={columnFilters.type || ''} onFilter={(val) => handleColumnFilter('type', val)} suggestions={columnSuggestions.type} />
                   </div>
                 </th>
                 <th className="px-6 py-4 text-left w-40">
                   <div className="flex items-center">
                     <span>Item Details</span>
-                    <ColumnFilter columnName="Group" currentValue={columnFilters.group_name || ''} onFilter={(val) => handleColumnFilter('group_name', val)} />
+                    <ColumnFilter columnName="Group" currentValue={columnFilters.group_name || ''} onFilter={(val) => handleColumnFilter('group_name', val)} suggestions={columnSuggestions.group_name} />
                   </div>
                 </th>
               </tr>

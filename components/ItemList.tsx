@@ -110,6 +110,20 @@ const ItemList: React.FC = () => {
     setCurrentPage(1);
   };
 
+  const columnSuggestions = React.useMemo(() => {
+    const suggestions: Record<string, string[]> = {};
+    const columns = ['code', 'sku', 'name', 'uom', 'location', 'type', 'group_name'];
+    
+    columns.forEach(col => {
+      const uniqueValues = Array.from(new Set(items.map(item => String((item as any)[col] || ''))))
+        .filter(val => val && val !== 'N/A')
+        .sort();
+      suggestions[col] = uniqueValues;
+    });
+    
+    return suggestions;
+  }, [items]);
+
   const handleSearch = () => {
     setCurrentPage(1);
     fetchItems();
@@ -355,43 +369,43 @@ const ItemList: React.FC = () => {
               <th className="px-4 py-5 border-r border-gray-50 text-center">
                 <div className="flex items-center justify-center">
                   <span>Code</span>
-                  <ColumnFilter columnName="Code" currentValue={columnFilters.code || ''} onFilter={(val) => handleColumnFilter('code', val)} />
+                  <ColumnFilter columnName="Code" currentValue={columnFilters.code || ''} onFilter={(val) => handleColumnFilter('code', val)} suggestions={columnSuggestions.code} />
                 </div>
               </th>
               <th className="px-4 py-5 border-r border-gray-50 text-center">
                 <div className="flex items-center justify-center">
                   <span>SKU</span>
-                  <ColumnFilter columnName="SKU" currentValue={columnFilters.sku || ''} onFilter={(val) => handleColumnFilter('sku', val)} />
+                  <ColumnFilter columnName="SKU" currentValue={columnFilters.sku || ''} onFilter={(val) => handleColumnFilter('sku', val)} suggestions={columnSuggestions.sku} />
                 </div>
               </th>
               <th className="px-4 py-5 border-r border-gray-50 text-left w-80">
                 <div className="flex items-center">
                   <span>Item Name</span>
-                  <ColumnFilter columnName="Name" currentValue={columnFilters.name || ''} onFilter={(val) => handleColumnFilter('name', val)} />
+                  <ColumnFilter columnName="Name" currentValue={columnFilters.name || ''} onFilter={(val) => handleColumnFilter('name', val)} suggestions={columnSuggestions.name} />
                 </div>
               </th>
               <th className="px-4 py-5 border-r border-gray-50 text-center">
                 <div className="flex items-center justify-center">
                   <span>UOM</span>
-                  <ColumnFilter columnName="UOM" currentValue={columnFilters.uom || ''} onFilter={(val) => handleColumnFilter('uom', val)} />
+                  <ColumnFilter columnName="UOM" currentValue={columnFilters.uom || ''} onFilter={(val) => handleColumnFilter('uom', val)} suggestions={columnSuggestions.uom} />
                 </div>
               </th>
               <th className="px-4 py-5 border-r border-gray-50 text-center">
                 <div className="flex items-center justify-center">
                   <span>Location</span>
-                  <ColumnFilter columnName="Location" currentValue={columnFilters.location || ''} onFilter={(val) => handleColumnFilter('location', val)} />
+                  <ColumnFilter columnName="Location" currentValue={columnFilters.location || ''} onFilter={(val) => handleColumnFilter('location', val)} suggestions={columnSuggestions.location} />
                 </div>
               </th>
               <th className="px-4 py-5 border-r border-gray-50 text-center">
                 <div className="flex items-center justify-center">
                   <span>Type</span>
-                  <ColumnFilter columnName="Type" currentValue={columnFilters.type || ''} onFilter={(val) => handleColumnFilter('type', val)} />
+                  <ColumnFilter columnName="Type" currentValue={columnFilters.type || ''} onFilter={(val) => handleColumnFilter('type', val)} suggestions={columnSuggestions.type} />
                 </div>
               </th>
               <th className="px-4 py-5 border-r border-gray-50 text-center">
                 <div className="flex items-center justify-center">
                   <span>Group</span>
-                  <ColumnFilter columnName="Group" currentValue={columnFilters.group_name || ''} onFilter={(val) => handleColumnFilter('group_name', val)} />
+                  <ColumnFilter columnName="Group" currentValue={columnFilters.group_name || ''} onFilter={(val) => handleColumnFilter('group_name', val)} suggestions={columnSuggestions.group_name} />
                 </div>
               </th>
               <th className="px-4 py-5 border-r border-gray-50 text-right">

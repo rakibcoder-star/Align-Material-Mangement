@@ -1,7 +1,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { X, Camera, RefreshCw, AlertCircle } from 'lucide-react';
-// @ts-ignore
+// @ts-expect-error
 import { Html5Qrcode } from 'https://esm.sh/html5-qrcode';
 
 interface ScannerModalProps {
@@ -13,6 +13,16 @@ const ScannerModal: React.FC<ScannerModalProps> = ({ onScan, onClose }) => {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
+
+  const stopScanner = React.useCallback(async () => {
+    if (scannerRef.current && scannerRef.current.isScanning) {
+      try {
+        await scannerRef.current.stop();
+      } catch (e) {
+        console.warn("Error stopping scanner", e);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const scannerId = "mo-reader";
@@ -48,17 +58,7 @@ const ScannerModal: React.FC<ScannerModalProps> = ({ onScan, onClose }) => {
     return () => {
       stopScanner();
     };
-  }, []);
-
-  const stopScanner = async () => {
-    if (scannerRef.current && scannerRef.current.isScanning) {
-      try {
-        await scannerRef.current.stop();
-      } catch (e) {
-        console.warn("Error stopping scanner", e);
-      }
-    }
-  };
+  }, [onScan, stopScanner]);
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">

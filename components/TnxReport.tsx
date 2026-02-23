@@ -173,6 +173,20 @@ const TnxReport: React.FC = () => {
     setColumnFilters(prev => ({ ...prev, [column]: value }));
   };
 
+  const columnSuggestions = useMemo(() => {
+    const suggestions: Record<string, string[]> = {};
+    const columns = ['tnxType', 'tnxRef', 'docRef', 'sku', 'name', 'uom', 'location', 'usedOn', 'status'];
+    
+    columns.forEach(col => {
+      const uniqueValues = Array.from(new Set(reportData.map(item => String(item[col] || ''))))
+        .filter(val => val && val !== 'N/A')
+        .sort();
+      suggestions[col] = uniqueValues;
+    });
+    
+    return suggestions;
+  }, [reportData]);
+
   const handleExportExcel = () => {
     try {
       const exportData = filteredReportData.length > 0 ? filteredReportData : [{ Message: "No data found" }];
@@ -264,31 +278,31 @@ const TnxReport: React.FC = () => {
                 <th className="px-4 py-4 border-r border-gray-50">
                   <div className="flex items-center">
                     <span>Tnx. Ref.</span>
-                    <ColumnFilter columnName="Ref" currentValue={columnFilters.tnxRef || ''} onFilter={(val) => handleColumnFilter('tnxRef', val)} />
+                    <ColumnFilter columnName="Ref" currentValue={columnFilters.tnxRef || ''} onFilter={(val) => handleColumnFilter('tnxRef', val)} suggestions={columnSuggestions.tnxRef} />
                   </div>
                 </th>
                 <th className="px-4 py-4 border-r border-gray-50">
                   <div className="flex items-center">
                     <span>Tnx. Type</span>
-                    <ColumnFilter columnName="Type" currentValue={columnFilters.tnxType || ''} onFilter={(val) => handleColumnFilter('tnxType', val)} />
+                    <ColumnFilter columnName="Type" currentValue={columnFilters.tnxType || ''} onFilter={(val) => handleColumnFilter('tnxType', val)} suggestions={columnSuggestions.tnxType} />
                   </div>
                 </th>
                 <th className="px-4 py-4 border-r border-gray-50">
                   <div className="flex items-center">
                     <span>Doc. Ref.</span>
-                    <ColumnFilter columnName="Doc Ref" currentValue={columnFilters.docRef || ''} onFilter={(val) => handleColumnFilter('docRef', val)} />
+                    <ColumnFilter columnName="Doc Ref" currentValue={columnFilters.docRef || ''} onFilter={(val) => handleColumnFilter('docRef', val)} suggestions={columnSuggestions.docRef} />
                   </div>
                 </th>
                 <th className="px-4 py-4 border-r border-gray-50">
                   <div className="flex items-center">
                     <span>SKU</span>
-                    <ColumnFilter columnName="SKU" currentValue={columnFilters.sku || ''} onFilter={(val) => handleColumnFilter('sku', val)} />
+                    <ColumnFilter columnName="SKU" currentValue={columnFilters.sku || ''} onFilter={(val) => handleColumnFilter('sku', val)} suggestions={columnSuggestions.sku} />
                   </div>
                 </th>
                 <th className="px-4 py-4 border-r border-gray-50">
                   <div className="flex items-center">
                     <span>Name</span>
-                    <ColumnFilter columnName="Name" currentValue={columnFilters.name || ''} onFilter={(val) => handleColumnFilter('name', val)} />
+                    <ColumnFilter columnName="Name" currentValue={columnFilters.name || ''} onFilter={(val) => handleColumnFilter('name', val)} suggestions={columnSuggestions.name} />
                   </div>
                 </th>
                 <th className="px-4 py-4 border-r border-gray-50 text-center">UOM</th>
@@ -298,20 +312,20 @@ const TnxReport: React.FC = () => {
                 <th className="px-4 py-4 border-r border-gray-50 text-center">
                   <div className="flex items-center justify-center">
                     <span>Location</span>
-                    <ColumnFilter columnName="Location" currentValue={columnFilters.location || ''} onFilter={(val) => handleColumnFilter('location', val)} />
+                    <ColumnFilter columnName="Location" currentValue={columnFilters.location || ''} onFilter={(val) => handleColumnFilter('location', val)} suggestions={columnSuggestions.location} />
                   </div>
                 </th>
                 <th className="px-4 py-4 border-r border-gray-50">Remarks</th>
                 <th className="px-4 py-4 border-r border-gray-50">
                   <div className="flex items-center">
                     <span>Used On</span>
-                    <ColumnFilter columnName="Used On" currentValue={columnFilters.usedOn || ''} onFilter={(val) => handleColumnFilter('usedOn', val)} />
+                    <ColumnFilter columnName="Used On" currentValue={columnFilters.usedOn || ''} onFilter={(val) => handleColumnFilter('usedOn', val)} suggestions={columnSuggestions.usedOn} />
                   </div>
                 </th>
                 <th className="px-4 py-4 border-r border-gray-50 text-center">
                   <div className="flex items-center justify-center">
                     <span>Status</span>
-                    <ColumnFilter columnName="Status" currentValue={columnFilters.status || ''} onFilter={(val) => handleColumnFilter('status', val)} />
+                    <ColumnFilter columnName="Status" currentValue={columnFilters.status || ''} onFilter={(val) => handleColumnFilter('status', val)} suggestions={columnSuggestions.status} />
                   </div>
                 </th>
                 <th className="px-4 py-4 text-center">

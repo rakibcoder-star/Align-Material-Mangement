@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Home, Printer, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-// @ts-ignore
+// @ts-expect-error
 import JsBarcode from 'https://esm.sh/jsbarcode';
 
 interface BarcodeGeneratorProps {
@@ -54,6 +54,35 @@ const BarcodePrintView = ({ labels, settings }: any) => {
   );
 };
 
+const CustomSlider = ({ label, value, min, max, steps, onChange }: any) => (
+  <div className="flex flex-col space-y-3 flex-1 min-w-[150px]">
+    <label className="text-[11px] font-medium text-gray-500">{label}:</label>
+    <div className="relative h-1 bg-gray-100 rounded-full mx-2">
+      <div 
+        className="absolute h-full bg-[#2d808e] rounded-full" 
+        style={{ width: `${((value - min) / (max - min)) * 100}%` }}
+      ></div>
+      <input 
+        type="range" 
+        min={min} 
+        max={max} 
+        step={steps[1] - steps[0] || 1}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="absolute -top-2 left-0 w-full h-5 opacity-0 cursor-pointer z-20"
+      />
+      <div className="absolute top-0 left-0 w-full flex justify-between px-0">
+        {steps.map((step: number) => (
+          <div key={step} className="flex flex-col items-center -mt-0.5">
+            <div className={`w-2 h-2 rounded-full border-2 bg-white ${value === step ? 'border-[#2d808e]' : 'border-gray-200'}`}></div>
+            <span className={`text-[9px] mt-1 font-bold ${value === step ? 'text-[#2d808e]' : 'text-gray-400'}`}>{step}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
 const BarcodeGenerator: React.FC<BarcodeGeneratorProps> = ({ onBack }) => {
   const [skuInput, setSkuInput] = useState('');
   const [hGutter, setHGutter] = useState(16);
@@ -72,7 +101,7 @@ const BarcodeGenerator: React.FC<BarcodeGeneratorProps> = ({ onBack }) => {
 
   const barcodeRefs = useRef<Record<string, SVGSVGElement | null>>({});
 
-  const fetchItems = async (skus: string[]) => {
+  const fetchItems = React.useCallback(async (skus: string[]) => {
     setLoading(true);
     const { data, error } = await supabase
       .from('items')
@@ -94,7 +123,7 @@ const BarcodeGenerator: React.FC<BarcodeGeneratorProps> = ({ onBack }) => {
       setLabels(skus.map(sku => ({ sku, name: 'Item not found' })));
     }
     setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
     const skus = skuInput.split('\n').map(s => s.trim()).filter(s => s !== '');
@@ -102,9 +131,10 @@ const BarcodeGenerator: React.FC<BarcodeGeneratorProps> = ({ onBack }) => {
       const timer = setTimeout(() => fetchItems(skus), 500);
       return () => clearTimeout(timer);
     } else {
-      setLabels([]);
+      const timer = setTimeout(() => setLabels([]), 0);
+      return () => clearTimeout(timer);
     }
-  }, [skuInput]);
+  }, [skuInput, fetchItems]);
 
   useEffect(() => {
     labels.forEach((label, idx) => {
@@ -136,37 +166,7 @@ const BarcodeGenerator: React.FC<BarcodeGeneratorProps> = ({ onBack }) => {
     setTimeout(() => window.print(), 800);
   };
 
-  const CustomSlider = ({ label, value, min, max, steps, onChange }: any) => (
-    <div className="flex flex-col space-y-3 flex-1 min-w-[150px]">
-      <label className="text-[11px] font-medium text-gray-500">{label}:</label>
-      <div className="relative h-1 bg-gray-100 rounded-full mx-2">
-        <div 
-          className="absolute h-full bg-[#2d808e] rounded-full" 
-          style={{ width: `${((value - min) / (max - min)) * 100}%` }}
-        ></div>
-        <input 
-          type="range" 
-          min={min} 
-          max={max} 
-          step={steps[1] - steps[0] || 1}
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
-          className="absolute -top-2 left-0 w-full h-5 opacity-0 cursor-pointer z-20"
-        />
-        <div className="absolute top-0 left-0 w-full flex justify-between px-0">
-          {steps.map((step: number) => (
-            <div key={step} className="flex flex-col items-center -mt-0.5">
-              <div className={`w-2 h-2 rounded-full border-2 bg-white ${value === step ? 'border-[#2d808e]' : 'border-gray-200'}`}></div>
-              <span className={`text-[9px] mt-1 font-bold ${value === step ? 'text-[#2d808e]' : 'text-gray-400'}`}>{step}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
   return (
-    <div className="space-y-6 font-sans antialiased text-gray-800 animate-slide-up no-print">
       <div className="flex items-center space-x-2 text-[11px] font-bold text-[#2d808e] uppercase tracking-wider">
         <Home size={14} className="text-gray-400" />
         <span className="text-gray-300">/</span>
