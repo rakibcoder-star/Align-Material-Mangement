@@ -112,5 +112,27 @@ SELECT name, dept FROM (
 ) AS t(name, dept)
 ON CONFLICT (name) DO NOTHING;
 
+-- 7. Cycle Counting Table
+CREATE TABLE IF NOT EXISTS cycle_counts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    counting_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    user_id TEXT,
+    sku TEXT,
+    item_name TEXT,
+    location TEXT,
+    uom TEXT,
+    physical_qty INTEGER DEFAULT 0,
+    system_qty INTEGER DEFAULT 0,
+    pending_receive INTEGER DEFAULT 0,
+    pending_issue INTEGER DEFAULT 0,
+    short_over INTEGER DEFAULT 0,
+    remarks TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE cycle_counts ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow all" ON cycle_counts;
+CREATE POLICY "Allow all" ON cycle_counts FOR ALL USING (true) WITH CHECK (true);
+
 -- FORCE CACHE RELOAD
 NOTIFY pgrst, 'reload schema';
