@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Home, Printer, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-// @ts-expect-error
+// @ts-expect-error - external esm import
 import JsBarcode from 'https://esm.sh/jsbarcode';
 
 interface BarcodeGeneratorProps {
@@ -167,6 +167,7 @@ const BarcodeGenerator: React.FC<BarcodeGeneratorProps> = ({ onBack }) => {
   };
 
   return (
+    <div className="space-y-6 font-sans antialiased text-gray-800 animate-slide-up no-print">
       <div className="flex items-center space-x-2 text-[11px] font-bold text-[#2d808e] uppercase tracking-wider">
         <Home size={14} className="text-gray-400" />
         <span className="text-gray-300">/</span>

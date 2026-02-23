@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Home, FileSpreadsheet, Search, List, Package, ChevronLeft, ChevronRight, ChevronDown, Loader2, Filter } from 'lucide-react';
+import { Home, FileSpreadsheet, Search, List, ChevronLeft, ChevronRight, ChevronDown, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { supabase } from '../lib/supabase';
 import ColumnFilter from './ColumnFilter';
@@ -27,7 +27,7 @@ const Inventory: React.FC = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
 
-  const fetchInventory = async () => {
+  const fetchInventory = React.useCallback(async () => {
     setLoading(true);
     try {
       let query = supabase
@@ -77,11 +77,11 @@ const Inventory: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchTerm, columnFilters, currentPage, pageSize]);
 
   useEffect(() => {
     fetchInventory();
-  }, [currentPage, pageSize, columnFilters]);
+  }, [fetchInventory]);
 
   const handleColumnFilter = (column: string, value: string) => {
     setColumnFilters(prev => ({ ...prev, [column]: value }));

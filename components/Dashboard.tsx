@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import UserManagement from './UserManagement';
 import MoveOrderModal from './MoveOrderModal';
@@ -48,6 +48,7 @@ import {
   MoveHorizontal,
   LogOut as LogOutIcon,
   Loader2,
+  X,
   Truck,
   BarChart3,
   ArrowRight,
@@ -192,7 +193,6 @@ const DashboardOverview: React.FC<{
   const [octaneStock, setOctaneStock] = useState(57);
   const [weeklyData, setWeeklyData] = useState<any[]>([]);
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     todayOrderQty: '0', todayOrderCount: '0',
     lastDayOrderQty: '0', lastDayOrderCount: '0',
@@ -205,7 +205,6 @@ const DashboardOverview: React.FC<{
   useEffect(() => {
     const timer = setInterval(() => setDateTime(new Date()), 1000);
     const fetchDashboardData = async () => {
-      setLoading(true);
       const { data: prApprovals } = await supabase.from('requisitions').select('*').eq('status', 'Pending').order('created_at', { ascending: false }).limit(5);
       if (prApprovals) setPendingPrs(prApprovals);
       const { data: poApprovals } = await supabase.from('purchase_orders').select('*').eq('status', 'Pending').order('created_at', { ascending: false }).limit(5);
@@ -266,7 +265,6 @@ const DashboardOverview: React.FC<{
         weeklyPrQty: sumQty(allPr || [], new Date(today.getTime() - 7*86400000)).qty, weeklyPrCount: sumQty(allPr || [], new Date(today.getTime() - 7*86400000)).count,
         monthlyPrQty: sumQty(allPr || [], new Date(today.getTime() - 30*86400000)).qty, monthlyPrCount: sumQty(allPr || [], new Date(today.getTime() - 30*86400000)).count
       });
-      setLoading(false);
     };
     fetchDashboardData();
     return () => clearInterval(timer);

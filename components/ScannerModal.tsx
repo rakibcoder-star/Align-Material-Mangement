@@ -1,7 +1,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { X, Camera, RefreshCw, AlertCircle } from 'lucide-react';
-// @ts-expect-error
+// @ts-expect-error - external esm import
 import { Html5Qrcode } from 'https://esm.sh/html5-qrcode';
 
 interface ScannerModalProps {

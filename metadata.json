@@ -1,5 +1,5 @@
 {
-  "name": "ALIGN Data Management System",
+  "name": "ALIGN Data Management System Test",
   "description": "Dynamic multi-user platform integrated with Supabase Auth & Database, optimized for private GitHub deployment and Render.com hosting.",
   "requestFramePermissions": [
     "camera"
