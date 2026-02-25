@@ -215,12 +215,12 @@ const CycleCounting: React.FC = () => {
     return (
       <div className="flex flex-col space-y-6 max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-300">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2 text-[11px] font-bold text-[#2d808e] uppercase tracking-wider">
+          <div className="flex items-center space-x-2 text-[11px] font-bold text-[#2d808e] uppercase">
             <Home size={14} className="text-gray-400" />
             <span className="text-gray-300">/</span>
             <span className="text-gray-400">Warehouse</span>
             <span className="text-gray-300">/</span>
-            <span className="border border-[#2d808e] px-2 py-0.5 rounded text-[#2d808e] font-black">New Cycle Count</span>
+            <span className="border border-[#2d808e] px-2 py-0.5 rounded text-[#2d808e] font-bold">New Cycle Count</span>
           </div>
           <button 
             onClick={() => { setView('list'); resetForm(); }}
@@ -237,7 +237,7 @@ const CycleCounting: React.FC = () => {
                 <ScanLine size={24} className="text-[#2d808e]" />
               </div>
               <div>
-                <h2 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Daily Cycle Counting</h2>
+                <h2 className="text-2xl font-bold text-gray-800 uppercase">Daily Cycle Counting</h2>
                 <p className="text-sm text-gray-400 font-medium">Verify physical inventory against system records</p>
               </div>
             </div>
@@ -246,7 +246,7 @@ const CycleCounting: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* SKU Input */}
                 <div className="space-y-3">
-                  <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Item SKU / Scanner</label>
+                  <label className="text-[11px] font-bold text-gray-400 uppercase">Item SKU / Scanner</label>
                   <div className="flex space-x-2">
                     <div className="relative flex-1">
                       <input 
@@ -272,7 +272,7 @@ const CycleCounting: React.FC = () => {
                     </button>
                   </div>
                   {itemName && (
-                    <div className={`flex items-center space-x-2 mt-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider ${itemName === 'ITEM NOT FOUND' ? 'bg-red-50 text-red-500' : 'bg-[#2d808e]/5 text-[#2d808e]'}`}>
+                    <div className={`flex items-center space-x-2 mt-2 px-4 py-2 rounded-xl text-[10px] font-bold uppercase ${itemName === 'ITEM NOT FOUND' ? 'bg-red-50 text-red-500' : 'bg-[#2d808e]/5 text-[#2d808e]'}`}>
                       {itemName === 'ITEM NOT FOUND' ? <X size={14} /> : <CheckCircle2 size={14} />}
                       <span>{itemName}</span>
                     </div>
@@ -282,13 +282,13 @@ const CycleCounting: React.FC = () => {
                 {/* Location & UOM */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-3">
-                    <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Location</label>
+                    <label className="text-[11px] font-bold text-gray-400 uppercase">Location</label>
                     <div className="px-5 py-4 bg-gray-100 border border-gray-200 rounded-2xl text-sm font-bold text-gray-500 uppercase">
                       {location || '---'}
                     </div>
                   </div>
                   <div className="space-y-3">
-                    <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">UOM</label>
+                    <label className="text-[11px] font-bold text-gray-400 uppercase">UOM</label>
                     <div className="px-5 py-4 bg-gray-100 border border-gray-200 rounded-2xl text-sm font-bold text-gray-500 uppercase">
                       {uom || '---'}
                     </div>
@@ -299,20 +299,20 @@ const CycleCounting: React.FC = () => {
               {/* Stats Grid */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-5 bg-gray-50 rounded-2xl border border-gray-100">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">System Qty</p>
-                  <p className="text-xl font-black text-gray-800">{systemQty}</p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">System Qty</p>
+                  <p className="text-xl font-bold text-gray-800">{systemQty}</p>
                 </div>
                 <div className="p-5 bg-blue-50/50 rounded-2xl border border-blue-100">
-                  <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Pend. Receive</p>
-                  <p className="text-xl font-black text-blue-600">{pendingReceive}</p>
+                  <p className="text-[10px] font-bold text-blue-400 uppercase mb-1">Pend. Receive</p>
+                  <p className="text-xl font-bold text-blue-600">{pendingReceive}</p>
                 </div>
                 <div className="p-5 bg-amber-50/50 rounded-2xl border border-amber-100">
-                  <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest mb-1">Pend. Issue</p>
-                  <p className="text-xl font-black text-amber-600">{pendingIssue}</p>
+                  <p className="text-[10px] font-bold text-amber-400 uppercase mb-1">Pend. Issue</p>
+                  <p className="text-xl font-bold text-amber-600">{pendingIssue}</p>
                 </div>
                 <div className="p-5 bg-[#2d808e]/5 rounded-2xl border border-[#2d808e]/10">
-                  <p className="text-[10px] font-black text-[#2d808e] uppercase tracking-widest mb-1">Short / Over</p>
-                  <p className={`text-xl font-black ${physicalQty !== '' ? (Number(physicalQty) - systemQty >= 0 ? 'text-emerald-600' : 'text-red-600') : 'text-gray-400'}`}>
+                  <p className="text-[10px] font-bold text-[#2d808e] uppercase mb-1">Short / Over</p>
+                  <p className={`text-xl font-bold ${physicalQty !== '' ? (Number(physicalQty) - systemQty >= 0 ? 'text-emerald-600' : 'text-red-600') : 'text-gray-400'}`}>
                     {physicalQty !== '' ? (Number(physicalQty) - systemQty > 0 ? `+${Number(physicalQty) - systemQty}` : Number(physicalQty) - systemQty) : '0'}
                   </p>
                 </div>
@@ -399,14 +399,14 @@ const CycleCounting: React.FC = () => {
           </div>
           <button 
             onClick={handleExportExcel}
-            className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-200 text-gray-600 text-[11px] font-black uppercase rounded-xl hover:bg-gray-50 transition-all shadow-sm"
+            className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-200 text-gray-600 text-[11px] font-bold uppercase rounded-xl hover:bg-gray-50 transition-all shadow-sm"
           >
             <FileSpreadsheet size={16} />
             <span>Export</span>
           </button>
           <button 
             onClick={() => setView('add')}
-            className="flex items-center space-x-2 px-5 py-2 bg-[#2d808e] text-white text-[11px] font-black uppercase rounded-xl hover:bg-[#256b78] transition-all shadow-lg shadow-[#2d808e]/20"
+            className="flex items-center space-x-2 px-5 py-2 bg-[#2d808e] text-white text-[11px] font-bold uppercase rounded-xl hover:bg-[#256b78] transition-all shadow-lg shadow-[#2d808e]/20"
           >
             <Plus size={16} />
             <span>New Count</span>
@@ -418,7 +418,7 @@ const CycleCounting: React.FC = () => {
         <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-200">
           <table className="w-full text-left border-collapse min-w-[1400px]">
             <thead className="bg-[#fcfcfc]">
-              <tr className="text-[10px] font-black text-gray-400 border-b border-gray-100 uppercase tracking-widest">
+              <tr className="text-[10px] font-bold text-gray-400 border-b border-gray-100 uppercase">
                 <th className="px-6 py-5 text-center w-16">SL</th>
                 <th className="px-6 py-5">
                   <div className="flex items-center">
@@ -455,17 +455,17 @@ const CycleCounting: React.FC = () => {
                 <th className="px-6 py-5 text-center">System</th>
                 <th className="px-6 py-5 text-center text-blue-600">Pend. Rec.</th>
                 <th className="px-6 py-5 text-center text-amber-600">Pend. Iss.</th>
-                <th className="px-6 py-5 text-center font-black">Short/Over</th>
+                <th className="px-6 py-5 text-center font-bold">Short/Over</th>
                 <th className="px-6 py-5">Remarks</th>
               </tr>
             </thead>
-            <tbody className="text-[11px] font-bold text-gray-600 uppercase tracking-tight">
+            <tbody className="text-[11px] font-medium text-gray-600 uppercase">
               {loading ? (
                 <tr>
                   <td colSpan={13} className="px-6 py-20 text-center">
                     <div className="flex flex-col items-center space-y-4">
                       <Loader2 size={40} className="animate-spin text-[#2d808e]" />
-                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Scanning Records...</span>
+                      <span className="text-[10px] font-bold text-gray-400 uppercase">Scanning Records...</span>
                     </div>
                   </td>
                 </tr>
@@ -474,7 +474,7 @@ const CycleCounting: React.FC = () => {
                   <td colSpan={13} className="px-6 py-20 text-center">
                     <div className="flex flex-col items-center space-y-3 opacity-20">
                       <History size={48} />
-                      <span className="text-[10px] font-black uppercase tracking-widest">No counting history for this period</span>
+                      <span className="text-[10px] font-bold uppercase">No counting history for this period</span>
                     </div>
                   </td>
                 </tr>
@@ -492,7 +492,7 @@ const CycleCounting: React.FC = () => {
                     <td className="px-6 py-4 text-center">{count.system_qty}</td>
                     <td className="px-6 py-4 text-center text-blue-600">{count.pending_receive}</td>
                     <td className="px-6 py-4 text-center text-amber-600">{count.pending_issue}</td>
-                    <td className={`px-6 py-4 text-center font-black ${count.short_over >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                    <td className={`px-6 py-4 text-center font-bold ${count.short_over >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                       {count.short_over > 0 ? `+${count.short_over}` : count.short_over}
                     </td>
                     <td className="px-6 py-4 text-gray-400 font-medium normal-case">{count.remarks || '---'}</td>

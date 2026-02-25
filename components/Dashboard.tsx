@@ -128,10 +128,10 @@ const SubmenuItem: React.FC<{
 
 const KPICard: React.FC<{ label: string; value: string; subValue?: string }> = ({ label, value, subValue }) => (
   <div className="bg-white p-4 rounded-xl border border-gray-100 flex flex-col justify-between shadow-sm hover:shadow-md transition-all group border-b-4 border-b-[#2d808e]/10 hover:border-b-[#2d808e]">
-    <h3 className="text-xs text-gray-400 font-bold tracking-wider uppercase mb-2">{label}</h3>
+    <h3 className="text-xs text-gray-400 font-medium uppercase mb-2">{label}</h3>
     <div className="flex items-baseline space-x-2">
-      <p className="text-2xl font-black text-gray-800 tracking-tight group-hover:text-[#2d808e] transition-colors">{value}</p>
-      {subValue && <p className="text-sm font-bold text-gray-300">({subValue})</p>}
+      <p className="text-2xl font-bold text-gray-800 group-hover:text-[#2d808e] transition-colors">{value}</p>
+      {subValue && <p className="text-sm font-medium text-gray-300">({subValue})</p>}
     </div>
   </div>
 );
@@ -290,14 +290,14 @@ const DashboardOverview: React.FC<{
     <div className="space-y-6 animate-slide-up pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex flex-col">
-          <h1 className="text-2xl font-black text-gray-800 tracking-tight leading-none">Welcome, {user?.fullName?.split(' ')[0] || 'Admin'}</h1>
-          <p className="text-xs font-bold text-gray-400 mt-2 uppercase tracking-[0.2em]">{dateTime.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+          <h1 className="text-2xl font-bold text-gray-800 leading-none">Welcome, {user?.fullName?.split(' ')[0] || 'Admin'}</h1>
+          <p className="text-xs font-medium text-gray-400 mt-2 uppercase">{dateTime.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <button onClick={() => navigate('/label')} className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 text-xs font-black rounded-xl shadow-sm hover:bg-gray-50 uppercase tracking-widest transition-all flex items-center gap-2"><Printer size={16} /><span>Print Labels</span></button>
-          <button onClick={onCheckStock} className="px-5 py-2.5 bg-[#2d808e] text-white text-xs font-black rounded-xl shadow-lg shadow-[#2d808e]/10 hover:bg-[#256b78] uppercase tracking-widest transition-all flex items-center gap-2"><PackageSearch size={16} /><span>Check Stock</span></button>
-          <button onClick={onMoveOrder} className="px-5 py-2.5 bg-emerald-600 text-white text-xs font-black rounded-xl shadow-lg shadow-emerald-900/10 hover:bg-emerald-700 uppercase tracking-widest transition-all flex items-center gap-2"><MoveHorizontal size={16} /><span>Move Order</span></button>
-          <button onClick={onLocTransfer} className="px-5 py-2.5 bg-[#2d808e] text-white text-xs font-black rounded-xl shadow-lg shadow-[#2d808e]/10 hover:bg-[#256b78] uppercase tracking-widest transition-all flex items-center gap-2"><MapPin size={16} /><span>Loc. Transfer</span></button>
+          <button onClick={() => navigate('/label')} className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-xl shadow-sm hover:bg-gray-50 uppercase transition-all flex items-center gap-2"><Printer size={16} /><span>Print Labels</span></button>
+          <button onClick={onCheckStock} className="px-5 py-2.5 bg-[#2d808e] text-white text-xs font-bold rounded-xl shadow-lg shadow-[#2d808e]/10 hover:bg-[#256b78] uppercase transition-all flex items-center gap-2"><PackageSearch size={16} /><span>Check Stock</span></button>
+          <button onClick={onMoveOrder} className="px-5 py-2.5 bg-emerald-600 text-white text-xs font-bold rounded-xl shadow-lg shadow-emerald-900/10 hover:bg-emerald-700 uppercase transition-all flex items-center gap-2"><MoveHorizontal size={16} /><span>Move Order</span></button>
+          <button onClick={onLocTransfer} className="px-5 py-2.5 bg-[#2d808e] text-white text-xs font-bold rounded-xl shadow-lg shadow-[#2d808e]/10 hover:bg-[#256b78] uppercase transition-all flex items-center gap-2"><MapPin size={16} /><span>Loc. Transfer</span></button>
         </div>
       </div>
 
@@ -312,16 +312,16 @@ const DashboardOverview: React.FC<{
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col shadow-sm">
-          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between"><h3 className="text-xs font-black text-gray-800 uppercase tracking-widest">PR Approvals</h3><span className="px-2 py-0.5 bg-orange-50 text-orange-600 text-[10px] font-black rounded-full uppercase">{pendingPrs.length} Pending</span></div>
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between"><h3 className="text-xs font-bold text-gray-800 uppercase">PR Approvals</h3><span className="px-2 py-0.5 bg-orange-50 text-orange-600 text-[10px] font-bold rounded-full uppercase">{pendingPrs.length} Pending</span></div>
           <div className="overflow-y-auto max-h-[220px] scrollbar-thin">
             <table className="w-full text-left border-collapse">
-              <thead className="bg-gray-50/50 sticky top-0"><tr className="text-[10px] font-bold text-gray-400 uppercase border-b border-gray-50"><th className="px-5 py-3">Date</th><th className="px-5 py-3">Reference</th><th className="px-5 py-3 text-right">Value</th></tr></thead>
+              <thead className="bg-gray-50/50 sticky top-0"><tr className="text-[10px] font-medium text-gray-400 uppercase border-b border-gray-50"><th className="px-5 py-3">Date</th><th className="px-5 py-3">Reference</th><th className="px-5 py-3 text-right">Value</th></tr></thead>
               <tbody className="text-xs font-medium text-gray-600">
                 {pendingPrs.map((pr) => (
                   <tr key={pr.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
                     <td className="px-5 py-3">{new Date(pr.created_at).toLocaleDateString()}</td>
                     <td className="px-5 py-3"><button onClick={() => onPreviewPr(pr)} className="text-blue-500 font-bold hover:underline">{pr.pr_no}</button></td>
-                    <td className="px-5 py-3 text-right font-black text-gray-800">{(pr.total_value || 0).toLocaleString()}</td>
+                    <td className="px-5 py-3 text-right font-medium text-gray-800">{(pr.total_value || 0).toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>
@@ -329,16 +329,16 @@ const DashboardOverview: React.FC<{
           </div>
         </div>
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col shadow-sm">
-          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between"><h3 className="text-xs font-black text-gray-800 uppercase tracking-widest">PO Approvals</h3><span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-black rounded-full uppercase">{pendingPos.length} Pending</span></div>
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between"><h3 className="text-xs font-bold text-gray-800 uppercase">PO Approvals</h3><span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-full uppercase">{pendingPos.length} Pending</span></div>
           <div className="overflow-y-auto max-h-[220px] scrollbar-thin">
             <table className="w-full text-left border-collapse">
-              <thead className="bg-gray-50/50 sticky top-0"><tr className="text-[10px] font-bold text-gray-400 uppercase border-b border-gray-50"><th className="px-5 py-3">Date</th><th className="px-5 py-3">Order No</th><th className="px-5 py-3 text-right">Value</th></tr></thead>
+              <thead className="bg-gray-50/50 sticky top-0"><tr className="text-[10px] font-medium text-gray-400 uppercase border-b border-gray-50"><th className="px-5 py-3">Date</th><th className="px-5 py-3">Order No</th><th className="px-5 py-3 text-right">Value</th></tr></thead>
               <tbody className="text-xs font-medium text-gray-600">
                 {pendingPos.map((po) => (
                   <tr key={po.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
                     <td className="px-5 py-3">{new Date(po.created_at).toLocaleDateString()}</td>
                     <td className="px-5 py-3"><button onClick={() => onPreviewPo(po)} className="text-blue-500 font-bold hover:underline">{po.po_no}</button></td>
-                    <td className="px-5 py-3 text-right font-black text-gray-800">{(po.total_value || 0).toLocaleString()}</td>
+                    <td className="px-5 py-3 text-right font-medium text-gray-800">{(po.total_value || 0).toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>
@@ -346,16 +346,16 @@ const DashboardOverview: React.FC<{
           </div>
         </div>
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col shadow-sm">
-          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between"><h3 className="text-xs font-black text-gray-800 uppercase tracking-widest">MO Approvals</h3><span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[10px] font-black rounded-full uppercase">{pendingMos.length} Pending</span></div>
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between"><h3 className="text-xs font-bold text-gray-800 uppercase">MO Approvals</h3><span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded-full uppercase">{pendingMos.length} Pending</span></div>
           <div className="overflow-y-auto max-h-[220px] scrollbar-thin">
             <table className="w-full text-left border-collapse">
-              <thead className="bg-gray-50/50 sticky top-0"><tr className="text-[10px] font-bold text-gray-400 uppercase border-b border-gray-50"><th className="px-5 py-3">Date</th><th className="px-5 py-3">Ref ID</th><th className="px-5 py-3 text-right">Value</th></tr></thead>
+              <thead className="bg-gray-50/50 sticky top-0"><tr className="text-[10px] font-medium text-gray-400 uppercase border-b border-gray-50"><th className="px-5 py-3">Date</th><th className="px-5 py-3">Ref ID</th><th className="px-5 py-3 text-right">Value</th></tr></thead>
               <tbody className="text-xs font-medium text-gray-600">
                 {pendingMos.map((mo) => (
                   <tr key={mo.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
                     <td className="px-5 py-3 whitespace-nowrap">{new Date(mo.created_at).toLocaleDateString()}</td>
                     <td className="px-5 py-3"><button onClick={() => onPreviewMo(mo)} className="text-blue-500 font-bold hover:underline">{mo.mo_no}</button></td>
-                    <td className="px-5 py-3 text-right font-black text-gray-800">{(mo.total_value || 0).toLocaleString()}</td>
+                    <td className="px-5 py-3 text-right font-medium text-gray-800">{(mo.total_value || 0).toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>
@@ -383,7 +383,7 @@ const DashboardOverview: React.FC<{
         <LiquidGauge label="DIESEL" value={dieselStock} subLabel="4457" color="#2d808e" colorLight="#60a5fa" />
         <LiquidGauge label="OCTANE" value={octaneStock} subLabel="3121" color="#2589ff" colorLight="#8ebfff" />
         <div className="bg-white p-6 rounded-2xl border border-gray-100 flex flex-col shadow-sm">
-          <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest mb-6 text-center">Stock Segmentation</h3>
+          <h3 className="text-xs font-bold text-gray-800 uppercase mb-6 text-center">Stock Segmentation</h3>
           <div className="flex flex-1 items-center justify-around gap-4">
             <div className="h-40 w-1/2">
               <ResponsiveContainer width="100%" height="100%">
@@ -403,9 +403,9 @@ const DashboardOverview: React.FC<{
                   <div key={index} className="flex items-center justify-between group hover:bg-gray-50 p-2 rounded-lg transition-colors">
                     <div className="flex items-center space-x-2 overflow-hidden">
                       <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
-                      <span className="text-[10px] font-bold text-gray-500 uppercase truncate leading-none">{type.name}</span>
+                      <span className="text-[10px] font-medium text-gray-500 uppercase truncate leading-none">{type.name}</span>
                     </div>
-                    <span className="text-[10px] font-black text-gray-800 ml-2">{percent}%</span>
+                    <span className="text-[10px] font-bold text-gray-800 ml-2">{percent}%</span>
                   </div>
                 ); 
               })}
@@ -416,11 +416,11 @@ const DashboardOverview: React.FC<{
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm flex flex-col min-h-[400px]">
-          <h2 className="text-xl font-black text-[#2d808e] mb-6 tracking-tight">Latest Move orders</h2>
+          <h2 className="text-xl font-bold text-[#2d808e] mb-6">Latest Move orders</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="text-[10px] font-black text-gray-400 border-b border-gray-50 uppercase tracking-wider">
+                <tr className="text-[10px] font-medium text-gray-400 border-b border-gray-50 uppercase">
                   <th className="px-2 py-4 text-center w-12 border-r border-gray-50">#</th>
                   <th className="px-4 py-4 text-center border-r border-gray-50">DATE</th>
                   <th className="px-4 py-4 text-center border-r border-gray-50">TNX.NO</th>
@@ -444,9 +444,9 @@ const DashboardOverview: React.FC<{
                       <td className="px-4 py-4 text-center border-r border-gray-50">
                         <button onClick={() => onPreviewTnx(mo)} className="text-blue-500 font-bold hover:underline transition-all">{mo.mo_no}</button>
                       </td>
-                      <td className="px-4 py-4 uppercase truncate max-w-[200px] font-bold text-gray-700 border-r border-gray-50" title={itemNameDisplay}>{itemNameDisplay}</td>
-                      <td className="px-4 py-4 text-center font-black text-gray-800 border-r border-gray-50">{totalQty}</td>
-                      <td className="px-4 py-4 text-right font-black text-gray-800">{formatCurrency(mo.total_value)}</td>
+                      <td className="px-4 py-4 uppercase truncate max-w-[200px] font-medium text-gray-700 border-r border-gray-50" title={itemNameDisplay}>{itemNameDisplay}</td>
+                      <td className="px-4 py-4 text-center font-bold text-gray-800 border-r border-gray-50">{totalQty}</td>
+                      <td className="px-4 py-4 text-right font-bold text-gray-800">{formatCurrency(mo.total_value)}</td>
                     </tr>
                   );
                 })}
