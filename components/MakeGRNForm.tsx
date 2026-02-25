@@ -29,7 +29,7 @@ interface MakeGRNFormProps {
 const MakeGRNForm: React.FC<MakeGRNFormProps> = ({ selectedItems, onClose, onSubmit }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [items, setItems] = useState<GRNItem[]>([]);
-  const [allLocations, setAllLocations] = useState<string[]>([]);
+  const [allLocations, setAllLocations] = useState<{name: string, count: number}[]>([]);
   const [formData, setFormData] = useState({
     documentDate: new Date().toISOString().split('T')[0],
     receiveDate: new Date().toISOString().split('T')[0],
@@ -42,8 +42,14 @@ const MakeGRNForm: React.FC<MakeGRNFormProps> = ({ selectedItems, onClose, onSub
     const fetchAllLocations = async () => {
       const { data } = await supabase.from('items').select('location');
       if (data) {
-        const uniqueLocs = Array.from(new Set(data.map(i => i.location).filter(Boolean)));
-        setAllLocations(uniqueLocs as string[]);
+        const counts: Record<string, number> = {};
+        data.forEach(i => {
+          if (i.location) {
+            counts[i.location] = (counts[i.location] || 0) + 1;
+          }
+        });
+        const locList = Object.entries(counts).map(([name, count]) => ({ name, count }));
+        setAllLocations(locList);
       }
     };
     fetchAllLocations();
@@ -243,7 +249,14 @@ const MakeGRNForm: React.FC<MakeGRNFormProps> = ({ selectedItems, onClose, onSub
                     <td className="px-4 py-5 text-gray-700 font-medium uppercase max-w-[350px] leading-tight">{item.name}</td>
                     <td className="px-4 py-5 text-center text-gray-600">{item.uom}</td>
                     <td className="px-4 py-5 text-center text-gray-600">{item.poQty}</td>
-                    <td className="px-4 py-5 text-center text-gray-600">{item.alreadyReceived}</td>
+                    <td className="px-4 py-5 text-center text-gray-600">
+                      <input 
+                        type="number" 
+                        value={item.alreadyReceived}
+                        onChange={(e) => updateItem(item.id, 'alreadyReceived', Number(e.target.value))}
+                        className="w-20 px-2 py-1 border border-gray-100 rounded text-center outline-none focus:border-[#2d808e] bg-gray-50/30"
+                      />
+                    </td>
                     <td className="px-4 py-5 text-center text-gray-600">{item.grnPrice}</td>
                     <td className="px-4 py-5 text-center">
                       <input 
@@ -266,11 +279,13 @@ const MakeGRNForm: React.FC<MakeGRNFormProps> = ({ selectedItems, onClose, onSub
                         <datalist id={`locations-${item.id}`}>
                           {item.masterLocation && (
                             <option value={item.masterLocation}>
-                              {item.masterLocation} (Current: {item.masterStock || 0})
+                              {item.masterLocation} (Master Stock: {item.masterStock || 0})
                             </option>
                           )}
-                          {allLocations.filter(l => l !== item.masterLocation).map(loc => (
-                            <option key={loc} value={loc}>{loc}</option>
+                          {allLocations.filter(l => l.name !== item.masterLocation).map(loc => (
+                            <option key={loc.name} value={loc.name}>
+                              {loc.name} ({loc.count} items)
+                            </option>
                           ))}
                           <option value="WH-01">Warehouse 01</option>
                           <option value="WH-02">Warehouse 02</option>

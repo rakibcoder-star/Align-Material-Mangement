@@ -24,14 +24,20 @@ interface ManualGRNProps {
 const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingSku, setLoadingSku] = useState<string | null>(null);
-  const [allLocations, setAllLocations] = useState<string[]>([]);
+  const [allLocations, setAllLocations] = useState<{name: string, count: number}[]>([]);
 
   React.useEffect(() => {
     const fetchLocations = async () => {
       const { data } = await supabase.from('items').select('location');
       if (data) {
-        const uniqueLocs = Array.from(new Set(data.map(i => i.location).filter(Boolean)));
-        setAllLocations(uniqueLocs as string[]);
+        const counts: Record<string, number> = {};
+        data.forEach(i => {
+          if (i.location) {
+            counts[i.location] = (counts[i.location] || 0) + 1;
+          }
+        });
+        const locList = Object.entries(counts).map(([name, count]) => ({ name, count }));
+        setAllLocations(locList);
       }
     };
     fetchLocations();
@@ -330,8 +336,10 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
                               {item.masterLocation} (Master Stock: {item.masterStock || 0})
                             </option>
                           )}
-                          {allLocations.filter(l => l !== item.masterLocation).map(loc => (
-                            <option key={loc} value={loc}>{loc}</option>
+                          {allLocations.filter(l => l.name !== item.masterLocation).map(loc => (
+                            <option key={loc.name} value={loc.name}>
+                              {loc.name} ({loc.count} items)
+                            </option>
                           ))}
                           <option value="WH-01">Warehouse 01</option>
                           <option value="WH-02">Warehouse 02</option>
