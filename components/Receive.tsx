@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Home, Inbox, Filter, ChevronDown, Search, Loader2 } from 'lucide-react';
 import ManualGRN from './ManualGRN';
+import MakeGRNForm from './MakeGRNForm';
 import { supabase } from '../lib/supabase';
 import ColumnFilter from './ColumnFilter';
 
 const Receive: React.FC = () => {
-  const [view, setView] = useState<'list' | 'manual'>('list');
+  const [view, setView] = useState<'list' | 'manual' | 'make-grn'>('list');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [pendingItems, setPendingItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,7 +32,9 @@ const Receive: React.FC = () => {
               poNo: po.po_no,
               sku: item.sku,
               name: item.name,
+              uom: item.uom || 'SET',
               poQty: item.poQty,
+              unitPrice: item.unitPrice || 0,
               grnQty: 0, 
               reqBy: po.terms?.contactPerson || 'N/A',
               supplier: po.supplier_name
@@ -53,6 +56,12 @@ const Receive: React.FC = () => {
 
   const handleManualGRNSubmit = (data: any) => {
     setView('list');
+    fetchPendingPOItems();
+  };
+
+  const handleMakeGRNSubmit = () => {
+    setView('list');
+    setSelectedItems(new Set());
     fetchPendingPOItems();
   };
 
@@ -80,12 +89,31 @@ const Receive: React.FC = () => {
     setSelectedItems(newSelected);
   };
 
+  const toggleSelectAll = () => {
+    if (selectedItems.size === filteredPendingItems.length) {
+      setSelectedItems(new Set());
+    } else {
+      setSelectedItems(new Set(filteredPendingItems.map(item => item.id)));
+    }
+  };
+
+  const getSelectedItemsData = () => {
+    return pendingItems.filter(item => selectedItems.has(item.id));
+  };
+
   if (view === 'manual') {
     return <ManualGRN onBack={() => setView('list')} onSubmit={handleManualGRNSubmit} />;
   }
 
   return (
     <div className="flex flex-col space-y-4 font-sans antialiased text-gray-800">
+      {view === 'make-grn' && (
+        <MakeGRNForm 
+          selectedItems={getSelectedItemsData()} 
+          onClose={() => setView('list')} 
+          onSubmit={handleMakeGRNSubmit} 
+        />
+      )}
       {/* Top Header Matching Image 1 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2 text-[11px] font-bold text-[#2d808e] uppercase tracking-wider">
@@ -104,6 +132,7 @@ const Receive: React.FC = () => {
       <div className="flex items-center">
         <button 
           disabled={selectedItems.size === 0}
+          onClick={() => setView('make-grn')}
           className={`px-8 py-1.5 rounded text-[11px] font-black transition-all border uppercase tracking-widest ${
             selectedItems.size > 0 
               ? 'bg-[#2d808e] text-white border-[#2d808e] hover:bg-[#256b78] shadow-md' 
@@ -121,7 +150,12 @@ const Receive: React.FC = () => {
             <thead className="bg-[#fafbfc]">
               <tr className="text-[11px] font-black text-gray-700 uppercase tracking-tight border-b border-gray-100">
                 <th className="px-4 py-4 w-12 text-center">
-                  <input type="checkbox" className="w-4 h-4 rounded border-gray-300" disabled />
+                  <input 
+                    type="checkbox" 
+                    className="w-4 h-4 rounded border-gray-300 text-[#2d808e]" 
+                    checked={filteredPendingItems.length > 0 && selectedItems.size === filteredPendingItems.length}
+                    onChange={toggleSelectAll}
+                  />
                 </th>
                 <th className="px-4 py-4 text-center relative group w-48">
                    <div className="flex items-center justify-center space-x-2">
