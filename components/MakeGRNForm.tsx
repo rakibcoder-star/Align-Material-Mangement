@@ -15,6 +15,8 @@ interface GRNItem {
   grnPrice: number;
   grnQty: number;
   location: string;
+  masterLocation?: string;
+  masterStock?: number;
   remarks: string;
 }
 
@@ -27,6 +29,7 @@ interface MakeGRNFormProps {
 const MakeGRNForm: React.FC<MakeGRNFormProps> = ({ selectedItems, onClose, onSubmit }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [items, setItems] = useState<GRNItem[]>([]);
+  const [allLocations, setAllLocations] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     documentDate: new Date().toISOString().split('T')[0],
     receiveDate: new Date().toISOString().split('T')[0],
@@ -36,22 +39,52 @@ const MakeGRNForm: React.FC<MakeGRNFormProps> = ({ selectedItems, onClose, onSub
   });
 
   useEffect(() => {
-    // Initialize items from selectedItems
-    const initialItems = selectedItems.map(item => ({
-      id: item.id,
-      poId: item.poId,
-      poNo: item.poNo,
-      sku: item.sku,
-      name: item.name,
-      uom: item.uom || 'SET', // Default from image
-      poQty: item.poQty || 0,
-      alreadyReceived: 0, // Should probably fetch this if available
-      grnPrice: item.unitPrice || 0,
-      grnQty: item.poQty || 0, // Default to PO Qty
-      location: '',
-      remarks: ''
-    }));
-    setItems(initialItems);
+    const fetchAllLocations = async () => {
+      const { data } = await supabase.from('items').select('location');
+      if (data) {
+        const uniqueLocs = Array.from(new Set(data.map(i => i.location).filter(Boolean)));
+        setAllLocations(uniqueLocs as string[]);
+      }
+    };
+    fetchAllLocations();
+
+    const initializeItems = async () => {
+      // Fetch master item details for all selected SKUs
+      const skus = selectedItems.map(i => i.sku);
+      const { data: masterItems } = await supabase
+        .from('items')
+        .select('sku, location, stock')
+        .in('sku', skus);
+
+      const masterMap = (masterItems || []).reduce((acc: any, item: any) => {
+        acc[item.sku] = { location: item.location, stock: item.stock };
+        return acc;
+      }, {});
+
+      // Initialize items from selectedItems
+      const initialItems = selectedItems.map(item => {
+        const master = masterMap[item.sku] || { location: '', stock: 0 };
+        return {
+          id: item.id,
+          poId: item.poId,
+          poNo: item.poNo,
+          sku: item.sku,
+          name: item.name,
+          uom: item.uom || 'SET',
+          poQty: item.poQty || 0,
+          alreadyReceived: 0,
+          grnPrice: item.unitPrice || 0,
+          grnQty: item.poQty || 0,
+          location: master.location || '',
+          masterLocation: master.location,
+          masterStock: master.stock,
+          remarks: ''
+        };
+      });
+      setItems(initialItems);
+    };
+
+    initializeItems();
   }, [selectedItems]);
 
   const removeItem = (id: string) => {
@@ -221,15 +254,29 @@ const MakeGRNForm: React.FC<MakeGRNFormProps> = ({ selectedItems, onClose, onSub
                       />
                     </td>
                     <td className="px-4 py-5">
-                      <select 
-                        value={item.location}
-                        onChange={(e) => updateItem(item.id, 'location', e.target.value)}
-                        className="w-full px-3 py-1.5 border border-gray-100 rounded text-[12px] outline-none focus:border-[#2d808e] text-gray-300 bg-white"
-                      >
-                        <option value="">Select Location</option>
-                        <option value="WH-01">Warehouse 01</option>
-                        <option value="WH-02">Warehouse 02</option>
-                      </select>
+                      <div className="relative group/loc">
+                        <input 
+                          type="text" 
+                          list={`locations-${item.id}`}
+                          value={item.location}
+                          onChange={(e) => updateItem(item.id, 'location', e.target.value)}
+                          placeholder="Select Location"
+                          className="w-full px-3 py-1.5 border border-gray-100 rounded text-[12px] outline-none focus:border-[#2d808e] bg-gray-50/30"
+                        />
+                        <datalist id={`locations-${item.id}`}>
+                          {item.masterLocation && (
+                            <option value={item.masterLocation}>
+                              {item.masterLocation} (Current: {item.masterStock || 0})
+                            </option>
+                          )}
+                          {allLocations.filter(l => l !== item.masterLocation).map(loc => (
+                            <option key={loc} value={loc}>{loc}</option>
+                          ))}
+                          <option value="WH-01">Warehouse 01</option>
+                          <option value="WH-02">Warehouse 02</option>
+                          <option value="QC-AREA">QC Area</option>
+                        </datalist>
+                      </div>
                     </td>
                     <td className="px-4 py-5">
                       <input 

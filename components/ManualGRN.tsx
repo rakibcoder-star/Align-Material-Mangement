@@ -11,6 +11,8 @@ interface GRNItem {
   unitPrice: string;
   recQty: string;
   location: string;
+  masterLocation?: string;
+  masterStock?: number;
   remarks: string;
 }
 
@@ -22,6 +24,18 @@ interface ManualGRNProps {
 const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingSku, setLoadingSku] = useState<string | null>(null);
+  const [allLocations, setAllLocations] = useState<string[]>([]);
+
+  React.useEffect(() => {
+    const fetchLocations = async () => {
+      const { data } = await supabase.from('items').select('location');
+      if (data) {
+        const uniqueLocs = Array.from(new Set(data.map(i => i.location).filter(Boolean)));
+        setAllLocations(uniqueLocs as string[]);
+      }
+    };
+    fetchLocations();
+  }, []);
   
   const [formData, setFormData] = useState({
     documentDate: new Date().toISOString().split('T')[0],
@@ -54,6 +68,8 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
         uom: data.uom,
         unitPrice: String(data.last_price || '0.00'),
         location: data.location || '',
+        masterLocation: data.location,
+        masterStock: data.stock
       } : item));
     }
     setLoadingSku(null);
@@ -299,15 +315,28 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
                       />
                     </td>
                     <td className="py-2 px-1">
-                      <select 
-                        value={item.location}
-                        onChange={(e) => updateItem(item.id, 'location', e.target.value)}
-                        className="w-full px-3 py-1.5 border border-cyan-700/30 rounded text-[11px] outline-none text-gray-300 bg-white"
-                      >
-                        <option value="">Location</option>
-                        <option value="WH-01">Warehouse 01</option>
-                        <option value="WH-02">Warehouse 02</option>
-                      </select>
+                      <div className="relative">
+                        <input 
+                          type="text" 
+                          list={`locations-${item.id}`}
+                          value={item.location}
+                          onChange={(e) => updateItem(item.id, 'location', e.target.value)}
+                          placeholder="Location"
+                          className="w-full px-3 py-1.5 border border-cyan-700/30 rounded text-[11px] outline-none bg-white"
+                        />
+                        <datalist id={`locations-${item.id}`}>
+                          {item.masterLocation && (
+                            <option value={item.masterLocation}>
+                              {item.masterLocation} (Master Stock: {item.masterStock || 0})
+                            </option>
+                          )}
+                          {allLocations.filter(l => l !== item.masterLocation).map(loc => (
+                            <option key={loc} value={loc}>{loc}</option>
+                          ))}
+                          <option value="WH-01">Warehouse 01</option>
+                          <option value="WH-02">Warehouse 02</option>
+                        </datalist>
+                      </div>
                     </td>
                     <td className="py-2 px-1">
                       <input 
