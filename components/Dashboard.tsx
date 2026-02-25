@@ -290,14 +290,14 @@ const DashboardOverview: React.FC<{
     <div className="space-y-6 animate-slide-up pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex flex-col">
-          <h1 className="text-2xl font-bold text-gray-800 leading-none">Welcome, {user?.fullName?.split(' ')[0] || 'Admin'}</h1>
+          <h1 className="text-2xl font-bold text-[#2d808e] leading-none">Welcome, {user?.fullName?.split(' ')[0] || 'Admin'}</h1>
           <p className="text-xs font-medium text-gray-400 mt-2 uppercase">{dateTime.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <button onClick={() => navigate('/label')} className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-xl shadow-sm hover:bg-gray-50 uppercase transition-all flex items-center gap-2"><Printer size={16} /><span>Print Labels</span></button>
-          <button onClick={onCheckStock} className="px-5 py-2.5 bg-[#2d808e] text-white text-xs font-bold rounded-xl shadow-lg shadow-[#2d808e]/10 hover:bg-[#256b78] uppercase transition-all flex items-center gap-2"><PackageSearch size={16} /><span>Check Stock</span></button>
-          <button onClick={onMoveOrder} className="px-5 py-2.5 bg-emerald-600 text-white text-xs font-bold rounded-xl shadow-lg shadow-emerald-900/10 hover:bg-emerald-700 uppercase transition-all flex items-center gap-2"><MoveHorizontal size={16} /><span>Move Order</span></button>
-          <button onClick={onLocTransfer} className="px-5 py-2.5 bg-[#2d808e] text-white text-xs font-bold rounded-xl shadow-lg shadow-[#2d808e]/10 hover:bg-[#256b78] uppercase transition-all flex items-center gap-2"><MapPin size={16} /><span>Loc. Transfer</span></button>
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <button onClick={() => navigate('/label')} className="flex-1 sm:flex-none px-4 sm:px-5 py-2.5 bg-[#2d808e] text-white text-xs font-bold rounded-xl shadow-lg shadow-[#2d808e]/10 hover:bg-[#256b78] uppercase transition-all flex items-center justify-center gap-2"><Printer size={16} /><span>Print Labels</span></button>
+          <button onClick={onCheckStock} className="flex-1 sm:flex-none px-4 sm:px-5 py-2.5 bg-[#2d808e] text-white text-xs font-bold rounded-xl shadow-lg shadow-[#2d808e]/10 hover:bg-[#256b78] uppercase transition-all flex items-center justify-center gap-2"><PackageSearch size={16} /><span>Check Stock</span></button>
+          <button onClick={onMoveOrder} className="flex-1 sm:flex-none px-4 sm:px-5 py-2.5 bg-[#2d808e] text-white text-xs font-bold rounded-xl shadow-lg shadow-[#2d808e]/10 hover:bg-[#256b78] uppercase transition-all flex items-center justify-center gap-2"><MoveHorizontal size={16} /><span>Move Order</span></button>
+          <button onClick={onLocTransfer} className="flex-1 sm:flex-none px-4 sm:px-5 py-2.5 bg-[#2d808e] text-white text-xs font-bold rounded-xl shadow-lg shadow-[#2d808e]/10 hover:bg-[#256b78] uppercase transition-all flex items-center justify-center gap-2"><MapPin size={16} /><span>Loc. Transfer</span></button>
         </div>
       </div>
 
@@ -706,8 +706,16 @@ const Dashboard: React.FC = () => {
   });
 
   return (
-    <div className="flex h-screen bg-[#f3f4f6] overflow-hidden font-sans no-print">
-      <aside className={`relative z-50 transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'w-16 md:w-20' : 'w-[240px]'} bg-white flex flex-col h-full shadow-2xl shrink-0 border-r border-gray-100`}>
+    <div className="flex h-screen bg-[#f3f4f6] overflow-hidden font-sans no-print relative">
+      {/* Mobile Overlay */}
+      {!isSidebarCollapsed && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity duration-300"
+          onClick={() => setIsSidebarCollapsed(true)}
+        />
+      )}
+      
+      <aside className={`fixed md:relative z-50 transition-all duration-300 ease-in-out ${isSidebarCollapsed ? '-translate-x-full md:translate-x-0 md:w-16 lg:w-20' : 'translate-x-0 w-[240px]'} bg-white flex flex-col h-full shadow-2xl shrink-0 border-r border-gray-100`}>
         <div className="p-6 flex flex-col items-center border-b border-gray-50 mb-4">
           <div className="w-16 h-16 rounded-full bg-[#f0f9fa] flex items-center justify-center mb-3 shadow-inner">
             <UserIcon size={32} className="text-[#2d808e]" />
@@ -802,11 +810,11 @@ const Dashboard: React.FC = () => {
       </aside>
       <div className="flex-1 flex flex-col overflow-hidden relative">
         <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-30 shrink-0">
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2 md:gap-6">
             <button onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} className="p-2 hover:bg-gray-50 rounded-xl text-[#2d808e] transition-all"><Menu size={24} /></button>
-            <div onClick={() => navigate('/overview')} className="text-2xl font-black text-gray-800 tracking-tighter cursor-pointer select-none">ALIGN</div>
+            <div onClick={() => navigate('/overview')} className="text-xl md:text-2xl font-black text-gray-800 tracking-tighter cursor-pointer select-none">ALIGN</div>
           </div>
-          <div ref={searchContainerRef} className="flex-1 max-w-[600px] mx-10 relative">
+          <div ref={searchContainerRef} className="hidden md:block flex-1 max-w-[600px] mx-4 lg:mx-10 relative">
             <div className="bg-[#f8f9fa] rounded-2xl flex items-center px-4 py-1.5 border border-transparent focus-within:border-[#2d808e]/30 focus-within:bg-white focus-within:shadow-lg transition-all">
               <Search size={20} className="text-gray-300" />
               <input 
