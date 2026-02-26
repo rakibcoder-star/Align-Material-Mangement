@@ -153,11 +153,8 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
       
       setShowSuccess(true);
     } catch (err: any) {
-      if (err.message?.includes('relation "grns" does not exist')) {
-        setShowSuccess(true);
-      } else {
-        alert("Error: " + err.message);
-      }
+      console.error('GRN Submission Error:', err);
+      alert("Error: " + err.message + (err.message?.includes('relation "grns" does not exist') ? "\n\nPlease ensure the 'grns' table is created in your Supabase database." : ""));
     } finally {
       setIsSubmitting(false);
     }

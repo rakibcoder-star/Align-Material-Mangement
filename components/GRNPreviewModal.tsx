@@ -33,12 +33,16 @@ const GRNPreviewModal: React.FC<GRNPreviewModalProps> = ({ grnId, onClose }) => 
         let targetGrn = grn;
         if (!targetGrn) {
           // If not found by grn_no, try by id (uuid)
-          const { data: grnById } = await supabase
-            .from('grns')
-            .select('*')
-            .eq('id', grnId)
-            .maybeSingle();
-          targetGrn = grnById;
+          // Only try if grnId looks like a UUID to avoid error
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+          if (uuidRegex.test(grnId)) {
+            const { data: grnById } = await supabase
+              .from('grns')
+              .select('*')
+              .eq('id', grnId)
+              .maybeSingle();
+            targetGrn = grnById;
+          }
         }
 
         if (targetGrn) {

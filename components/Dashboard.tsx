@@ -223,7 +223,8 @@ const DashboardOverview: React.FC<{
       if (prLogs) setLatestPRs(prLogs);
       const { data: moLogs } = await supabase.from('move_orders').select('*').order('created_at', { ascending: false }).limit(5);
       if (moLogs) setLatestMOs(moLogs);
-      const { data: grnLogs } = await supabase.from('grns').select('*').order('created_at', { ascending: false }).limit(5);
+      const { data: grnLogs, error: grnError } = await supabase.from('grns').select('*').order('created_at', { ascending: false }).limit(5);
+      if (grnError) console.error('Error fetching GRNs:', grnError);
       if (grnLogs) setLatestGRNs(grnLogs);
 
       const { data: items } = await supabase.from('items').select('*');

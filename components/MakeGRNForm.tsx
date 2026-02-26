@@ -184,12 +184,8 @@ const MakeGRNForm: React.FC<MakeGRNFormProps> = ({ selectedItems, onClose, onSub
 
       setShowSuccess(true);
     } catch (err: any) {
-      // If grns table doesn't exist, still show success for the demo/UI part
-      if (err.message?.includes('relation "grns" does not exist')) {
-        setShowSuccess(true);
-      } else {
-        alert("Error: " + err.message);
-      }
+      console.error('GRN Submission Error:', err);
+      alert("Error: " + err.message + (err.message?.includes('relation "grns" does not exist') ? "\n\nPlease ensure the 'grns' table is created in your Supabase database." : ""));
     } finally {
       setIsSubmitting(false);
     }

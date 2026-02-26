@@ -130,6 +130,26 @@ CREATE TABLE IF NOT EXISTS cycle_counts (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- 8. Goods Receive Notes (GRN) Table
+CREATE TABLE IF NOT EXISTS grns (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    grn_no TEXT UNIQUE NOT NULL,
+    document_date DATE,
+    receive_date DATE,
+    transaction_type TEXT,
+    source_type TEXT,
+    source_ref TEXT,
+    header_text TEXT,
+    invoice_no TEXT,
+    bl_mushok_no TEXT,
+    items JSONB DEFAULT '[]'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE grns ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow all" ON grns;
+CREATE POLICY "Allow all" ON grns FOR ALL USING (true) WITH CHECK (true);
+
 ALTER TABLE cycle_counts ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow all" ON cycle_counts;
 CREATE POLICY "Allow all" ON cycle_counts FOR ALL USING (true) WITH CHECK (true);
