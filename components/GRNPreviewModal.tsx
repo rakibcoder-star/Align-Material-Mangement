@@ -47,15 +47,44 @@ const GRNPreviewModal: React.FC<GRNPreviewModalProps> = ({ grnId, onClose }) => 
 
         if (targetGrn) {
           setGrnData(targetGrn);
+          
+          let foundPo = null;
           // Fetch PO if source_ref looks like a PO number
           if (targetGrn.source_ref) {
-            const { data: po } = await supabase
+            // Try by po_no first
+            const { data: poByNo } = await supabase
               .from('purchase_orders')
               .select('*')
               .eq('po_no', targetGrn.source_ref)
               .maybeSingle();
-            if (po) setPoData(po);
+            
+            if (poByNo) {
+              foundPo = poByNo;
+            } else {
+              // Try by id (uuid) if it looks like one
+              const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+              if (uuidRegex.test(targetGrn.source_ref)) {
+                const { data: poById } = await supabase
+                  .from('purchase_orders')
+                  .select('*')
+                  .eq('id', targetGrn.source_ref)
+                  .maybeSingle();
+                if (poById) foundPo = poById;
+              }
+            }
           }
+          
+          // If still no poData, try to find it from the first item's poNo if available
+          if (!foundPo && targetGrn.items?.[0]?.poNo) {
+            const { data: poFromItem } = await supabase
+              .from('purchase_orders')
+              .select('*')
+              .eq('po_no', targetGrn.items[0].poNo)
+              .maybeSingle();
+            if (poFromItem) foundPo = poFromItem;
+          }
+
+          if (foundPo) setPoData(foundPo);
         }
       } catch (err) {
         console.error('Error fetching GRN data:', err);

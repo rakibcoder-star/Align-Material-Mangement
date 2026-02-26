@@ -141,6 +141,7 @@ const MakeGRNForm: React.FC<MakeGRNFormProps> = ({ selectedItems, onClose, onSub
         invoice_no: formData.invoiceNo,
         bl_mushok_no: formData.blMushokNo,
         bl_container: formData.blContainer,
+        source_ref: items[0]?.poNo || '',
         items: items
       }]);
       

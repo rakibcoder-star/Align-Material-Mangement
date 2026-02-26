@@ -237,7 +237,7 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
         {/* Row 2: References */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="space-y-1.5">
-            <label className="text-[11px] font-black text-[#2d808e] uppercase">Source Referance</label>
+            <label className="text-[11px] font-black text-[#2d808e] uppercase">Source Reference</label>
             <div className="relative">
               <input 
                 type="text" 
