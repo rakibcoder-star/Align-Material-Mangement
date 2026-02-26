@@ -142,6 +142,7 @@ CREATE TABLE IF NOT EXISTS grns (
     header_text TEXT,
     invoice_no TEXT,
     bl_mushok_no TEXT,
+    bl_container TEXT,
     items JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

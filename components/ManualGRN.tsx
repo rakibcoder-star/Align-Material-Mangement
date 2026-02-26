@@ -74,7 +74,8 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
     sourceRef: '',
     headerText: '',
     invoiceNo: '',
-    blMushokNo: ''
+    blMushokNo: '',
+    blContainer: ''
   });
 
   const [items, setItems] = useState<GRNItem[]>([
@@ -137,6 +138,7 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
         header_text: formData.headerText,
         invoice_no: formData.invoiceNo,
         bl_mushok_no: formData.blMushokNo,
+        bl_container: formData.blContainer,
         items: items
       }]);
 
@@ -288,6 +290,20 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
                 className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none placeholder-gray-300" 
               />
               <span className="absolute right-2 top-2.5 text-[8px] font-bold text-gray-300">{formData.blMushokNo.length} / 50</span>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-black text-[#2d808e] uppercase">B/L Container</label>
+            <div className="relative">
+              <input 
+                type="text" 
+                maxLength={50}
+                placeholder="B/L Container Ref."
+                value={formData.blContainer} 
+                onChange={(e) => setFormData({...formData, blContainer: e.target.value})} 
+                className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none placeholder-gray-300" 
+              />
+              <span className="absolute right-2 top-2.5 text-[8px] font-bold text-gray-300">{formData.blContainer.length} / 50</span>
             </div>
           </div>
         </div>

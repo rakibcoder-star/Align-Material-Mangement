@@ -129,10 +129,10 @@ const GRNPreviewModal: React.FC<GRNPreviewModalProps> = ({ grnId, onClose }) => 
       [],
       ["Goods Received Note"],
       [],
-      ["Supplier Number:", poData?.supplier_id || "N/A", "", "GRN No. / Date:", `${grnData.grn_no} / ${new Date(grnData.created_at).toLocaleDateString('en-GB')}`],
-      ["Supplier Name:", poData?.supplier_name || "N/A", "", "Delivery Note:", grnData.invoice_no || "N/A"],
-      ["PO Number:", grnData.source_ref || "N/A", "", "Bill of Lading:", grnData.bl_mushok_no || "N/A"],
-      ["PO Date:", poData ? new Date(poData.created_at).toLocaleDateString('en-GB') : "N/A", "", "B/L Container:", "N/A"],
+      ["Supplier Number:", poData?.supplier_id || "", "", "GRN No. / Date:", `${grnData.grn_no} / ${new Date(grnData.created_at).toLocaleDateString('en-GB')}`],
+      ["Supplier Name:", poData?.supplier_name || "", "", "Delivery Note:", grnData.invoice_no || ""],
+      ["PO Number:", grnData.source_ref || "", "", "Bill of Lading:", grnData.bl_mushok_no || ""],
+      ["PO Date:", poData ? new Date(poData.created_at).toLocaleDateString('en-GB') : "", "", "B/L Container:", grnData.bl_container || ""],
       [],
       ["SL", "Material Number", "Goods", "UOM", "Order Quantity", "Received Quantity", "Comments"],
     ];
@@ -243,16 +243,16 @@ const GRNPreviewModal: React.FC<GRNPreviewModalProps> = ({ grnId, onClose }) => 
             {/* Info Section */}
             <div className="grid grid-cols-2 gap-8 mb-6 text-sm">
               <div className="space-y-1">
-                <div className="flex"><span className="w-32 font-bold">Supplier Number:</span> <span>{poData?.supplier_id || '2000000183'}</span></div>
-                <div className="flex"><span className="w-32 font-bold">Supplier Name:</span> <span>{poData?.supplier_name || 'Youngsan Glonet Corporation'}</span></div>
-                <div className="flex"><span className="w-32 font-bold">PO Number:</span> <span>{grnData.source_ref || '2100001884'}</span></div>
+                <div className="flex"><span className="w-32 font-bold">Supplier Number:</span> <span>{poData?.supplier_id || ''}</span></div>
+                <div className="flex"><span className="w-32 font-bold">Supplier Name:</span> <span>{poData?.supplier_name || ''}</span></div>
+                <div className="flex"><span className="w-32 font-bold">PO Number:</span> <span>{grnData.source_ref || ''}</span></div>
                 <div className="flex"><span className="w-32 font-bold">PO Date:</span> <span>{poData ? new Date(poData.created_at).toLocaleDateString('en-GB') : ''}</span></div>
               </div>
               <div className="space-y-1">
                 <div className="flex"><span className="w-40 font-bold">GRN No. / Date:</span> <span>{grnData.grn_no} / {new Date(grnData.created_at).toLocaleDateString('en-GB')}</span></div>
-                <div className="flex"><span className="w-40 font-bold">Delivery Note:</span> <span>{grnData.invoice_no || 'FILTER'}</span></div>
-                <div className="flex"><span className="w-40 font-bold">Bill of Lading:</span> <span>{grnData.bl_mushok_no || 'V1-0A0-055'}</span></div>
-                <div className="flex"><span className="w-40 font-bold">B/L Container:</span> <span>LC 121925010027</span></div>
+                <div className="flex"><span className="w-40 font-bold">Delivery Note:</span> <span>{grnData.invoice_no || ''}</span></div>
+                <div className="flex"><span className="w-40 font-bold">Bill of Lading:</span> <span>{grnData.bl_mushok_no || ''}</span></div>
+                <div className="flex"><span className="w-40 font-bold">B/L Container:</span> <span>{grnData.bl_container || ''}</span></div>
               </div>
             </div>
 

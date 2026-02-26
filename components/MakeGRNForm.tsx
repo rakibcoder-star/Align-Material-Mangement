@@ -38,7 +38,8 @@ const MakeGRNForm: React.FC<MakeGRNFormProps> = ({ selectedItems, onClose, onSub
     receiveDate: new Date().toISOString().split('T')[0],
     headerText: '',
     invoiceNo: '',
-    blMushokNo: ''
+    blMushokNo: '',
+    blContainer: ''
   });
 
   useEffect(() => {
@@ -139,6 +140,7 @@ const MakeGRNForm: React.FC<MakeGRNFormProps> = ({ selectedItems, onClose, onSub
         header_text: formData.headerText,
         invoice_no: formData.invoiceNo,
         bl_mushok_no: formData.blMushokNo,
+        bl_container: formData.blContainer,
         items: items
       }]);
       
@@ -286,6 +288,20 @@ const MakeGRNForm: React.FC<MakeGRNFormProps> = ({ selectedItems, onClose, onSub
                   className="w-full px-3 py-2 border border-gray-100 rounded text-[13px] outline-none focus:border-[#2d808e] pr-12 bg-gray-50/30 placeholder:text-gray-300" 
                 />
                 <span className="absolute right-2 top-2.5 text-[10px] text-gray-300 font-medium">{formData.blMushokNo.length} / 50</span>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[12px] font-medium text-gray-600">B/L Container</label>
+              <div className="relative">
+                <input 
+                  type="text" 
+                  placeholder="B/L Container Ref."
+                  maxLength={50}
+                  value={formData.blContainer}
+                  onChange={(e) => setFormData({...formData, blContainer: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-100 rounded text-[13px] outline-none focus:border-[#2d808e] pr-12 bg-gray-50/30 placeholder:text-gray-300" 
+                />
+                <span className="absolute right-2 top-2.5 text-[10px] text-gray-300 font-medium">{formData.blContainer.length} / 50</span>
               </div>
             </div>
           </div>
