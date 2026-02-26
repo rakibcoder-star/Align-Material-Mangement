@@ -591,10 +591,10 @@ const ProfileModal: React.FC<{ user: any, isOpen: boolean, onClose: () => void, 
 };
 
 const SearchResults: React.FC<{ 
-  results: {pr: any[], po: any[], mo: any[], items: any[]}, 
+  results: {pr: any[], po: any[], mo: any[], items: any[], grn: any[]}, 
   onNavigate: (type: string, obj: any) => void
 }> = ({ results, onNavigate }) => {
-  const hasResults = results.pr.length > 0 || results.po.length > 0 || results.mo.length > 0 || results.items.length > 0;
+  const hasResults = results.pr.length > 0 || results.po.length > 0 || results.mo.length > 0 || results.items.length > 0 || results.grn.length > 0;
   return (
     <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-[80vh] overflow-y-auto z-[2000] scrollbar-thin">
       {!hasResults ? (
@@ -660,6 +660,20 @@ const SearchResults: React.FC<{
               ))}
             </div>
           )}
+          {results.grn.length > 0 && (
+            <div className="space-y-1">
+              <h4 className="px-3 py-1 text-[9px] font-black text-[#2d808e] uppercase tracking-widest border-b border-gray-50">Goods Received Notes</h4>
+              {results.grn.map(g => (
+                <button key={g.id} onClick={() => onNavigate('grn', g)} className="w-full text-left px-4 py-2 hover:bg-[#2d808e]/5 rounded-lg flex items-center justify-between group transition-colors">
+                  <div className="flex flex-col">
+                    <span className="text-[13px] font-black text-gray-800">GRN-{g.grn_no}</span>
+                    <span className="text-[10px] font-bold text-gray-400">Ref: {g.source_ref} | Invoice: {g.invoice_no}</span>
+                  </div>
+                  <ArrowUpRight size={14} className="text-gray-200 group-hover:text-[#2d808e] transition-colors" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -688,7 +702,7 @@ const Dashboard: React.FC = () => {
   const [previewTnx, setPreviewTnx] = useState<any>(null);
   const [previewGrn, setPreviewGrn] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<{pr: any[], po: any[], mo: any[], items: any[]}>({ pr: [], po: [], mo: [], items: [] });
+  const [searchResults, setSearchResults] = useState<{pr: any[], po: any[], mo: any[], items: any[], grn: any[]}>({ pr: [], po: [], mo: [], items: [], grn: [] });
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
@@ -696,22 +710,24 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const handleSearch = async () => {
       if (!searchQuery || searchQuery.length < 2) {
-        setSearchResults({ pr: [], po: [], mo: [], items: [] });
+        setSearchResults({ pr: [], po: [], mo: [], items: [], grn: [] });
         return;
       }
       setIsSearching(true);
       try {
-        const [prRes, poRes, moRes, itemRes] = await Promise.all([
+        const [prRes, poRes, moRes, itemRes, grnRes] = await Promise.all([
           supabase.from('requisitions').select('*').or(`pr_no.ilike.%${searchQuery}%,reference.ilike.%${searchQuery}%`).limit(5),
           supabase.from('purchase_orders').select('*').or(`po_no.ilike.%${searchQuery}%,supplier_name.ilike.%${searchQuery}%`).limit(5),
           supabase.from('move_orders').select('*').or(`mo_no.ilike.%${searchQuery}%,reference.ilike.%${searchQuery}%`).limit(5),
-          supabase.from('items').select('*').or(`sku.ilike.%${searchQuery}%,name.ilike.%${searchQuery}%`).limit(5)
+          supabase.from('items').select('*').or(`sku.ilike.%${searchQuery}%,name.ilike.%${searchQuery}%`).limit(5),
+          supabase.from('grns').select('*').or(`grn_no.ilike.%${searchQuery}%,source_ref.ilike.%${searchQuery}%,invoice_no.ilike.%${searchQuery}%`).limit(5)
         ]);
         setSearchResults({
           pr: prRes.data || [],
           po: poRes.data || [],
           mo: moRes.data || [],
-          items: itemRes.data || []
+          items: itemRes.data || [],
+          grn: grnRes.data || []
         });
         setShowSearchResults(true);
       } catch (err) {
@@ -740,6 +756,7 @@ const Dashboard: React.FC = () => {
     if (type === 'pr') setPreviewPr(obj);
     if (type === 'po') setPreviewPo(obj);
     if (type === 'mo') setPreviewMo(obj);
+    if (type === 'grn') setPreviewGrn(obj.grn_no);
     if (type === 'item') navigate('/item-list');
   };
 

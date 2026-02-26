@@ -33,6 +33,9 @@ ALTER TABLE items ADD COLUMN IF NOT EXISTS issued_qty INTEGER DEFAULT 0;
 ALTER TABLE items ADD COLUMN IF NOT EXISTS received_qty INTEGER DEFAULT 0;
 ALTER TABLE items ADD COLUMN IF NOT EXISTS location TEXT;
 
+-- Ensure grns table has bl_container column if it already exists
+ALTER TABLE grns ADD COLUMN IF NOT EXISTS bl_container TEXT;
+
 -- 3. Standardize the update_item_stock function
 CREATE OR REPLACE FUNCTION public.update_item_stock(item_sku text, qty_change integer, is_receive boolean)
  RETURNS void
