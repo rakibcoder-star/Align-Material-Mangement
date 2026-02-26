@@ -208,7 +208,7 @@ const MakeGRNForm: React.FC<MakeGRNFormProps> = ({ selectedItems, onClose, onSub
             <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
               <X size={20} />
             </button>
-            <h2 className="text-[16px] font-bold text-gray-800">Make a Gate Receive Note(GRN)</h2>
+            <h2 className="text-[16px] font-bold text-gray-800">Make a Goods Receive Note(GRN)</h2>
           </div>
           <div className="flex items-center space-x-3">
             <button 
@@ -347,7 +347,7 @@ const MakeGRNForm: React.FC<MakeGRNFormProps> = ({ selectedItems, onClose, onSub
                         />
                         <datalist id={`locations-${item.id}`}>
                           {item.masterLocation && (
-                            <option value={item.masterLocation}>
+                            <option value={`${item.masterLocation} (${item.masterStock || 0})`}>
                               {item.masterLocation} (Master Stock: {item.masterStock || 0})
                             </option>
                           )}

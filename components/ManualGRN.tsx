@@ -376,7 +376,7 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
                         />
                         <datalist id={`locations-${item.id}`}>
                           {item.masterLocation && (
-                            <option value={item.masterLocation}>
+                            <option value={`${item.masterLocation} (${item.masterStock || 0})`}>
                               {item.masterLocation} (Master Stock: {item.masterStock || 0})
                             </option>
                           )}
