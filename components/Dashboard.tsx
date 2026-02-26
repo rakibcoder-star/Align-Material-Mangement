@@ -26,6 +26,7 @@ import CostCenter from './CostCenter';
 import LabelManagement from './LabelManagement';
 import TnxDetailsModal from './TnxDetailsModal';
 import LocationTransferModal from './LocationTransferModal';
+import GRNPreviewModal from './GRNPreviewModal';
 import { supabase } from '../lib/supabase';
 import { 
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -183,8 +184,9 @@ const DashboardOverview: React.FC<{
   onPreviewPr: (pr: any) => void; 
   onPreviewPo: (po: any) => void; 
   onPreviewMo: (mo: any) => void; 
-  onPreviewTnx: (tnx: any) => void 
-}> = ({ onCheckStock, onMoveOrder, onPreviewPr, onPreviewPo, onPreviewMo, onPreviewTnx, onLocTransfer }) => {
+  onPreviewTnx: (tnx: any) => void;
+  onPreviewGrn: (grnId: string) => void;
+}> = ({ onCheckStock, onMoveOrder, onPreviewPr, onPreviewPo, onPreviewMo, onPreviewTnx, onLocTransfer, onPreviewGrn }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [dateTime, setDateTime] = useState(new Date());
@@ -193,6 +195,7 @@ const DashboardOverview: React.FC<{
   const [pendingMos, setPendingMos] = useState<any[]>([]);
   const [latestPRs, setLatestPRs] = useState<any[]>([]);
   const [latestMOs, setLatestMOs] = useState<any[]>([]);
+  const [latestGRNs, setLatestGRNs] = useState<any[]>([]);
   const [stockTypes, setStockTypes] = useState<any[]>([]);
   const [dieselStock, setDieselStock] = useState(41);
   const [octaneStock, setOctaneStock] = useState(57);
@@ -220,6 +223,8 @@ const DashboardOverview: React.FC<{
       if (prLogs) setLatestPRs(prLogs);
       const { data: moLogs } = await supabase.from('move_orders').select('*').order('created_at', { ascending: false }).limit(5);
       if (moLogs) setLatestMOs(moLogs);
+      const { data: grnLogs } = await supabase.from('grns').select('*').order('created_at', { ascending: false }).limit(5);
+      if (grnLogs) setLatestGRNs(grnLogs);
 
       const { data: items } = await supabase.from('items').select('*');
       if (items) {
@@ -491,6 +496,44 @@ const DashboardOverview: React.FC<{
           </div>
         </div>
       </div>
+
+      <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm flex flex-col min-h-[400px] mt-6">
+        <h2 className="text-xl font-black text-[#2d808e] mb-6 tracking-tight">Latest GRN</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="text-[10px] font-black text-gray-400 border-b border-gray-50 uppercase tracking-wider">
+                <th className="px-2 py-4 text-center w-12 border-r border-gray-50">#</th>
+                <th className="px-4 py-4 text-center border-r border-gray-50">DATE</th>
+                <th className="px-4 py-4 text-center border-r border-gray-50">GRN NO</th>
+                <th className="px-4 py-4 border-r border-gray-50">SOURCE REF</th>
+                <th className="px-4 py-4 text-center border-r border-gray-50">QTY</th>
+                <th className="px-4 py-4 text-right">INVOICE NO</th>
+              </tr>
+            </thead>
+            <tbody className="text-[12px] font-medium">
+              {latestGRNs.map((grn, idx) => {
+                const totalQty = grn.items?.reduce((acc: number, i: any) => acc + (Number(i.grnQty || i.recQty) || 0), 0);
+                
+                return (
+                  <tr key={grn.id} className="hover:bg-gray-50/40 transition-colors">
+                    <td className="px-2 py-4 text-center text-gray-400 border-r border-gray-50">{idx + 1}</td>
+                    <td className="px-4 py-4 text-center border-r border-gray-50 whitespace-nowrap text-gray-600">{formatDateShort(grn.created_at)}</td>
+                    <td className="px-4 py-4 text-center border-r border-gray-50 font-bold text-[#2d808e]">
+                      <button onClick={() => onPreviewGrn(grn.grn_no)} className="hover:underline">
+                        {grn.grn_no}
+                      </button>
+                    </td>
+                    <td className="px-4 py-4 uppercase truncate max-w-[150px] font-bold text-gray-700 border-r border-gray-50">{grn.source_ref || 'N/A'}</td>
+                    <td className="px-4 py-4 text-center font-black text-gray-800 border-r border-gray-50">{totalQty}</td>
+                    <td className="px-4 py-4 text-right font-black text-gray-800">{grn.invoice_no || 'N/A'}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 };
@@ -642,6 +685,7 @@ const Dashboard: React.FC = () => {
   const [previewPo, setPreviewPo] = useState<any>(null);
   const [previewMo, setPreviewMo] = useState<any>(null);
   const [previewTnx, setPreviewTnx] = useState<any>(null);
+  const [previewGrn, setPreviewGrn] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{pr: any[], po: any[], mo: any[], items: any[]}>({ pr: [], po: [], mo: [], items: [] });
   const [isSearching, setIsSearching] = useState(false);
@@ -848,7 +892,7 @@ const Dashboard: React.FC = () => {
         <main className="flex-1 overflow-y-auto p-6 md:p-8 bg-[#f9fafb] pb-12 scrollbar-thin">
           <div className="max-w-[1600px] mx-auto w-full">
             <Routes>
-              <Route path="/overview" element={<DashboardOverview onCheckStock={() => setIsStockStatusModalOpen(true)} onMoveOrder={() => setIsMoveOrderModalOpen(true)} onLocTransfer={() => setIsLocationTransferModalOpen(true)} onPreviewPr={setPreviewPr} onPreviewPo={setPreviewPo} onPreviewMo={setPreviewMo} onPreviewTnx={setPreviewTnx} />} />
+              <Route path="/overview" element={<DashboardOverview onCheckStock={() => setIsStockStatusModalOpen(true)} onMoveOrder={() => setIsMoveOrderModalOpen(true)} onLocTransfer={() => setIsLocationTransferModalOpen(true)} onPreviewPr={setPreviewPr} onPreviewPo={setPreviewPo} onPreviewMo={setPreviewMo} onPreviewTnx={setPreviewTnx} onPreviewGrn={setPreviewGrn} />} />
               <Route path="/users" element={<UserManagement />} /><Route path="/requisition" element={<PurchaseRequisition />} /><Route path="/purchase-order" element={<PurchaseOrder />} /><Route path="/supplier" element={<Supplier />} /><Route path="/purchase-report" element={<PurchaseReport />} /><Route path="/inventory" element={<Inventory />} /><Route path="/receive" element={<Receive />} /><Route path="/issue" element={<Issue />} /><Route path="/tnx-report" element={<TnxReport />} /><Route path="/mo-report" element={<MOReport />} /><Route path="/item-list" element={<ItemList />} /><Route path="/item-uom" element={<ItemUOM />} /><Route path="/item-group" element={<ItemGroup />} /><Route path="/item-type" element={<ItemType />} /><Route path="/cost-center" element={<CostCenter />} /><Route path="/label" element={<LabelManagement />} /><Route path="/cycle-counting" element={<CycleCounting />} /><Route path="/" element={<Navigate to="/overview" replace />} />
             </Routes>
           </div>
@@ -861,6 +905,7 @@ const Dashboard: React.FC = () => {
       {previewPo && <POPreviewModal po={previewPo} onClose={() => setPreviewPo(null)} />}
       {previewMo && <MOApprovalModal mo={previewMo} isOpen={!!previewMo} onClose={() => setPreviewMo(null)} />}
       {previewTnx && <TnxDetailsModal tnx={previewTnx} onClose={() => setPreviewTnx(null)} />}
+      {previewGrn && <GRNPreviewModal grnId={previewGrn} onClose={() => setPreviewGrn(null)} />}
       <ProfileModal user={user} isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} logout={logout} />
       {isNotificationOpen && (
         <div className="absolute top-16 right-20 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-[1001] animate-in fade-in slide-in-from-top-2">

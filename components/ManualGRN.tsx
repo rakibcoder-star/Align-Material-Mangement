@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Home, Plus, MinusCircle, Loader2, Save } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import GRNSuccessModal from './GRNSuccessModal';
+import GRNPreviewModal from './GRNPreviewModal';
 
 interface GRNItem {
   id: string;
@@ -164,7 +164,7 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
   };
 
   if (showSuccess) {
-    return <GRNSuccessModal grnId={grnId} items={items} onClose={() => onSubmit({ ...formData, items })} />;
+    return <GRNPreviewModal grnId={grnId} onClose={() => onSubmit({ ...formData, items })} />;
   }
 
   return (

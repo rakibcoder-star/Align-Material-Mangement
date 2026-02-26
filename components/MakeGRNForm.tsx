@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Loader2, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import GRNSuccessModal from './GRNSuccessModal';
+import GRNPreviewModal from './GRNPreviewModal';
 
 interface GRNItem {
   id: string;
@@ -196,7 +196,7 @@ const MakeGRNForm: React.FC<MakeGRNFormProps> = ({ selectedItems, onClose, onSub
   };
 
   if (showSuccess) {
-    return <GRNSuccessModal grnId={grnId} items={items} onClose={onSubmit} />;
+    return <GRNPreviewModal grnId={grnId} onClose={onSubmit} />;
   }
 
   return (
