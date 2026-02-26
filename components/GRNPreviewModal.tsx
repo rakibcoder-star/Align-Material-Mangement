@@ -274,7 +274,7 @@ const GRNPreviewModal: React.FC<GRNPreviewModalProps> = ({ grnId, onClose }) => 
               <div className="space-y-1">
                 <div className="flex"><span className="w-32 font-bold">Supplier Number:</span> <span>{poData?.supplier_id || ''}</span></div>
                 <div className="flex"><span className="w-32 font-bold">Supplier Name:</span> <span>{poData?.supplier_name || ''}</span></div>
-                <div className="flex"><span className="w-32 font-bold">PO Number:</span> <span>{grnData.source_ref || ''}</span></div>
+                <div className="flex"><span className="w-32 font-bold">PO Number:</span> <span>{poData?.po_no || grnData.source_ref || ''}</span></div>
                 <div className="flex"><span className="w-32 font-bold">PO Date:</span> <span>{poData ? new Date(poData.created_at).toLocaleDateString('en-GB') : ''}</span></div>
               </div>
               <div className="space-y-1">
