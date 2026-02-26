@@ -82,11 +82,11 @@ const MakeGRNForm: React.FC<MakeGRNFormProps> = ({ selectedItems, onClose, onSub
       const skus = selectedItems.map(i => i.sku);
       const { data: masterItems } = await supabase
         .from('items')
-        .select('sku, location, stock')
+        .select('sku, location, on_hand_stock')
         .in('sku', skus);
 
       const masterMap = (masterItems || []).reduce((acc: any, item: any) => {
-        acc[item.sku] = { location: item.location, stock: item.stock };
+        acc[item.sku] = { location: item.location, stock: item.on_hand_stock };
         return acc;
       }, {});
 

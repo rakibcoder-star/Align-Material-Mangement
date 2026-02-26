@@ -91,7 +91,7 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
       .maybeSingle();
 
     if (data && !error) {
-      const locationDisplay = data.location ? `${data.location} (${data.stock || 0})` : '';
+      const locationDisplay = data.location ? `${data.location} (${data.on_hand_stock || 0})` : '';
       setItems(prev => prev.map(item => item.id === id ? {
         ...item,
         name: data.name,
@@ -99,7 +99,7 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
         unitPrice: String(data.last_price || '0.00'),
         location: locationDisplay,
         masterLocation: data.location,
-        masterStock: data.stock
+        masterStock: data.on_hand_stock
       } : item));
     }
     setLoadingSku(null);
