@@ -26,19 +26,26 @@ const Receive: React.FC = () => {
         data.forEach(po => {
           const poItems = po.items || [];
           poItems.forEach((item: any, idx: number) => {
-            flattened.push({
-              id: `${po.id}_${idx}`,
-              poId: po.id,
-              poNo: po.po_no,
-              sku: item.sku,
-              name: item.name,
-              uom: item.uom || 'SET',
-              poQty: item.poQty,
-              unitPrice: item.unitPrice || 0,
-              grnQty: 0, 
-              reqBy: item.reqBy || 'N/A',
-              supplier: po.supplier_name
-            });
+            const poQty = Number(item.poQty || 0);
+            const receivedQty = Number(item.receivedQty || 0);
+            
+            // Only show items that haven't been fully received
+            if (receivedQty < poQty) {
+              flattened.push({
+                id: `${po.id}_${idx}`,
+                poId: po.id,
+                poNo: po.po_no,
+                sku: item.sku,
+                name: item.name,
+                uom: item.uom || 'SET',
+                poQty: poQty,
+                alreadyReceived: receivedQty,
+                unitPrice: item.unitPrice || 0,
+                grnQty: 0, 
+                reqBy: item.reqBy || 'N/A',
+                supplier: po.supplier_name
+              });
+            }
           });
         });
         setPendingItems(flattened);

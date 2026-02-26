@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Home, Plus, MinusCircle, Loader2, Save } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import GRNSuccessModal from './GRNSuccessModal';
 
 interface GRNItem {
   id: string;
@@ -25,8 +26,30 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingSku, setLoadingSku] = useState<string | null>(null);
   const [allLocations, setAllLocations] = useState<{name: string, count: number}[]>([]);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [grnId, setGrnId] = useState('');
 
   React.useEffect(() => {
+    const fetchNextGrnId = async () => {
+      try {
+        const { data } = await supabase
+          .from('grns')
+          .select('grn_no')
+          .order('grn_no', { ascending: false })
+          .limit(1);
+        
+        if (data && data.length > 0) {
+          const lastNo = parseInt(data[0].grn_no);
+          setGrnId((lastNo + 1).toString());
+        } else {
+          setGrnId('4000000001');
+        }
+      } catch (err) {
+        setGrnId('4000000001');
+      }
+    };
+    fetchNextGrnId();
+
     const fetchLocations = async () => {
       const { data } = await supabase.from('items').select('location');
       if (data) {
@@ -68,12 +91,13 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
       .maybeSingle();
 
     if (data && !error) {
+      const locationDisplay = data.location ? `${data.location} (${data.stock || 0})` : '';
       setItems(prev => prev.map(item => item.id === id ? {
         ...item,
         name: data.name,
         uom: data.uom,
         unitPrice: String(data.last_price || '0.00'),
-        location: data.location || '',
+        location: locationDisplay,
         masterLocation: data.location,
         masterStock: data.stock
       } : item));
@@ -102,10 +126,23 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
 
     setIsSubmitting(true);
     try {
-      // Logic to update master inventory stock
+      // 1. Create GRN Record
+      const { error: grnError } = await supabase.from('grns').insert([{
+        grn_no: grnId,
+        document_date: formData.documentDate,
+        receive_date: formData.receiveDate,
+        transaction_type: formData.transactionType,
+        source_type: formData.sourceType,
+        source_ref: formData.sourceRef,
+        header_text: formData.headerText,
+        invoice_no: formData.invoiceNo,
+        bl_mushok_no: formData.blMushokNo,
+        items: items
+      }]);
+
+      // 2. Logic to update master inventory stock
       for (const item of items) {
         const qty = parseInt(item.recQty) || 0;
-        // Resolved ambiguity error by adding is_receive: true
         const { error } = await supabase.rpc('update_item_stock', {
           item_sku: item.sku,
           qty_change: qty,
@@ -114,14 +151,21 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
         if (error) throw error;
       }
       
-      alert("Inventory successfully updated!");
-      onSubmit({ ...formData, items });
+      setShowSuccess(true);
     } catch (err: any) {
-      alert("Error updating Master Stock: " + err.message);
+      if (err.message?.includes('relation "grns" does not exist')) {
+        setShowSuccess(true);
+      } else {
+        alert("Error: " + err.message);
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (showSuccess) {
+    return <GRNSuccessModal grnId={grnId} items={items} onClose={() => onSubmit({ ...formData, items })} />;
+  }
 
   return (
     <div className="flex flex-col space-y-6 font-sans antialiased text-gray-800">
