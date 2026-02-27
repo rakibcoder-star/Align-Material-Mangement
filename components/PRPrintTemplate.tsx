@@ -61,7 +61,7 @@ const PRPrintTemplate: React.FC<PRPrintTemplateProps> = ({
   };
 
   return (
-    <div className="bg-white text-black font-roboto p-6 md:p-10 max-w-[1200px] mx-auto overflow-hidden print:p-0 select-text text-[12px] leading-relaxed">
+    <div className="bg-white text-black font-roboto p-6 md:p-10 max-w-[1200px] mx-auto overflow-visible print:p-0 select-text text-[12px] leading-relaxed">
       {/* Header Section */}
       <div className="flex justify-between items-start mb-8 relative">
         <div className="w-24 h-24"></div> {/* Spacer for symmetry */}
