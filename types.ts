@@ -27,6 +27,7 @@ export interface User {
   email: string;
   fullName: string;
   username: string;
+  avatarUrl?: string;
   role: Role;
   status: 'Active' | 'Inactive';
   lastLogin: string;

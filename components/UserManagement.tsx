@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Role, User, ModulePermissions } from '../types';
-import { X, User as UserIcon, Plus, Check, ChevronDown, Save, Eye, EyeOff } from 'lucide-react';
+import { X, User as UserIcon, Plus, Check, ChevronDown, Save, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 interface PermissionCardProps {
   label: string;
@@ -84,6 +84,7 @@ const UserManagement: React.FC = () => {
   const { users, addUser, updateUser, deleteUser, user: currentUser } = useAuth();
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isAdding, setIsAdding] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   
   const [formData, setFormData] = useState<any>({});
@@ -94,6 +95,8 @@ const UserManagement: React.FC = () => {
   };
 
   const handleCommitChanges = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
     try {
       if (editingUser) {
         await updateUser(editingUser.id, formData);
@@ -108,7 +111,13 @@ const UserManagement: React.FC = () => {
       }
     } catch (err: any) {
       console.error("Failed to save changes:", err);
-      alert("Error saving user access changes: " + err.message);
+      if (err.message?.includes("rate limit")) {
+        alert("Email rate limit exceeded. Please wait a few minutes before adding more users, or disable 'Email Confirmation' in your Supabase Auth settings to bypass this.");
+      } else {
+        alert("Error saving user access changes: " + err.message);
+      }
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -365,6 +374,36 @@ const UserManagement: React.FC = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Avatar Section */}
+                <div className="w-full md:w-[280px] bg-[#fcfcfc] rounded-xl border border-gray-100 p-8 flex flex-col items-center justify-center space-y-4 shadow-inner">
+                  <div className="relative">
+                    <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center shadow-inner border border-white overflow-hidden">
+                      {formData.avatarUrl ? (
+                        <img src={formData.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <UserIcon size={44} className="text-gray-300" />
+                      )}
+                    </div>
+                    <button 
+                      onClick={() => {
+                        const url = window.prompt("Enter Avatar Image URL:");
+                        if (url !== null) setFormData({...formData, avatarUrl: url});
+                      }}
+                      className="absolute bottom-0.5 right-0.5 bg-[#2d808e] text-white p-1.5 rounded-full border-2 border-white shadow-md hover:scale-110 transition-transform"
+                    >
+                      <Plus size={14} strokeWidth={4} />
+                    </button>
+                  </div>
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Avatar URL</span>
+                  <input 
+                    type="text" 
+                    placeholder="https://example.com/image.jpg"
+                    value={formData.avatarUrl || ''}
+                    onChange={(e) => setFormData({...formData, avatarUrl: e.target.value})}
+                    className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded text-[10px] outline-none focus:border-[#2d808e]"
+                  />
+                </div>
               </div>
 
               {/* Granular Section */}
@@ -480,10 +519,22 @@ const UserManagement: React.FC = () => {
               </button>
               <button 
                 onClick={handleCommitChanges}
-                className="flex items-center px-12 py-3 bg-[#2d808e] text-white text-[13px] font-black rounded-lg shadow-lg hover:bg-[#256b78] transition-all uppercase tracking-widest active:scale-[0.98]"
+                disabled={isSaving}
+                className={`flex items-center px-12 py-3 text-[13px] font-black rounded-lg shadow-lg transition-all uppercase tracking-widest active:scale-[0.98] ${
+                  isSaving ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#2d808e] text-white hover:bg-[#256b78]'
+                }`}
               >
-                <Plus size={16} className="mr-3" strokeWidth={3} />
-                Commit Access Changes
+                {isSaving ? (
+                  <>
+                    <Loader2 size={16} className="mr-3 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Plus size={16} className="mr-3" strokeWidth={3} />
+                    Commit Access Changes
+                  </>
+                )}
               </button>
             </div>
           </div>

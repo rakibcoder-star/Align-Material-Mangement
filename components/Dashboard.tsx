@@ -324,6 +324,11 @@ const DashboardOverview: React.FC<{
     <div className="space-y-6 animate-slide-up pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
+          {user?.avatarUrl && (
+            <div className="w-12 h-12 rounded-xl border-2 border-[#2d808e]/20 overflow-hidden shadow-sm">
+              <img src={user.avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+            </div>
+          )}
           <div className="flex flex-col">
             <h1 className="text-2xl font-bold text-[#2d808e] leading-none">Welcome, {user?.fullName?.split(' ')[0] || 'Admin'}</h1>
             <p className="text-xs font-medium text-gray-400 mt-2 uppercase">{dateTime.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
@@ -600,8 +605,12 @@ const ProfileModal: React.FC<{ user: any, isOpen: boolean, onClose: () => void, 
               <div className="absolute -top-10 -left-10 w-40 h-40 border-8 border-white rounded-full"></div>
               <div className="absolute -bottom-10 -right-10 w-60 h-60 border-4 border-white rounded-full"></div>
            </div>
-           <div className="w-24 h-24 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center mb-6 shadow-xl backdrop-blur-sm z-10">
-             <UserIcon size={56} className="text-white" />
+           <div className="w-24 h-24 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center mb-6 shadow-xl backdrop-blur-sm z-10 overflow-hidden">
+             {user?.avatarUrl ? (
+               <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+             ) : (
+               <UserIcon size={56} className="text-white" />
+             )}
            </div>
            <h2 className="text-2xl font-black uppercase tracking-tighter mb-1 z-10">SYSTEM ADMINISTRATOR</h2>
            <p className="text-[10px] font-black text-white/60 uppercase tracking-widest z-10">NODE ID: {user?.id?.substring(0,8).toUpperCase() || 'N/A'}</p>
