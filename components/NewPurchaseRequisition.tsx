@@ -12,6 +12,7 @@ interface RequisitionItem {
   uom: string;
   unitPrice: string;
   onHand: string;
+  stockInHand: string;
   reqQty: string;
   remarks: string;
 }
@@ -109,6 +110,7 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
         uom: data.uom,
         unitPrice: String(data.last_price || '0'),
         onHand: String(data.on_hand_stock || '0'),
+        stockInHand: '',
         specification: data.type || '',
         brand: data.brand || '',
       } : item));
@@ -128,6 +130,7 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
         uom: '',
         unitPrice: '',
         onHand: '',
+        stockInHand: '',
         reqQty: '',
         remarks: '',
       },
@@ -203,9 +206,9 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
         <div className="w-10"></div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-8 space-y-8">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-8 space-y-4">
         {/* Top Header Fields */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="space-y-2">
             <label className="text-[11px] font-bold text-[#2d808e] uppercase tracking-wider">PR Number</label>
             <input 
@@ -263,9 +266,9 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
         </div>
 
         {/* Requester Details */}
-        <div className="space-y-3 pt-2">
+        <div className="space-y-1 pt-2">
           <h3 className="text-[11px] font-bold text-[#2d808e] uppercase tracking-wider">Requester Details</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
             <div className="space-y-1">
               <label className="text-[10px] text-gray-400 font-bold">Name</label>
               <input 
@@ -324,7 +327,8 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
                   <th className="pb-3 px-1 w-[120px]">Brand</th>
                   <th className="pb-3 px-1 w-[100px]">UOM*</th>
                   <th className="pb-3 px-1 w-[100px] text-center">Unit Price</th>
-                  <th className="pb-3 px-1 w-[100px] text-center">On-Hand Qty</th>
+                  <th className="pb-3 px-1 w-[100px] text-center">Stock in Store [B]</th>
+                  <th className="pb-3 px-1 w-[100px] text-center">Stock in Hand [A]</th>
                   <th className="pb-3 px-1 w-[100px] text-center">Req. Qty*</th>
                   <th className="pb-3 px-1 w-[160px]">Remarks</th>
                   <th className="pb-3 w-8"></th>
@@ -394,10 +398,19 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
                     <td className="py-1 px-1">
                       <input 
                         type="text" 
-                        placeholder="On Hand"
+                        placeholder="Stock Store"
                         value={item.onHand}
                         readOnly
                         className="w-full px-3 py-2 bg-gray-50 border border-cyan-700/30 rounded text-[11px] text-center text-gray-400 outline-none"
+                      />
+                    </td>
+                    <td className="py-1 px-1">
+                      <input 
+                        type="text" 
+                        placeholder="Stock Hand"
+                        value={item.stockInHand}
+                        onChange={(e) => updateItem(item.id, 'stockInHand', e.target.value)}
+                        className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] text-center focus:border-[#2d808e] outline-none placeholder-gray-200"
                       />
                     </td>
                     <td className="py-1 px-1">

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Trash2, ChevronDown, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 interface SelectedItem {
   id: string;
@@ -27,6 +28,7 @@ interface CreatePODetailsProps {
 
 const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, onCancel, onSubmit }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [items, setItems] = useState<SelectedItem[]>(
     initialItems.map(item => ({
       ...item,
@@ -114,6 +116,8 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
       supplier_contact: selectedSupplier.phone_office || 'N/A',
       currency: currency,
       total_value: totalValue,
+      requested_by: user?.fullName || 'N/A',
+      requested_contact: user?.email || 'N/A',
       status: 'Pending', // Setting to 'Pending' as requested
       items: items,
       terms: {
@@ -170,67 +174,67 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
         </div>
       </div>
 
-      <div className="p-6 max-w-[1600px] mx-auto space-y-6">
+      <div className="p-4 max-w-[1600px] mx-auto space-y-4">
         <div className="bg-white rounded border border-gray-100 overflow-hidden shadow-sm">
           <table className="w-full text-left border-collapse">
             <thead className="bg-[#fcfcfc]">
-              <tr className="font-bold text-gray-800 border-b border-gray-100 uppercase text-[11px]">
-                <th className="px-4 py-4 text-center w-32 border-r border-gray-50">SKU</th>
-                <th className="px-4 py-4 border-r border-gray-50">name</th>
-                <th className="px-4 py-4 border-r border-gray-50">Specification</th>
-                <th className="px-4 py-4 text-center border-r border-gray-50">Req.Qty</th>
-                <th className="px-4 py-4 text-center border-r border-gray-50">PO Pending</th>
-                <th className="px-4 py-4 text-center border-r border-gray-50">PO Qty</th>
-                <th className="px-4 py-4 text-center border-r border-gray-50 text-[#2d808e]">PO Price</th>
-                <th className="px-4 py-4 text-center border-r border-gray-50">% of VAT</th>
-                <th className="px-4 py-4 border-r border-gray-50">PO Remarks</th>
-                <th className="px-4 py-4 text-center">Action</th>
+              <tr className="font-bold text-gray-800 border-b border-gray-100 uppercase text-[10px]">
+                <th className="px-3 py-3 text-center w-32 border-r border-gray-50">SKU</th>
+                <th className="px-3 py-3 border-r border-gray-50">name</th>
+                <th className="px-3 py-3 border-r border-gray-50">Specification</th>
+                <th className="px-3 py-3 text-center border-r border-gray-50">Req.Qty</th>
+                <th className="px-3 py-3 text-center border-r border-gray-50">PO Pending</th>
+                <th className="px-3 py-3 text-center border-r border-gray-50">PO Qty</th>
+                <th className="px-3 py-3 text-center border-r border-gray-50 text-[#2d808e]">PO Price</th>
+                <th className="px-3 py-3 text-center border-r border-gray-50">% of VAT</th>
+                <th className="px-3 py-3 border-r border-gray-50">PO Remarks</th>
+                <th className="px-3 py-3 text-center">Action</th>
               </tr>
             </thead>
-            <tbody className="text-[11px]">
+            <tbody className="text-[10px]">
               {items.map((item) => (
                 <tr key={item.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
-                  <td className="px-4 py-3 text-center border-r border-gray-50">{item.sku}</td>
-                  <td className="px-4 py-3 font-bold uppercase border-r border-gray-50 leading-tight">{item.name}</td>
-                  <td className="px-4 py-3 border-r border-gray-50 text-[10px] text-gray-500 leading-tight">{item.specification}</td>
-                  <td className="px-4 py-3 text-center border-r border-gray-50">{item.reqQty}</td>
-                  <td className="px-4 py-3 text-center border-r border-gray-50">{item.poPending}</td>
-                  <td className="px-4 py-3 text-center border-r border-gray-50">
+                  <td className="px-3 py-2 text-center border-r border-gray-50">{item.sku}</td>
+                  <td className="px-3 py-2 font-bold uppercase border-r border-gray-50 leading-tight">{item.name}</td>
+                  <td className="px-3 py-2 border-r border-gray-50 text-[9px] text-gray-500 leading-tight">{item.specification}</td>
+                  <td className="px-3 py-2 text-center border-r border-gray-50">{item.reqQty}</td>
+                  <td className="px-3 py-2 text-center border-r border-gray-50">{item.poPending}</td>
+                  <td className="px-3 py-2 text-center border-r border-gray-50">
                     <input 
                       type="number" 
                       value={item.poQty}
                       onChange={(e) => updateItem(item.id, 'poQty', Number(e.target.value))}
-                      className="w-16 px-2 py-1 text-center border border-gray-200 rounded outline-none font-bold"
+                      className="w-14 px-1 py-1 text-center border border-gray-200 rounded outline-none font-bold"
                     />
                   </td>
-                  <td className="px-4 py-3 text-center border-r border-gray-50">
+                  <td className="px-3 py-2 text-center border-r border-gray-50">
                     <input 
                       type="number" 
                       value={item.poPrice}
                       onChange={(e) => updateItem(item.id, 'poPrice', Number(e.target.value))}
-                      className="w-24 px-2 py-1 text-center border border-gray-200 rounded outline-none font-bold"
+                      className="w-20 px-1 py-1 text-center border border-gray-200 rounded outline-none font-bold"
                     />
                   </td>
-                  <td className="px-4 py-3 text-center border-r border-gray-50">
+                  <td className="px-3 py-2 text-center border-r border-gray-50">
                     <input 
                       type="text" 
                       value={item.vatPercent}
                       placeholder=""
                       onChange={(e) => updateItem(item.id, 'vatPercent', e.target.value)}
-                      className="w-12 px-2 py-1 text-center border border-gray-200 rounded outline-none"
+                      className="w-10 px-1 py-1 text-center border border-gray-200 rounded outline-none"
                     />
                   </td>
-                  <td className="px-4 py-3 border-r border-gray-50">
+                  <td className="px-3 py-2 border-r border-gray-50">
                     <input 
                       type="text" 
                       value={item.remarks}
                       onChange={(e) => updateItem(item.id, 'remarks', e.target.value)}
-                      className="w-full px-2 py-1 border border-gray-200 rounded outline-none"
+                      className="w-full px-1 py-1 border border-gray-200 rounded outline-none"
                     />
                   </td>
-                  <td className="px-4 py-3 text-center">
+                  <td className="px-3 py-2 text-center">
                     <button onClick={() => removeItem(item.id)} className="text-pink-400 hover:text-pink-600">
-                      <Trash2 size={16} />
+                      <Trash2 size={14} />
                     </button>
                   </td>
                 </tr>
@@ -239,10 +243,10 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
           </table>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 pt-4">
-          <div className="space-y-6">
-            <div className="space-y-1.5">
-              <label className="text-[12px] font-medium text-gray-500">Supplier</label>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-gray-500">Supplier</label>
               <div className="relative">
                 <select 
                   className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-xs text-gray-400 outline-none appearance-none"
@@ -259,32 +263,32 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
                 <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
               </div>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-[12px] font-medium text-gray-500">Delivery Location</label>
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-gray-500">Delivery Location</label>
               <textarea 
                 value={deliveryLocation}
                 onChange={(e) => setDeliveryLocation(e.target.value)}
-                className="w-full h-24 px-3 py-2 border border-gray-200 rounded text-[11px] outline-none resize-none"
+                className="w-full h-20 px-3 py-2 border border-gray-200 rounded text-[10px] outline-none resize-none"
               />
             </div>
-            <div className="space-y-1.5">
-              <label className="text-[12px] font-medium text-gray-500">Payment Terms</label>
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-gray-500">Payment Terms</label>
               <textarea 
                 value={paymentTerms}
                 onChange={(e) => setPaymentTerms(e.target.value)}
-                className="w-full h-24 px-3 py-2 border border-gray-200 rounded text-[11px] outline-none resize-none"
+                className="w-full h-20 px-3 py-2 border border-gray-200 rounded text-[10px] outline-none resize-none"
               />
             </div>
           </div>
 
-          <div className="space-y-6">
-            <div className="space-y-1.5">
-              <label className="text-[12px] font-medium text-gray-500">PO Type</label>
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-gray-500">PO Type</label>
               <div className="relative">
                 <select 
                   value={poType}
                   onChange={(e) => setPoType(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-xs text-gray-400 outline-none appearance-none"
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-[10px] text-gray-400 outline-none appearance-none"
                 >
                   <option value="Local">Local</option>
                   <option value="Import">Import</option>
@@ -292,72 +296,72 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
                 <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
               </div>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-[12px] font-medium text-gray-500">Bill Submission</label>
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-gray-500">Bill Submission</label>
               <textarea 
                 value={billSubmission}
                 onChange={(e) => setBillSubmission(e.target.value)}
-                className="w-full h-24 px-3 py-2 border border-gray-200 rounded text-[11px] outline-none resize-none"
+                className="w-full h-20 px-3 py-2 border border-gray-200 rounded text-[10px] outline-none resize-none"
               />
             </div>
-            <div className="space-y-1.5">
-              <label className="text-[12px] font-medium text-gray-500">Supplier Payment Methode</label>
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-gray-500">Supplier Payment Methode</label>
               <textarea 
                 placeholder="Payment methode details..."
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value)}
-                className="w-full h-24 px-3 py-2 border border-gray-200 rounded text-[11px] outline-none resize-none"
+                className="w-full h-20 px-3 py-2 border border-gray-200 rounded text-[10px] outline-none resize-none"
               />
             </div>
           </div>
 
-          <div className="space-y-6">
-            <div className="space-y-1.5">
-              <label className="text-[12px] font-medium text-gray-500">PO Note</label>
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-gray-500">PO Note</label>
               <textarea 
                 placeholder="Please enter PO Note..."
                 value={poNote}
                 onChange={(e) => setPoNote(e.target.value)}
-                className="w-full h-24 px-3 py-2 border border-gray-200 rounded text-[11px] outline-none resize-none"
+                className="w-full h-20 px-3 py-2 border border-gray-200 rounded text-[10px] outline-none resize-none"
               />
             </div>
-            <div className="space-y-1.5">
-              <label className="text-[12px] font-medium text-gray-500">Documents Requied For Billing</label>
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-gray-500">Documents Requied For Billing</label>
               <textarea 
                 value={documentsRequired}
                 onChange={(e) => setDocumentsRequired(e.target.value)}
-                className="w-full h-24 px-3 py-2 border border-gray-200 rounded text-[11px] outline-none resize-none"
+                className="w-full h-20 px-3 py-2 border border-gray-200 rounded text-[10px] outline-none resize-none"
               />
             </div>
-            <div className="space-y-1.5">
-              <label className="text-[12px] font-medium text-gray-500">PO Currency</label>
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-gray-500">PO Currency</label>
               <input 
                 type="text"
                 placeholder="BDT/USD/..."
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded text-xs outline-none"
+                className="w-full px-3 py-2 border border-gray-200 rounded text-[10px] outline-none"
               />
             </div>
           </div>
 
-          <div className="space-y-6">
-            <div className="space-y-1.5">
-              <label className="text-[12px] font-medium text-gray-500">Delivery Terms</label>
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-gray-500">Delivery Terms</label>
               <textarea 
                 value={deliveryTerms}
                 onChange={(e) => setDeliveryTerms(e.target.value)}
-                className="w-full h-[180px] px-3 py-2 border border-gray-200 rounded text-[11px] outline-none resize-none"
+                className="w-full h-[150px] px-3 py-2 border border-gray-200 rounded text-[10px] outline-none resize-none"
               />
             </div>
-            <div className="space-y-1.5">
-              <label className="text-[12px] font-medium text-gray-500">Delivery Target</label>
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-gray-500">Delivery Target</label>
               <div className="relative">
                 <input 
                   type="date"
                   value={deliveryTarget}
                   onChange={(e) => setDeliveryTarget(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded text-xs outline-none text-gray-400"
+                  className="w-full px-3 py-2 border border-gray-200 rounded text-[10px] outline-none text-gray-400"
                 />
               </div>
             </div>

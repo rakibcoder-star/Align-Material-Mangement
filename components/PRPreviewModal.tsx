@@ -28,8 +28,8 @@ const PRPreviewModal: React.FC<PRPreviewModalProps> = ({ pr: initialPr, onClose 
         name: item.name || 'N/A',
         last6m: item.last6m || 0,
         consumptionRate: item.consumptionRate || '',
-        stockHand: item.onHand || 0,
-        stockStore: 0,
+        stockHand: item.stockInHand || 0,
+        stockStore: item.onHand || 0,
         orderedQty: 0,
         purpose: '',
         approvedDesign: ''

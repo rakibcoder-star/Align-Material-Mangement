@@ -1,5 +1,6 @@
 import React from 'react';
 import { Plus, X, Trash2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface PRPrintTemplateProps {
   pr: any;
@@ -24,6 +25,7 @@ const PRPrintTemplate: React.FC<PRPrintTemplateProps> = ({
   onRemoveItem,
   onItemChange
 }) => {
+  const { hasGranularPermission } = useAuth();
   const items = pr.items || [];
   
   const totalQty = items.reduce((acc: number, i: any) => acc + (Number(i.reqQty) || 0), 0);
@@ -263,7 +265,7 @@ const PRPrintTemplate: React.FC<PRPrintTemplateProps> = ({
             placeholder="Type your notes here..."
           />
         </div>
-        <div className="flex flex-wrap gap-2 justify-center py-6">
+        <div className="flex flex-wrap gap-2 justify-center py-2">
              {images.map((img, idx) => (
                <div key={idx} className="relative group w-24 h-24 border border-gray-100 rounded-lg overflow-hidden shadow-sm">
                   <img src={img} alt="item" className="w-full h-full object-cover" />
@@ -286,23 +288,27 @@ const PRPrintTemplate: React.FC<PRPrintTemplateProps> = ({
       {/* Signatures */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-12 mb-10 pt-4">
         {[
-          { label: 'Prepared By', field: 'req_by_name' },
-          { label: 'Checked By', field: 'checked_by' },
-          { label: 'Confirmed By', field: 'confirmed_by' },
-          { label: 'Approved By', field: 'approved_by' },
-        ].map((sig, i) => (
-          <div key={i} className="text-center">
-            <div className="border-t border-black mb-1.5 pt-1.5">
-              <p className="font-black text-[10px] uppercase tracking-tighter">{sig.label}</p>
+          { label: 'Prepared By', field: 'req_by_name', perm: 'prepared' },
+          { label: 'Checked By', field: 'checked_by', perm: 'checked' },
+          { label: 'Confirmed By', field: 'confirmed_by', perm: 'confirmed' },
+          { label: 'Approved By', field: 'approved_by', perm: 'approved' },
+        ].map((sig, i) => {
+          const canEdit = hasGranularPermission('requisition', sig.perm);
+          return (
+            <div key={i} className="text-center">
+              <div className="border-t border-black mb-1.5 pt-1.5">
+                <p className="font-black text-[10px] uppercase tracking-tighter">{sig.label}</p>
+              </div>
+              <input 
+                className={`w-full text-[9px] font-bold text-gray-600 uppercase text-center bg-transparent border-none outline-none focus:bg-yellow-50 ${!canEdit ? 'cursor-not-allowed' : ''}`}
+                value={pr[sig.field] || (sig.field === 'req_by_name' ? pr.req_by_name : '')}
+                onChange={(e) => canEdit && onPrChange(sig.field, e.target.value)}
+                readOnly={!canEdit}
+                placeholder={canEdit ? "Type Name..." : ""}
+              />
             </div>
-            <input 
-              className="w-full text-[9px] font-bold text-gray-600 uppercase text-center bg-transparent border-none outline-none focus:bg-yellow-50"
-              value={pr[sig.field] || (sig.field === 'req_by_name' ? pr.req_by_name : '')}
-              onChange={(e) => onPrChange(sig.field, e.target.value)}
-              placeholder="Name..."
-            />
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Justification Table - Matching Red Marked Area 2 */}
@@ -353,9 +359,9 @@ const PRPrintTemplate: React.FC<PRPrintTemplateProps> = ({
                   <td className="border border-black py-2 px-1">
                     <input 
                       type="number" 
-                      className="w-full bg-transparent text-center focus:bg-yellow-50 outline-none border-none p-0" 
+                      className="w-full bg-transparent text-center focus:bg-yellow-50 outline-none border-none p-0 cursor-not-allowed" 
                       value={row.stockStore} 
-                      onChange={(e) => onJustificationChange(idx, 'stockStore', e.target.value)}
+                      readOnly
                     />
                   </td>
                   <td className="border border-black py-2 px-1">

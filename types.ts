@@ -15,6 +15,11 @@ export interface ModulePermissions {
   view: boolean;
   edit: boolean;
   dl: boolean;
+  prepared?: boolean;
+  checked?: boolean;
+  confirmed?: boolean;
+  approved?: boolean;
+  accepted?: boolean;
 }
 
 export interface User {

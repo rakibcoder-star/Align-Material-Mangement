@@ -11,31 +11,73 @@ interface PermissionCardProps {
   onChange: (moduleId: string, field: keyof ModulePermissions, value: boolean) => void;
 }
 
-const PermissionCard: React.FC<PermissionCardProps> = ({ label, moduleId, permissions, onChange }) => (
-  <div className="bg-white border border-cyan-100/50 rounded-lg p-3.5 flex flex-col space-y-3.5 shadow-sm">
-    <span className="text-[10px] font-black text-gray-500 uppercase tracking-tighter">{label}</span>
-    <div className="flex items-center space-x-5">
-      {(['view', 'edit', 'dl'] as const).map((field) => (
-        <label key={field} className="flex items-center space-x-1.5 cursor-pointer group">
-          <div 
-            className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${
-              permissions[field] ? 'bg-[#2d808e] border-[#2d808e]' : 'border-gray-300 group-hover:border-[#2d808e]'
-            }`}
-          >
-            {permissions[field] && <Check size={10} className="text-white" strokeWidth={4} />}
-            <input 
-              type="checkbox" 
-              className="hidden" 
-              checked={permissions[field]} 
-              onChange={(e) => onChange(moduleId, field, e.target.checked)} 
-            />
-          </div>
-          <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{field}</span>
-        </label>
-      ))}
+const PermissionCard: React.FC<PermissionCardProps> = ({ label, moduleId, permissions, onChange }) => {
+  const standardFields = ['view', 'edit', 'dl'] as const;
+  const requisitionFields = ['prepared', 'checked', 'confirmed', 'approved'] as const;
+  const poFields = ['prepared', 'checked', 'confirmed', 'approved', 'accepted'] as const;
+  
+  return (
+    <div className="bg-white border border-cyan-100/50 rounded-lg p-3.5 flex flex-col space-y-3.5 shadow-sm">
+      <span className="text-[10px] font-black text-gray-500 uppercase tracking-tighter">{label}</span>
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+        {standardFields.map((field) => (
+          <label key={field} className="flex items-center space-x-1.5 cursor-pointer group">
+            <div 
+              className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${
+                permissions[field] ? 'bg-[#2d808e] border-[#2d808e]' : 'border-gray-300 group-hover:border-[#2d808e]'
+              }`}
+            >
+              {permissions[field] && <Check size={10} className="text-white" strokeWidth={4} />}
+              <input 
+                type="checkbox" 
+                className="hidden" 
+                checked={permissions[field]} 
+                onChange={(e) => onChange(moduleId, field, e.target.checked)} 
+              />
+            </div>
+            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{field}</span>
+          </label>
+        ))}
+        {moduleId === 'requisition' && requisitionFields.map((field) => (
+          <label key={field} className="flex items-center space-x-1.5 cursor-pointer group">
+            <div 
+              className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${
+                permissions[field] ? 'bg-[#2d808e] border-[#2d808e]' : 'border-gray-300 group-hover:border-[#2d808e]'
+              }`}
+            >
+              {permissions[field] && <Check size={10} className="text-white" strokeWidth={4} />}
+              <input 
+                type="checkbox" 
+                className="hidden" 
+                checked={permissions[field] || false} 
+                onChange={(e) => onChange(moduleId, field, e.target.checked)} 
+              />
+            </div>
+            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{field}</span>
+          </label>
+        ))}
+        {moduleId === 'purchase_order' && poFields.map((field) => (
+          <label key={field} className="flex items-center space-x-1.5 cursor-pointer group">
+            <div 
+              className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${
+                permissions[field] ? 'bg-[#2d808e] border-[#2d808e]' : 'border-gray-300 group-hover:border-[#2d808e]'
+              }`}
+            >
+              {permissions[field] && <Check size={10} className="text-white" strokeWidth={4} />}
+              <input 
+                type="checkbox" 
+                className="hidden" 
+                checked={permissions[field] || false} 
+                onChange={(e) => onChange(moduleId, field, e.target.checked)} 
+              />
+            </div>
+            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{field}</span>
+          </label>
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const UserManagement: React.FC = () => {
   const { users, addUser, updateUser, deleteUser, user: currentUser } = useAuth();
@@ -111,8 +153,8 @@ const UserManagement: React.FC = () => {
               status: 'Active',
               password: '',
               granularPermissions: {
-                requisition: { view: true, edit: false, dl: false },
-                purchase_order: { view: true, edit: false, dl: false },
+                requisition: { view: true, edit: false, dl: false, prepared: true, checked: false, confirmed: false, approved: false },
+                purchase_order: { view: true, edit: false, dl: false, prepared: true, checked: false, confirmed: false, approved: false, accepted: false },
                 supplier: { view: true, edit: false, dl: false },
                 purchase_report: { view: true, edit: false, dl: false },
                 inventory: { view: true, edit: false, dl: false },

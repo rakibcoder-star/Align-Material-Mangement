@@ -1,11 +1,14 @@
 
 import React from 'react';
+import { useAuth } from '../context/AuthContext';
 
 interface POPrintTemplateProps {
   po: any;
+  onPoChange?: (field: string, value: any) => void;
 }
 
-const POPrintTemplate: React.FC<POPrintTemplateProps> = ({ po }) => {
+const POPrintTemplate: React.FC<POPrintTemplateProps> = ({ po, onPoChange }) => {
+  const { hasGranularPermission } = useAuth();
   const items = po.items || [];
   const terms = po.terms || {};
 
@@ -19,55 +22,55 @@ const POPrintTemplate: React.FC<POPrintTemplateProps> = ({ po }) => {
   const displayStatus = (po.status === 'Approved' || po.status === 'Open') ? 'Approved' : 'Pending';
 
   return (
-    <div className="p-10 bg-white text-black font-sans min-h-screen text-[10px]">
+    <div className="p-8 bg-white text-black font-sans min-h-screen text-[10px]">
       {/* Header Section */}
-      <div className="flex justify-between items-start mb-6">
+      <div className="flex justify-between items-start mb-4">
         <div className="flex-1 text-center">
-          <h1 className="text-2xl font-bold text-gray-900 leading-tight">Fair Technology Limited</h1>
-          <p className="text-[10px] text-gray-600">Plot- 12/A & 12/B, Block-C, Kaliakoir Hi-Tech Park</p>
-          <p className="text-[10px] text-gray-600">Gazipur, Bangladesh-1750. +#880 1787-670 786</p>
-          <div className="mt-4">
-            <h2 className="text-sm font-bold uppercase border-b-2 border-black inline-block px-4">PURCHASE ORDER (PO)</h2>
+          <h1 className="text-xl font-bold text-gray-900 leading-tight">Fair Technology Limited</h1>
+          <p className="text-[9px] text-gray-600">Plot- 12/A & 12/B, Block-C, Kaliakoir Hi-Tech Park</p>
+          <p className="text-[9px] text-gray-600">Gazipur, Bangladesh-1750. +#880 1787-670 786</p>
+          <div className="mt-2">
+            <h2 className="text-xs font-bold uppercase border-b-2 border-black inline-block px-4">PURCHASE ORDER (PO)</h2>
           </div>
         </div>
       </div>
 
       {/* Meta Grid Section - Strictly dynamic based on PO data */}
-      <div className="grid grid-cols-3 gap-8 mb-6 border-t border-gray-100 pt-6">
+      <div className="grid grid-cols-3 gap-4 mb-4 border-t border-gray-100 pt-4">
         {/* Left Column: Supplier Details */}
-        <div className="space-y-1.5">
-          <p className="flex"><span className="font-bold w-28 shrink-0">PO No.:</span> <span className="font-black">{po.po_no}</span></p>
-          <p className="flex"><span className="font-bold w-28 shrink-0">Supplier Name:</span> <span className="uppercase">{po.supplier_name}</span></p>
-          <p className="flex text-[9px]"><span className="font-bold w-28 shrink-0">Supplier Address:</span> <span>{po.supplier_address || 'N/A'}</span></p>
-          <p className="flex"><span className="font-bold w-28 shrink-0">VAT No.:</span> {po.supplier_vat || 'N/A'}</p>
-          <p className="flex"><span className="font-bold w-28 shrink-0">TIN No.:</span> {po.supplier_tin || 'N/A'}</p>
-          <p className="flex"><span className="font-bold w-28 shrink-0">Email:</span> {po.supplier_email || 'N/A'}</p>
-          <p className="flex"><span className="font-bold w-28 shrink-0">Contact:</span> {po.supplier_contact || 'N/A'}</p>
+        <div className="space-y-1">
+          <p className="flex"><span className="font-bold w-24 shrink-0">PO No.:</span> <span className="font-black">{po.po_no}</span></p>
+          <p className="flex"><span className="font-bold w-24 shrink-0">Supplier Name:</span> <span className="uppercase">{po.supplier_name}</span></p>
+          <p className="flex text-[8px]"><span className="font-bold w-24 shrink-0">Supplier Address:</span> <span>{po.supplier_address || 'N/A'}</span></p>
+          <p className="flex"><span className="font-bold w-24 shrink-0">VAT No.:</span> {po.supplier_vat || 'N/A'}</p>
+          <p className="flex"><span className="font-bold w-24 shrink-0">TIN No.:</span> {po.supplier_tin || 'N/A'}</p>
+          <p className="flex"><span className="font-bold w-24 shrink-0">Email:</span> {po.supplier_email || 'N/A'}</p>
+          <p className="flex"><span className="font-bold w-24 shrink-0">Contact:</span> {po.supplier_contact || 'N/A'}</p>
         </div>
         
         {/* Middle Column: Buyer Details */}
-        <div className="space-y-1.5">
-          <p className="flex"><span className="font-bold w-28 shrink-0">Buyer Name:</span> Fair Technology Limited</p>
-          <p className="flex text-[9px]"><span className="font-bold w-28 shrink-0">Buyer Address:</span> 76/B, Khawaja Palace, Road-11 Banani, Dhaka, Bangladesh, 1213.</p>
-          <p className="flex"><span className="font-bold w-28 shrink-0">Buyer BIN Name:</span> XXXXX</p>
-          <p className="flex"><span className="font-bold w-28 shrink-0">Buyer BIN No.:</span> XXXX</p>
-          <p className="flex"><span className="font-bold w-28 shrink-0">Buyer BIN Address:</span> XXXX</p>
+        <div className="space-y-1">
+          <p className="flex"><span className="font-bold w-24 shrink-0">Buyer Name:</span> Fair Technology Limited</p>
+          <p className="flex text-[8px]"><span className="font-bold w-24 shrink-0">Buyer Address:</span> 76/B, Khawaja Palace, Road-11 Banani, Dhaka, Bangladesh, 1213.</p>
+          <p className="flex"><span className="font-bold w-24 shrink-0">Buyer BIN Name:</span> XXXXX</p>
+          <p className="flex"><span className="font-bold w-24 shrink-0">Buyer BIN No.:</span> XXXX</p>
+          <p className="flex"><span className="font-bold w-24 shrink-0">Buyer BIN Address:</span> XXXX</p>
         </div>
 
         {/* Right Column: Metadata */}
-        <div className="space-y-1.5">
-          <p className="flex"><span className="font-bold w-28 shrink-0">Issue Date:</span> {new Date(po.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
-          <p className="flex"><span className="font-bold w-28 shrink-0">Delivery Date:</span> {terms.deliveryTarget || 'N/A'}</p>
-          <p className="flex">
-            <span className="font-bold w-28 shrink-0">PO Status:</span> 
+        <div className="space-y-1">
+          <p className="flex"><span className="font-bold w-24 shrink-0">Issue Date:</span> {new Date(po.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+          <p className="flex"><span className="font-bold w-24 shrink-0">Delivery Date:</span> {terms.deliveryTarget || 'N/A'}</p>
+          <p className={`flex ${po.status === 'Approved' ? 'hidden' : ''}`}>
+            <span className="font-bold w-24 shrink-0">PO Status:</span> 
             <span className={`font-black uppercase ${displayStatus === 'Approved' ? 'text-green-600' : 'text-orange-600'}`}>
               {displayStatus}
             </span>
           </p>
-          <p className="flex"><span className="font-bold w-28 shrink-0">Currency:</span> {po.currency || 'BDT'}</p>
-          <p className="flex"><span className="font-bold w-28 shrink-0">Requested by:</span> {po.requested_by || 'Sohel Rana'}</p>
-          <p className="flex"><span className="font-bold w-28 shrink-0">Contact No.:</span> {po.requested_contact || '+880 1773 402954'}</p>
-          <p className="flex"><span className="font-bold w-28 shrink-0">PO Note:</span> {po.note || 'N/A'}</p>
+          <p className="flex"><span className="font-bold w-24 shrink-0">Currency:</span> {po.currency || 'BDT'}</p>
+          <p className="flex"><span className="font-bold w-24 shrink-0">Requested by:</span> {po.requested_by || 'N/A'}</p>
+          <p className="flex"><span className="font-bold w-24 shrink-0">Contact No.:</span> {po.requested_contact || 'N/A'}</p>
+          <p className="flex"><span className="font-bold w-24 shrink-0">PO Note:</span> {po.note || 'N/A'}</p>
         </div>
       </div>
 
@@ -147,20 +150,29 @@ const POPrintTemplate: React.FC<POPrintTemplateProps> = ({ po }) => {
       {/* Signature Grid */}
       <div className="grid grid-cols-5 gap-4 mt-16 px-4">
         {[
-          { title: 'PREPARED BY', name: 'SOHEL RANA', company: 'Fair Technology Limited' },
-          { title: 'CHECKED BY', name: 'SOHEL RANA', company: 'Fair Technology Limited' },
-          { title: 'CONFIRMED BY', name: 'SOHEL RANA', company: 'Fair Technology Limited' },
-          { title: 'APPROVED BY', name: 'SOHEL RANA', company: 'Fair Technology Limited' },
-          { title: 'ACCEPTED BY', name: po.supplier_name || 'NSR COMPUTER & STATIO...', company: 'Fair Technology Limited' },
-        ].map((sig, i) => (
-          <div key={i} className="text-center flex flex-col">
-            <div className="border-t-[1.5px] border-black pt-2 mb-1">
-              <p className="font-black text-[9px] uppercase tracking-wider">{sig.title}</p>
+          { title: 'PREPARED BY', field: 'prepared_by', perm: 'prepared' },
+          { title: 'CHECKED BY', field: 'checked_by', perm: 'checked' },
+          { title: 'CONFIRMED BY', field: 'confirmed_by', perm: 'confirmed' },
+          { title: 'APPROVED BY', field: 'approved_by', perm: 'approved' },
+          { title: 'ACCEPTED BY', field: 'accepted_by', perm: 'accepted' },
+        ].map((sig, i) => {
+          const canEdit = hasGranularPermission('purchase_order', sig.perm);
+          return (
+            <div key={i} className="text-center flex flex-col">
+              <div className="border-t-[1.5px] border-black pt-2 mb-1">
+                <p className="font-black text-[9px] uppercase tracking-wider">{sig.title}</p>
+              </div>
+              <input 
+                className={`w-full text-[8px] font-bold uppercase text-center bg-transparent border-none outline-none focus:bg-yellow-50 ${!canEdit ? 'cursor-not-allowed' : ''}`}
+                value={po[sig.field] || (sig.field === 'accepted_by' ? po.supplier_name : '')}
+                onChange={(e) => canEdit && onPoChange && onPoChange(sig.field, e.target.value)}
+                readOnly={!canEdit}
+                placeholder={canEdit ? "Type Name..." : ""}
+              />
+              <p className="text-[7px] text-gray-400 font-medium">{sig.field === 'accepted_by' ? 'Supplier' : 'Fair Technology Limited'}</p>
             </div>
-            <p className="text-[8px] font-bold uppercase truncate px-1 text-gray-800">{sig.name}</p>
-            <p className="text-[7px] text-gray-400 font-medium">{sig.company}</p>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Footer Branding */}

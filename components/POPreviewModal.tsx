@@ -1,10 +1,12 @@
 
 import React, { useState } from 'react';
-import { X, Printer, FileSpreadsheet, CheckCircle, Save, ThumbsUp, Loader2 } from 'lucide-react';
+import { X, Printer, FileSpreadsheet, CheckCircle, Save, ThumbsUp, Loader2, FileDown } from 'lucide-react';
 import POPrintTemplate from './POPrintTemplate';
 import * as XLSX from 'xlsx';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 interface POPreviewModalProps {
   po: any;
@@ -22,17 +24,74 @@ const POPreviewModal: React.FC<POPreviewModalProps> = ({ po: initialPo, onClose 
       try {
         const { error } = await supabase
           .from('purchase_orders')
-          .update({ status: 'Approved' }) // Explicitly set to 'Approved'
+          .update({ 
+            status: 'Approved',
+            prepared_by: po.prepared_by,
+            checked_by: po.checked_by,
+            confirmed_by: po.confirmed_by,
+            approved_by: po.approved_by,
+            accepted_by: po.accepted_by
+          })
           .eq('id', po.id);
 
         if (error) throw error;
-        alert("Purchase Order Approved!");
+        alert("Purchase Order Approved & Signatures Saved!");
         onClose();
       } catch (err: any) {
         alert("Approval failed: " + err.message);
       } finally {
         setIsSaving(false);
       }
+    }
+  };
+
+  const handleSaveSignatures = async () => {
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('purchase_orders')
+        .update({ 
+          prepared_by: po.prepared_by,
+          checked_by: po.checked_by,
+          confirmed_by: po.confirmed_by,
+          approved_by: po.approved_by,
+          accepted_by: po.accepted_by
+        })
+        .eq('id', po.id);
+
+      if (error) throw error;
+      alert("Signatures Saved Successfully!");
+    } catch (err: any) {
+      alert("Save failed: " + err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    const element = document.getElementById('po-print-area');
+    if (!element) return;
+    
+    setIsSaving(true);
+    try {
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`PO_${po.po_no}.pdf`);
+    } catch (err) {
+      console.error("PDF generation error:", err);
+      alert("Failed to generate PDF");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -71,6 +130,15 @@ const POPreviewModal: React.FC<POPreviewModalProps> = ({ po: initialPo, onClose 
             </div>
           </div>
           <div className="flex items-center space-x-3">
+             <button 
+               onClick={handleSaveSignatures}
+               disabled={isSaving}
+               className="p-2.5 text-blue-600 hover:bg-blue-50 border border-blue-100 rounded-xl transition-all flex items-center space-x-2"
+               title="Save Signatures"
+             >
+               {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+               <span className="text-[10px] font-black uppercase tracking-widest hidden md:inline">Save Signatures</span>
+             </button>
              {(po.status === 'Pending Approval' || po.status === 'Pending') && (
                <button 
                 onClick={handleApprove}
@@ -81,6 +149,9 @@ const POPreviewModal: React.FC<POPreviewModalProps> = ({ po: initialPo, onClose 
                 <span>Approve PO</span>
               </button>
              )}
+             <button onClick={handleDownloadPDF} className="p-2.5 text-red-600 hover:bg-red-50 border border-red-100 rounded-xl transition-all" title="Download PDF">
+               <FileDown size={18} />
+             </button>
              <button onClick={() => window.print()} className="p-2.5 text-gray-600 hover:bg-gray-100 border border-gray-200 rounded-xl transition-all" title="Print PO">
                <Printer size={18} />
              </button>
@@ -91,8 +162,11 @@ const POPreviewModal: React.FC<POPreviewModalProps> = ({ po: initialPo, onClose 
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-10 scrollbar-thin bg-gray-100/30">
-           <div className="bg-white shadow-xl border border-gray-200 rounded-sm">
-             <POPrintTemplate po={po} />
+           <div id="po-print-area" className="bg-white shadow-xl border border-gray-200 rounded-sm">
+             <POPrintTemplate 
+               po={po} 
+               onPoChange={(field, val) => setPo({ ...po, [field]: val })}
+             />
            </div>
         </div>
       </div>

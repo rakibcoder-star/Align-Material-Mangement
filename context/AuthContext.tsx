@@ -11,6 +11,7 @@ interface AuthContextType extends AuthState {
   deleteUser: (userId: string) => Promise<void>;
   users: User[];
   hasPermission: (permissionId: string) => boolean;
+  hasGranularPermission: (moduleId: string, action: string) => boolean;
   loading: boolean;
 }
 
@@ -175,6 +176,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return !!user?.granularPermissions?.[permissionId]?.view;
   };
 
+  const hasGranularPermission = (moduleId: string, action: string) => {
+    if (user?.role === Role.ADMIN) return true;
+    const modulePerms = user?.granularPermissions?.[moduleId];
+    if (!modulePerms) return false;
+    return !!(modulePerms as any)[action];
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -186,6 +194,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       deleteUser, 
       users,
       hasPermission,
+      hasGranularPermission,
       loading
     }}>
       {children}
