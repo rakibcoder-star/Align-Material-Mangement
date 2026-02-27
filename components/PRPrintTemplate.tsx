@@ -12,6 +12,7 @@ interface PRPrintTemplateProps {
   onAddItem: () => void;
   onRemoveItem: (index: number) => void;
   onItemChange: (index: number, field: string, value: any) => void;
+  isPrinting?: boolean;
 }
 
 const PRPrintTemplate: React.FC<PRPrintTemplateProps> = ({ 
@@ -23,7 +24,8 @@ const PRPrintTemplate: React.FC<PRPrintTemplateProps> = ({
   onImagesChange,
   onAddItem,
   onRemoveItem,
-  onItemChange
+  onItemChange,
+  isPrinting = false
 }) => {
   const { hasGranularPermission } = useAuth();
   const items = pr.items || [];
@@ -85,83 +87,119 @@ const PRPrintTemplate: React.FC<PRPrintTemplateProps> = ({
         <div className="space-y-1">
           <div className="flex items-baseline">
             <span className="font-bold w-24 shrink-0">PR No.:</span>
-            <input 
-              className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5 text-gray-700"
-              value={pr.pr_no || ''}
-              onChange={(e) => onPrChange('pr_no', e.target.value)}
-            />
+            {isPrinting ? (
+              <span className="px-1 py-0.5 text-gray-700">{pr.pr_no || ''}</span>
+            ) : (
+              <input 
+                className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5 text-gray-700"
+                value={pr.pr_no || ''}
+                onChange={(e) => onPrChange('pr_no', e.target.value)}
+              />
+            )}
           </div>
           <div className="flex items-baseline">
             <span className="font-bold w-24 shrink-0">Reference:</span>
-            <input 
-              className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5 text-gray-700"
-              value={pr.reference || ''}
-              onChange={(e) => onPrChange('reference', e.target.value)}
-            />
+            {isPrinting ? (
+              <span className="px-1 py-0.5 text-gray-700">{pr.reference || ''}</span>
+            ) : (
+              <input 
+                className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5 text-gray-700"
+                value={pr.reference || ''}
+                onChange={(e) => onPrChange('reference', e.target.value)}
+              />
+            )}
           </div>
           <div className="flex items-baseline">
             <span className="font-bold w-24 shrink-0">Requested By:</span>
-            <input 
-              className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5 text-gray-700"
-              value={pr.req_by_name || ''}
-              onChange={(e) => onPrChange('req_by_name', e.target.value)}
-            />
+            {isPrinting ? (
+              <span className="px-1 py-0.5 text-gray-700">{pr.req_by_name || ''}</span>
+            ) : (
+              <input 
+                className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5 text-gray-700"
+                value={pr.req_by_name || ''}
+                onChange={(e) => onPrChange('req_by_name', e.target.value)}
+              />
+            )}
           </div>
         </div>
         
         <div className="space-y-1">
           <div className="flex items-baseline">
             <span className="font-bold w-24 shrink-0">Department:</span>
-            <input 
-              className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5 text-gray-700"
-              value={pr.reqDpt || ''}
-              onChange={(e) => onPrChange('reqDpt', e.target.value)}
-            />
+            {isPrinting ? (
+              <span className="px-1 py-0.5 text-gray-700">{pr.reqDpt || ''}</span>
+            ) : (
+              <input 
+                className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5 text-gray-700"
+                value={pr.reqDpt || ''}
+                onChange={(e) => onPrChange('reqDpt', e.target.value)}
+              />
+            )}
           </div>
           <div className="flex items-baseline">
             <span className="font-bold w-24 shrink-0">Email:</span>
-            <input 
-              className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5 text-gray-700 lowercase"
-              value={pr.email || ''}
-              onChange={(e) => onPrChange('email', e.target.value)}
-            />
+            {isPrinting ? (
+              <span className="px-1 py-0.5 text-gray-700 lowercase">{pr.email || ''}</span>
+            ) : (
+              <input 
+                className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5 text-gray-700 lowercase"
+                value={pr.email || ''}
+                onChange={(e) => onPrChange('email', e.target.value)}
+              />
+            )}
           </div>
           <div className="flex items-baseline">
             <span className="font-bold w-24 shrink-0">Phone No.:</span>
-            <input 
-              className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5 text-gray-700"
-              value={pr.contact || ''}
-              onChange={(e) => onPrChange('contact', e.target.value)}
-            />
+            {isPrinting ? (
+              <span className="px-1 py-0.5 text-gray-700">{pr.contact || ''}</span>
+            ) : (
+              <input 
+                className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5 text-gray-700"
+                value={pr.contact || ''}
+                onChange={(e) => onPrChange('contact', e.target.value)}
+              />
+            )}
           </div>
         </div>
 
         <div className="space-y-1 md:text-right">
           <div className="flex items-baseline justify-end">
             <span className="font-bold w-24 shrink-0 text-left md:text-right mr-2">Req. Date:</span>
-            <input 
-              type="date"
-              className="bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5 text-right w-32 text-gray-700"
-              value={formatDateForInput(pr.created_at)}
-              onChange={(e) => onPrChange('created_at', e.target.value)}
-            />
+            {isPrinting ? (
+              <span className="px-1 py-0.5 text-right w-32 text-gray-700">{formatDateForInput(pr.created_at)}</span>
+            ) : (
+              <input 
+                type="date"
+                className="bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5 text-right w-32 text-gray-700"
+                value={formatDateForInput(pr.created_at)}
+                onChange={(e) => onPrChange('created_at', e.target.value)}
+              />
+            )}
           </div>
           <div className="flex items-baseline justify-end">
             <span className="font-bold w-24 shrink-0 text-left md:text-right mr-2">PR Status:</span>
-            <input 
-              className="bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5 text-right w-32 font-bold text-[#2d808e]"
-              value={pr.status || ''}
-              onChange={(e) => onPrChange('status', e.target.value)}
-            />
+            {isPrinting ? (
+              <span className="px-1 py-0.5 text-right w-32 font-bold text-[#2d808e]">{pr.status || ''}</span>
+            ) : (
+              <input 
+                className="bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5 text-right w-32 font-bold text-[#2d808e]"
+                value={pr.status || ''}
+                onChange={(e) => onPrChange('status', e.target.value)}
+              />
+            )}
           </div>
           <div className="flex items-baseline justify-end">
             <span className="font-bold w-24 shrink-0 text-left md:text-right mr-2">Update On:</span>
-            <input 
-              type="date"
-              className="bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5 text-right w-32 text-gray-700"
-              value={formatDateForInput(pr.updated_at || pr.created_at)}
-              onChange={(e) => onPrChange('updated_at', e.target.value)}
-            />
+            {isPrinting ? (
+              <span className="px-1 py-0.5 text-right w-32 text-gray-700">{formatDateForInput(pr.updated_at || pr.created_at)}</span>
+            ) : (
+              <input 
+                type="date"
+                className="bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5 text-right w-32 text-gray-700"
+                value={formatDateForInput(pr.updated_at || pr.created_at)}
+                onChange={(e) => onPrChange('updated_at', e.target.value)}
+              />
+            )}
           </div>
         </div>
       </div>
@@ -190,34 +228,70 @@ const PRPrintTemplate: React.FC<PRPrintTemplateProps> = ({
               <tr key={idx} className="hover:bg-gray-50/50 group">
                 <td className="border border-black py-1 px-1 text-center">{idx + 1}</td>
                 <td className="border border-black py-0 px-0">
-                  <input className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-1 text-center" value={item.sku || ''} onChange={(e) => onItemChange(idx, 'sku', e.target.value)} />
+                  {isPrinting ? (
+                    <div className="w-full px-1 py-1 text-center">{item.sku || ''}</div>
+                  ) : (
+                    <input className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-1 text-center" value={item.sku || ''} onChange={(e) => onItemChange(idx, 'sku', e.target.value)} />
+                  )}
                 </td>
                 <td className="border border-black py-0 px-0">
-                  <input className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-2 py-1 font-bold uppercase" value={item.name || ''} onChange={(e) => onItemChange(idx, 'name', e.target.value.toUpperCase())} />
+                  {isPrinting ? (
+                    <div className="w-full px-2 py-1 font-bold uppercase">{item.name || ''}</div>
+                  ) : (
+                    <input className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-2 py-1 font-bold uppercase" value={item.name || ''} onChange={(e) => onItemChange(idx, 'name', e.target.value.toUpperCase())} />
+                  )}
                 </td>
                 <td className="border border-black py-0 px-0">
-                  <input className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-1 text-center" value={item.specification || ''} onChange={(e) => onItemChange(idx, 'specification', e.target.value)} />
+                  {isPrinting ? (
+                    <div className="w-full px-1 py-1 text-center">{item.specification || ''}</div>
+                  ) : (
+                    <input className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-1 text-center" value={item.specification || ''} onChange={(e) => onItemChange(idx, 'specification', e.target.value)} />
+                  )}
                 </td>
                 <td className="border border-black py-0 px-0">
-                  <input className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-1 text-center" value={item.brand || ''} onChange={(e) => onItemChange(idx, 'brand', e.target.value)} />
+                  {isPrinting ? (
+                    <div className="w-full px-1 py-1 text-center">{item.brand || ''}</div>
+                  ) : (
+                    <input className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-1 text-center" value={item.brand || ''} onChange={(e) => onItemChange(idx, 'brand', e.target.value)} />
+                  )}
                 </td>
                 <td className="border border-black py-0 px-0">
-                  <input className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-1 text-center uppercase" value={item.uom || ''} onChange={(e) => onItemChange(idx, 'uom', e.target.value.toUpperCase())} />
+                  {isPrinting ? (
+                    <div className="w-full px-1 py-1 text-center uppercase">{item.uom || ''}</div>
+                  ) : (
+                    <input className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-1 text-center uppercase" value={item.uom || ''} onChange={(e) => onItemChange(idx, 'uom', e.target.value.toUpperCase())} />
+                  )}
                 </td>
                 <td className="border border-black py-0 px-0">
-                  <input type="number" className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-1 text-right" value={item.unitPrice || 0} onChange={(e) => onItemChange(idx, 'unitPrice', e.target.value)} />
+                  {isPrinting ? (
+                    <div className="w-full px-1 py-1 text-right">{item.unitPrice || 0}</div>
+                  ) : (
+                    <input type="number" className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-1 text-right" value={item.unitPrice || 0} onChange={(e) => onItemChange(idx, 'unitPrice', e.target.value)} />
+                  )}
                 </td>
                 <td className="border border-black py-0 px-0">
-                  <input type="number" className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-1 text-center font-black" value={item.reqQty || 0} onChange={(e) => onItemChange(idx, 'reqQty', e.target.value)} />
+                  {isPrinting ? (
+                    <div className="w-full px-1 py-1 text-center font-black">{item.reqQty || 0}</div>
+                  ) : (
+                    <input type="number" className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-1 text-center font-black" value={item.reqQty || 0} onChange={(e) => onItemChange(idx, 'reqQty', e.target.value)} />
+                  )}
                 </td>
                 <td className="border border-black py-1 px-1 text-right font-black">
                   {formatCurrency(Number(item.reqQty || 0) * Number(item.unitPrice || 0))}
                 </td>
                 <td className="border border-black py-0 px-0">
-                  <input type="number" className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-1 text-center font-bold text-[#2d808e]" value={item.onHand || 0} onChange={(e) => onItemChange(idx, 'onHand', e.target.value)} />
+                  {isPrinting ? (
+                    <div className="w-full px-1 py-1 text-center font-bold text-[#2d808e]">{item.onHand || 0}</div>
+                  ) : (
+                    <input type="number" className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-1 text-center font-bold text-[#2d808e]" value={item.onHand || 0} onChange={(e) => onItemChange(idx, 'onHand', e.target.value)} />
+                  )}
                 </td>
                 <td className="border border-black py-0 px-0">
-                  <input className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-1 text-left italic text-gray-400" value={item.remarks || ''} onChange={(e) => onItemChange(idx, 'remarks', e.target.value)} />
+                  {isPrinting ? (
+                    <div className="w-full px-1 py-1 text-left italic text-gray-400">{item.remarks || ''}</div>
+                  ) : (
+                    <input className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-1 text-left italic text-gray-400" value={item.remarks || ''} onChange={(e) => onItemChange(idx, 'remarks', e.target.value)} />
+                  )}
                 </td>
                 <td className="border border-black py-1 px-1 text-center no-print">
                    <button onClick={() => onRemoveItem(idx)} className="text-red-300 hover:text-red-500 transition-colors">
@@ -247,12 +321,16 @@ const PRPrintTemplate: React.FC<PRPrintTemplateProps> = ({
       <div className="flex flex-col items-center mb-10">
         <div className="text-[10px] font-bold text-gray-700 mb-2 self-start flex items-center w-full">
           <span className="mr-2 shrink-0">Note:</span> 
-          <input 
-            className="w-full font-medium text-gray-500 italic border-b border-gray-100 bg-transparent outline-none focus:border-[#2d808e]" 
-            value={pr.note || ''}
-            onChange={(e) => onPrChange('note', e.target.value)}
-            placeholder="Type your notes here..."
-          />
+          {isPrinting ? (
+            <div className="w-full font-medium text-gray-500 italic border-b border-gray-100 py-1">{pr.note || ''}</div>
+          ) : (
+            <input 
+              className="w-full font-medium text-gray-500 italic border-b border-gray-100 bg-transparent outline-none focus:border-[#2d808e]" 
+              value={pr.note || ''}
+              onChange={(e) => onPrChange('note', e.target.value)}
+              placeholder="Type your notes here..."
+            />
+          )}
         </div>
         <div className="flex flex-wrap gap-2 justify-center py-2">
              {images.map((img, idx) => (
@@ -276,28 +354,34 @@ const PRPrintTemplate: React.FC<PRPrintTemplateProps> = ({
 
       {/* Signatures */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-12 mb-10 pt-4">
-        {[
-          { label: 'Prepared By', field: 'req_by_name', perm: 'prepared' },
-          { label: 'Checked By', field: 'checked_by', perm: 'checked' },
-          { label: 'Confirmed By', field: 'confirmed_by', perm: 'confirmed' },
-          { label: 'Approved By', field: 'approved_by', perm: 'approved' },
-        ].map((sig, i) => {
-          const canEdit = hasGranularPermission('requisition', sig.perm);
-          return (
-            <div key={i} className="text-center">
-              <div className="border-t border-black mb-1.5 pt-1.5">
-                <p className="font-black text-[11px] uppercase tracking-tighter">{sig.label}</p>
-              </div>
-              <input 
-                className={`w-full text-[10px] font-bold text-gray-600 uppercase text-center bg-transparent border-none outline-none focus:bg-yellow-50 ${!canEdit ? 'cursor-not-allowed' : ''}`}
-                value={pr[sig.field] || (sig.field === 'req_by_name' ? pr.req_by_name : '')}
-                onChange={(e) => canEdit && onPrChange(sig.field, e.target.value)}
-                readOnly={!canEdit}
-                placeholder={canEdit ? "Type Name..." : ""}
-              />
-            </div>
-          );
-        })}
+              {[
+                { label: 'Prepared By', field: 'req_by_name', perm: 'prepared' },
+                { label: 'Checked By', field: 'checked_by', perm: 'checked' },
+                { label: 'Confirmed By', field: 'confirmed_by', perm: 'confirmed' },
+                { label: 'Approved By', field: 'approved_by', perm: 'approved' },
+              ].map((sig, i) => {
+                const canEdit = hasGranularPermission('requisition', sig.perm);
+                return (
+                  <div key={i} className="text-center">
+                    <div className="border-t border-black mb-1.5 pt-1.5">
+                      <p className="font-black text-[11px] uppercase tracking-tighter">{sig.label}</p>
+                    </div>
+                    {isPrinting ? (
+                      <div className="w-full text-[10px] font-bold text-gray-600 uppercase text-center py-1">
+                        {pr[sig.field] || (sig.field === 'req_by_name' ? pr.req_by_name : '')}
+                      </div>
+                    ) : (
+                      <input 
+                        className={`w-full text-[10px] font-bold text-gray-600 uppercase text-center bg-transparent border-none outline-none focus:bg-yellow-50 ${!canEdit ? 'cursor-not-allowed' : ''}`}
+                        value={pr[sig.field] || (sig.field === 'req_by_name' ? pr.req_by_name : '')}
+                        onChange={(e) => canEdit && onPrChange(sig.field, e.target.value)}
+                        readOnly={!canEdit}
+                        placeholder={canEdit ? "Type Name..." : ""}
+                      />
+                    )}
+                  </div>
+                );
+              })}
       </div>
 
       {/* Justification Table - Matching Red Marked Area 2 */}
@@ -324,64 +408,87 @@ const PRPrintTemplate: React.FC<PRPrintTemplateProps> = ({
               {justificationData.map((row, idx) => (
                 <tr key={idx} className="text-center group min-h-[40px]">
                   <td className="border border-black py-2 px-2 text-left uppercase truncate max-w-[200px]">
-                    <input className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-1" value={row.name || ''} onChange={(e) => onJustificationChange(idx, 'name', e.target.value)} />
+                    {isPrinting ? (
+                      <div className="w-full px-1 py-1">{row.name || ''}</div>
+                    ) : (
+                      <input className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-1" value={row.name || ''} onChange={(e) => onJustificationChange(idx, 'name', e.target.value)} />
+                    )}
                   </td>
                   <td className="border border-black py-2 px-1">
-                    <input 
-                      type="number" 
-                      className="w-full bg-transparent text-center focus:bg-yellow-50 outline-none border-none p-0" 
-                      value={row.last6m} 
-                      onChange={(e) => onJustificationChange(idx, 'last6m', e.target.value)}
-                    />
+                    {isPrinting ? (
+                      <div className="w-full text-center">{row.last6m}</div>
+                    ) : (
+                      <input 
+                        type="number" 
+                        className="w-full bg-transparent text-center focus:bg-yellow-50 outline-none border-none p-0" 
+                        value={row.last6m} 
+                        onChange={(e) => onJustificationChange(idx, 'last6m', e.target.value)}
+                      />
+                    )}
                   </td>
                   <td className="border border-black py-2 px-1">
-                    <input 
-                      type="text" 
-                      className="w-full bg-transparent text-center focus:bg-yellow-50 outline-none border-none p-0" 
-                      value={row.consumptionRate} 
-                      onChange={(e) => onJustificationChange(idx, 'consumptionRate', e.target.value)}
-                    />
+                    {isPrinting ? (
+                      <div className="w-full text-center">{row.consumptionRate}</div>
+                    ) : (
+                      <input 
+                        type="text" 
+                        className="w-full bg-transparent text-center focus:bg-yellow-50 outline-none border-none p-0" 
+                        value={row.consumptionRate} 
+                        onChange={(e) => onJustificationChange(idx, 'consumptionRate', e.target.value)}
+                      />
+                    )}
                   </td>
                   <td className="border border-black py-0 px-0">
-                    <input type="number" className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-2 text-center font-black text-[#2d808e]" value={row.stockHand || 0} onChange={(e) => onJustificationChange(idx, 'stockHand', e.target.value)} />
+                    {isPrinting ? (
+                      <div className="w-full px-1 py-2 text-center font-black text-[#2d808e]">{row.stockHand || 0}</div>
+                    ) : (
+                      <input type="number" className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-2 text-center font-black text-[#2d808e]" value={row.stockHand || 0} onChange={(e) => onJustificationChange(idx, 'stockHand', e.target.value)} />
+                    )}
                   </td>
                   <td className="border border-black py-2 px-1">
-                    <input 
-                      type="number" 
-                      className="w-full bg-transparent text-center focus:bg-yellow-50 outline-none border-none p-0 cursor-not-allowed" 
-                      value={row.stockStore} 
-                      readOnly
-                    />
+                    <div className="w-full text-center">{row.stockStore}</div>
                   </td>
                   <td className="border border-black py-2 px-1">
-                    <input 
-                      type="number" 
-                      className="w-full bg-transparent text-center focus:bg-yellow-50 outline-none border-none p-0" 
-                      value={row.orderedQty} 
-                      onChange={(e) => onJustificationChange(idx, 'orderedQty', e.target.value)}
-                    />
+                    {isPrinting ? (
+                      <div className="w-full text-center">{row.orderedQty}</div>
+                    ) : (
+                      <input 
+                        type="number" 
+                        className="w-full bg-transparent text-center focus:bg-yellow-50 outline-none border-none p-0" 
+                        value={row.orderedQty} 
+                        onChange={(e) => onJustificationChange(idx, 'orderedQty', e.target.value)}
+                      />
+                    )}
                   </td>
                   <td className="border border-black py-2 px-1 font-black">
                     {(Number(row.stockHand || 0) + Number(row.stockStore || 0) + Number(row.orderedQty || 0)).toFixed(2)}
                   </td>
                   <td className="border border-black py-2 px-2">
-                    <input 
-                      type="text" 
-                      className="w-full bg-transparent text-left focus:bg-yellow-50 outline-none border-none p-0 px-1 uppercase" 
-                      value={row.purpose} 
-                      onChange={(e) => onJustificationChange(idx, 'purpose', e.target.value)}
-                    />
+                    {isPrinting ? (
+                      <div className="w-full text-left px-1 uppercase">{row.purpose}</div>
+                    ) : (
+                      <input 
+                        type="text" 
+                        className="w-full bg-transparent text-left focus:bg-yellow-50 outline-none border-none p-0 px-1 uppercase" 
+                        value={row.purpose} 
+                        onChange={(e) => onJustificationChange(idx, 'purpose', e.target.value)}
+                      />
+                    )}
                   </td>
                   <td className="border border-black py-2 px-1">
-                    <select 
-                      className="w-full bg-transparent text-center focus:bg-yellow-50 outline-none appearance-none border-none p-0 font-black" 
-                      value={row.approvedDesign} 
-                      onChange={(e) => onJustificationChange(idx, 'approvedDesign', e.target.value)}
-                    >
-                      <option value=""></option>
-                      <option value="Y">Y</option>
-                      <option value="N">N</option>
-                    </select>
+                    {isPrinting ? (
+                      <div className="w-full text-center font-black">{row.approvedDesign}</div>
+                    ) : (
+                      <select 
+                        className="w-full bg-transparent text-center focus:bg-yellow-50 outline-none appearance-none border-none p-0 font-black" 
+                        value={row.approvedDesign} 
+                        onChange={(e) => onJustificationChange(idx, 'approvedDesign', e.target.value)}
+                      >
+                        <option value=""></option>
+                        <option value="Y">Y</option>
+                        <option value="N">N</option>
+                      </select>
+                    )}
                   </td>
                 </tr>
               ))}

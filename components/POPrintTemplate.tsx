@@ -5,9 +5,10 @@ import { useAuth } from '../context/AuthContext';
 interface POPrintTemplateProps {
   po: any;
   onPoChange?: (field: string, value: any) => void;
+  isPrinting?: boolean;
 }
 
-const POPrintTemplate: React.FC<POPrintTemplateProps> = ({ po, onPoChange }) => {
+const POPrintTemplate: React.FC<POPrintTemplateProps> = ({ po, onPoChange, isPrinting = false }) => {
   const { hasGranularPermission } = useAuth();
   const items = po.items || [];
   const terms = po.terms || {};
@@ -170,13 +171,19 @@ const POPrintTemplate: React.FC<POPrintTemplateProps> = ({ po, onPoChange }) => 
               <div className="border-t-[1.5px] border-black pt-2 mb-1">
                 <p className="font-black text-[11px] uppercase tracking-wider">{sig.title}</p>
               </div>
-              <input 
-                className={`w-full text-[10px] font-bold uppercase text-center bg-transparent border-none outline-none focus:bg-yellow-50 ${!canEdit ? 'cursor-not-allowed' : ''}`}
-                value={po[sig.field] || (sig.field === 'accepted_by' ? po.supplier_name : '')}
-                onChange={(e) => canEdit && onPoChange && onPoChange(sig.field, e.target.value)}
-                readOnly={!canEdit}
-                placeholder={canEdit ? "Type Name..." : ""}
-              />
+              {isPrinting ? (
+                <p className="text-[10px] font-bold uppercase text-center py-1 text-gray-700">
+                  {po[sig.field] || (sig.field === 'accepted_by' ? po.supplier_name : '')}
+                </p>
+              ) : (
+                <input 
+                  className={`w-full text-[10px] font-bold uppercase text-center bg-transparent border-none outline-none focus:bg-yellow-50 ${!canEdit ? 'cursor-not-allowed' : ''}`}
+                  value={po[sig.field] || (sig.field === 'accepted_by' ? po.supplier_name : '')}
+                  onChange={(e) => canEdit && onPoChange && onPoChange(sig.field, e.target.value)}
+                  readOnly={!canEdit}
+                  placeholder={canEdit ? "Type Name..." : ""}
+                />
+              )}
               <p className="text-[9px] text-gray-400 font-medium">{sig.field === 'accepted_by' ? 'Supplier' : 'Fair Technology Limited'}</p>
             </div>
           );

@@ -17,6 +17,7 @@ const POPreviewModal: React.FC<POPreviewModalProps> = ({ po: initialPo, onClose 
   const { user } = useAuth();
   const [po, setPo] = useState<any>(initialPo);
   const [isSaving, setIsSaving] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   const handleApprove = async () => {
     if (window.confirm(`Are you sure you want to APPROVE PO No: ${po.po_no}?`)) {
@@ -73,11 +74,19 @@ const POPreviewModal: React.FC<POPreviewModalProps> = ({ po: initialPo, onClose 
     if (!element) return;
     
     setIsSaving(true);
+    setIsPrinting(true);
+
+    // Small delay to ensure React re-renders with isPrinting=true
+    await new Promise(resolve => setTimeout(resolve, 150));
+
     try {
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
-        logging: false
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight
       });
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
@@ -91,8 +100,17 @@ const POPreviewModal: React.FC<POPreviewModalProps> = ({ po: initialPo, onClose 
       console.error("PDF generation error:", err);
       alert("Failed to generate PDF");
     } finally {
+      setIsPrinting(false);
       setIsSaving(false);
     }
+  };
+
+  const handlePrint = () => {
+    setIsPrinting(true);
+    setTimeout(() => {
+      window.print();
+      setIsPrinting(false);
+    }, 150);
   };
 
   const handleExportExcel = () => {
@@ -117,9 +135,9 @@ const POPreviewModal: React.FC<POPreviewModalProps> = ({ po: initialPo, onClose 
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 overflow-y-auto no-print">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 overflow-y-auto">
       <div className="bg-white w-full max-w-[1300px] rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300 flex flex-col my-auto max-h-[96vh]">
-        <div className="flex items-center justify-between px-8 py-5 border-b border-gray-100 bg-white sticky top-0 z-10">
+        <div className="flex items-center justify-between px-8 py-5 border-b border-gray-100 bg-white sticky top-0 z-10 no-print">
           <div className="flex items-center space-x-4">
             <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 bg-gray-50 rounded-xl transition-colors">
               <X size={20} />
@@ -152,7 +170,7 @@ const POPreviewModal: React.FC<POPreviewModalProps> = ({ po: initialPo, onClose 
              <button onClick={handleDownloadPDF} className="p-2.5 text-red-600 hover:bg-red-50 border border-red-100 rounded-xl transition-all" title="Download PDF">
                <FileDown size={18} />
              </button>
-             <button onClick={() => window.print()} className="p-2.5 text-gray-600 hover:bg-gray-100 border border-gray-200 rounded-xl transition-all" title="Print PO">
+             <button onClick={handlePrint} className="p-2.5 text-gray-600 hover:bg-gray-100 border border-gray-200 rounded-xl transition-all" title="Print PO">
                <Printer size={18} />
              </button>
              <button onClick={handleExportExcel} className="p-2.5 text-green-600 hover:bg-green-50 border border-green-100 rounded-xl transition-all" title="Export Excel">
@@ -162,10 +180,11 @@ const POPreviewModal: React.FC<POPreviewModalProps> = ({ po: initialPo, onClose 
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-10 scrollbar-thin bg-gray-100/30">
-           <div id="po-print-area" className="bg-white shadow-xl border border-gray-200 rounded-sm printable">
+           <div id="po-print-area" className={`bg-white shadow-xl border border-gray-200 rounded-sm printable ${isPrinting ? 'html2canvas-container' : ''}`}>
              <POPrintTemplate 
                po={po} 
                onPoChange={(field, val) => setPo({ ...po, [field]: val })}
+               isPrinting={isPrinting}
              />
            </div>
         </div>

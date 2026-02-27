@@ -16,6 +16,7 @@ const PRPreviewModal: React.FC<PRPreviewModalProps> = ({ pr: initialPr, onClose 
   const [justificationData, setJustificationData] = useState<any[]>([]);
   const [images, setImages] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   useEffect(() => {
     // Reset internal state when initialPr changes
@@ -166,11 +167,19 @@ const PRPreviewModal: React.FC<PRPreviewModalProps> = ({ pr: initialPr, onClose 
     if (!element) return;
     
     setIsSaving(true);
+    setIsPrinting(true);
+    
+    // Small delay to ensure React re-renders with isPrinting=true
+    await new Promise(resolve => setTimeout(resolve, 150));
+
     try {
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
-        logging: false
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight
       });
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
@@ -184,14 +193,23 @@ const PRPreviewModal: React.FC<PRPreviewModalProps> = ({ pr: initialPr, onClose 
       console.error("PDF generation error:", err);
       alert("Failed to generate PDF");
     } finally {
+      setIsPrinting(false);
       setIsSaving(false);
     }
   };
 
+  const handlePrint = () => {
+    setIsPrinting(true);
+    setTimeout(() => {
+      window.print();
+      setIsPrinting(false);
+    }, 150);
+  };
+
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 overflow-y-auto no-print">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 overflow-y-auto">
       <div className="bg-[#f8f9fa] w-full max-w-[1300px] rounded-2xl shadow-[0_32px_64px_-12px_rgba(0,0,0,0.5)] overflow-hidden animate-in fade-in zoom-in-95 duration-300 flex flex-col my-auto max-h-[96vh]">
-        <div className="flex items-center justify-between px-8 py-5 border-b border-gray-100 bg-white sticky top-0 z-10">
+        <div className="flex items-center justify-between px-8 py-5 border-b border-gray-100 bg-white sticky top-0 z-10 no-print">
           <div className="flex items-center space-x-4">
             <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 bg-gray-50 rounded-xl transition-colors">
               <X size={20} />
@@ -223,7 +241,7 @@ const PRPreviewModal: React.FC<PRPreviewModalProps> = ({ pr: initialPr, onClose 
               </button>
              )}
 
-             <button onClick={() => window.print()} className="p-2.5 text-gray-600 hover:bg-gray-100 border border-gray-200 rounded-xl transition-all" title="Print to PDF">
+             <button onClick={handlePrint} className="p-2.5 text-gray-600 hover:bg-gray-100 border border-gray-200 rounded-xl transition-all" title="Print to PDF">
                <Printer size={18} />
              </button>
              <button onClick={handleExportExcel} className="p-2.5 text-green-600 hover:bg-green-50 border border-green-100 rounded-xl transition-all" title="Export Excel">
@@ -244,7 +262,7 @@ const PRPreviewModal: React.FC<PRPreviewModalProps> = ({ pr: initialPr, onClose 
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-10 scrollbar-thin bg-gray-100/50">
-           <div id="pr-print-area" className="bg-white shadow-2xl border border-gray-200 rounded-sm ring-1 ring-black/5 printable">
+           <div id="pr-print-area" className={`bg-white shadow-2xl border border-gray-200 rounded-sm ring-1 ring-black/5 printable ${isPrinting ? 'html2canvas-container' : ''}`}>
              <PRPrintTemplate 
                 pr={pr} 
                 onPrChange={handlePrFieldChange}
@@ -255,6 +273,7 @@ const PRPreviewModal: React.FC<PRPreviewModalProps> = ({ pr: initialPr, onClose 
                 onAddItem={handleAddItem}
                 onRemoveItem={handleRemoveItem}
                 onItemChange={handleItemChange}
+                isPrinting={isPrinting}
              />
            </div>
         </div>
