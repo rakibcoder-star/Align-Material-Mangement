@@ -105,12 +105,57 @@ const POPreviewModal: React.FC<POPreviewModalProps> = ({ po: initialPo, onClose 
     }
   };
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
+    const element = document.getElementById('po-print-area');
+    if (!element) return;
+    
+    setIsSaving(true);
     setIsPrinting(true);
-    setTimeout(() => {
-      window.print();
+
+    // Small delay to ensure React re-renders with isPrinting=true
+    await new Promise(resolve => setTimeout(resolve, 150));
+
+    try {
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      
+      // Auto print logic
+      const pdfBlob = pdf.output('blob');
+      const blobUrl = URL.createObjectURL(pdfBlob);
+      
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = blobUrl;
+      document.body.appendChild(iframe);
+      
+      iframe.onload = () => {
+        iframe.contentWindow?.print();
+        // Cleanup after print dialog closes (approximate)
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+          URL.revokeObjectURL(blobUrl);
+        }, 1000);
+      };
+    } catch (err) {
+      console.error("Print generation error:", err);
+      alert("Failed to generate print document");
+    } finally {
       setIsPrinting(false);
-    }, 150);
+      setIsSaving(false);
+    }
   };
 
   const handleExportExcel = () => {
