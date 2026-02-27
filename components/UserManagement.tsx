@@ -365,36 +365,6 @@ const UserManagement: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                
-                {/* Avatar Section */}
-                <div className="w-full md:w-[280px] bg-[#fcfcfc] rounded-xl border border-gray-100 p-8 flex flex-col items-center justify-center space-y-4 shadow-inner">
-                  <div className="relative">
-                    <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center shadow-inner border border-white overflow-hidden">
-                      {formData.avatarUrl ? (
-                        <img src={formData.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                      ) : (
-                        <UserIcon size={44} className="text-gray-300" />
-                      )}
-                    </div>
-                    <button 
-                      onClick={() => {
-                        const url = window.prompt("Enter Avatar Image URL:");
-                        if (url !== null) setFormData({...formData, avatarUrl: url});
-                      }}
-                      className="absolute bottom-0.5 right-0.5 bg-[#2d808e] text-white p-1.5 rounded-full border-2 border-white shadow-md hover:scale-110 transition-transform"
-                    >
-                      <Plus size={14} strokeWidth={4} />
-                    </button>
-                  </div>
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Avatar URL</span>
-                  <input 
-                    type="text" 
-                    placeholder="https://example.com/image.jpg"
-                    value={formData.avatarUrl || ''}
-                    onChange={(e) => setFormData({...formData, avatarUrl: e.target.value})}
-                    className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded text-[10px] outline-none focus:border-[#2d808e]"
-                  />
-                </div>
               </div>
 
               {/* Granular Section */}

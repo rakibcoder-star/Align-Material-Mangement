@@ -36,7 +36,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: data.email,
         fullName: data.fullName || data.full_name,
         username: data.username,
-        avatarUrl: data.avatarUrl || data.avatar_url,
         role: data.role as Role,
         status: data.status as 'Active' | 'Inactive',
         lastLogin: data.lastLogin || data.last_login,
@@ -61,7 +60,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: u.email,
         fullName: u.fullName || u.full_name,
         username: u.username,
-        avatarUrl: u.avatarUrl || u.avatar_url,
         role: u.role as Role,
         status: u.status as 'Active' | 'Inactive',
         lastLogin: u.lastLogin || u.last_login,
@@ -142,7 +140,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: userData.email,
         fullName: userData.fullName,
         username: userData.username,
-        avatarUrl: userData.avatarUrl,
         role: userData.role,
         status: userData.status,
         granularPermissions: userData.granularPermissions
@@ -158,7 +155,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { error } = await supabase.from('profiles').update({
       fullName: updates.fullName,
       username: updates.username,
-      avatarUrl: updates.avatarUrl,
       role: updates.role,
       status: updates.status,
       granularPermissions: updates.granularPermissions
