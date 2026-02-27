@@ -225,23 +225,10 @@ const PRPreviewModal: React.FC<PRPreviewModalProps> = ({ pr: initialPr, onClose 
       
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       
-      // Auto print logic
-      const pdfBlob = pdf.output('blob');
-      const blobUrl = URL.createObjectURL(pdfBlob);
-      
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      iframe.src = blobUrl;
-      document.body.appendChild(iframe);
-      
-      iframe.onload = () => {
-        iframe.contentWindow?.print();
-        // Cleanup after print dialog closes (approximate)
-        setTimeout(() => {
-          document.body.removeChild(iframe);
-          URL.revokeObjectURL(blobUrl);
-        }, 1000);
-      };
+      // Auto print logic using autoPrint() and opening in new tab
+      pdf.autoPrint();
+      const blobUrl = pdf.output('bloburl');
+      window.open(blobUrl, '_blank');
     } catch (err) {
       console.error("Print generation error:", err);
       alert("Failed to generate print document");

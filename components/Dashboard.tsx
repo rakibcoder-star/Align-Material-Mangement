@@ -188,7 +188,7 @@ const DashboardOverview: React.FC<{
   onPreviewGrn: (grnId: string) => void;
 }> = ({ onCheckStock, onMoveOrder, onPreviewPr, onPreviewPo, onPreviewMo, onPreviewTnx, onLocTransfer, onPreviewGrn }) => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, hasGranularPermission } = useAuth();
   const [dateTime, setDateTime] = useState(new Date());
   const [pendingPrs, setPendingPrs] = useState<any[]>([]);
   const [pendingPos, setPendingPos] = useState<any[]>([]);
@@ -209,6 +209,34 @@ const DashboardOverview: React.FC<{
     weeklyPrQty: '0', weeklyPrCount: '0',
     monthlyPrQty: '0', monthlyPrCount: '0'
   });
+
+  const canViewPrApprovals = hasGranularPermission('pr_approval', 'view');
+  const canViewPoApprovals = hasGranularPermission('po_approval', 'view');
+  const canViewMoApprovals = hasGranularPermission('mo_approval', 'view');
+
+  // KPI Visibility
+  const canViewKpiToday = hasGranularPermission('dash_kpi_today_orders', 'view');
+  const canViewKpiLastDay = hasGranularPermission('dash_kpi_last_day_orders', 'view');
+  const canViewKpiWeekly = hasGranularPermission('dash_kpi_weekly_orders', 'view');
+  const canViewKpiMonthly = hasGranularPermission('dash_kpi_monthly_orders', 'view');
+  const canViewKpiWeeklyPr = hasGranularPermission('dash_kpi_weekly_pr', 'view');
+  const canViewKpiMonthlyPr = hasGranularPermission('dash_kpi_monthly_pr', 'view');
+
+  // Charts & Tables Visibility
+  const canViewChartWeekly = hasGranularPermission('dash_chart_weekly_movement', 'view');
+  const canViewChartAnnual = hasGranularPermission('dash_chart_annual_valuation', 'view');
+  const canViewChartSegmentation = hasGranularPermission('dash_chart_stock_segmentation', 'view');
+  const canViewGaugeDiesel = hasGranularPermission('dash_gauge_diesel', 'view');
+  const canViewGaugeOctane = hasGranularPermission('dash_gauge_octane', 'view');
+  const canViewTableMo = hasGranularPermission('dash_table_latest_mo', 'view');
+  const canViewTablePr = hasGranularPermission('dash_table_latest_pr', 'view');
+  const canViewTableGrn = hasGranularPermission('dash_table_latest_grn', 'view');
+
+  // Action Buttons Visibility
+  const canActionPrintLabels = hasGranularPermission('dash_action_print_labels', 'view');
+  const canActionCheckStock = hasGranularPermission('dash_action_check_stock', 'view');
+  const canActionMoveOrder = hasGranularPermission('dash_action_move_order', 'view');
+  const canActionLocTransfer = hasGranularPermission('dash_action_loc_transfer', 'view');
 
   useEffect(() => {
     const timer = setInterval(() => setDateTime(new Date()), 1000);
@@ -295,200 +323,263 @@ const DashboardOverview: React.FC<{
   return (
     <div className="space-y-6 animate-slide-up pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex flex-col">
-          <h1 className="text-2xl font-bold text-[#2d808e] leading-none">Welcome, {user?.fullName?.split(' ')[0] || 'Admin'}</h1>
-          <p className="text-xs font-medium text-gray-400 mt-2 uppercase">{dateTime.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+        <div className="flex items-center gap-4">
+          {user?.avatarUrl && (
+            <div className="w-12 h-12 rounded-xl border-2 border-[#2d808e]/20 overflow-hidden shadow-sm">
+              <img src={user.avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+            </div>
+          )}
+          <div className="flex flex-col">
+            <h1 className="text-2xl font-bold text-[#2d808e] leading-none">Welcome, {user?.fullName?.split(' ')[0] || 'Admin'}</h1>
+            <p className="text-xs font-medium text-gray-400 mt-2 uppercase">{dateTime.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <button onClick={() => navigate('/label')} className="flex-1 sm:flex-none px-4 sm:px-5 py-2.5 bg-[#2d808e] text-white text-xs font-bold rounded-xl shadow-lg shadow-[#2d808e]/10 hover:bg-[#256b78] uppercase transition-all flex items-center justify-center gap-2"><Printer size={16} /><span>Print Labels</span></button>
-          <button onClick={onCheckStock} className="flex-1 sm:flex-none px-4 sm:px-5 py-2.5 bg-[#2d808e] text-white text-xs font-bold rounded-xl shadow-lg shadow-[#2d808e]/10 hover:bg-[#256b78] uppercase transition-all flex items-center justify-center gap-2"><PackageSearch size={16} /><span>Check Stock</span></button>
-          <button onClick={onMoveOrder} className="flex-1 sm:flex-none px-4 sm:px-5 py-2.5 bg-[#2d808e] text-white text-xs font-bold rounded-xl shadow-lg shadow-[#2d808e]/10 hover:bg-[#256b78] uppercase transition-all flex items-center justify-center gap-2"><MoveHorizontal size={16} /><span>Move Order</span></button>
-          <button onClick={onLocTransfer} className="flex-1 sm:flex-none px-4 sm:px-5 py-2.5 bg-[#2d808e] text-white text-xs font-bold rounded-xl shadow-lg shadow-[#2d808e]/10 hover:bg-[#256b78] uppercase transition-all flex items-center justify-center gap-2"><MapPin size={16} /><span>Loc. Transfer</span></button>
+          {canActionPrintLabels && <button onClick={() => navigate('/label')} className="flex-1 sm:flex-none px-4 sm:px-5 py-2.5 bg-[#2d808e] text-white text-xs font-bold rounded-xl shadow-lg shadow-[#2d808e]/10 hover:bg-[#256b78] uppercase transition-all flex items-center justify-center gap-2"><Printer size={16} /><span>Print Labels</span></button>}
+          {canActionCheckStock && <button onClick={onCheckStock} className="flex-1 sm:flex-none px-4 sm:px-5 py-2.5 bg-[#2d808e] text-white text-xs font-bold rounded-xl shadow-lg shadow-[#2d808e]/10 hover:bg-[#256b78] uppercase transition-all flex items-center justify-center gap-2"><PackageSearch size={16} /><span>Check Stock</span></button>}
+          {canActionMoveOrder && <button onClick={onMoveOrder} className="flex-1 sm:flex-none px-4 sm:px-5 py-2.5 bg-[#2d808e] text-white text-xs font-bold rounded-xl shadow-lg shadow-[#2d808e]/10 hover:bg-[#256b78] uppercase transition-all flex items-center justify-center gap-2"><MoveHorizontal size={16} /><span>Move Order</span></button>}
+          {canActionLocTransfer && <button onClick={onLocTransfer} className="flex-1 sm:flex-none px-4 sm:px-5 py-2.5 bg-[#2d808e] text-white text-xs font-bold rounded-xl shadow-lg shadow-[#2d808e]/10 hover:bg-[#256b78] uppercase transition-all flex items-center justify-center gap-2"><MapPin size={16} /><span>Loc. Transfer</span></button>}
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <KPICard label="Today Orders" value={stats.todayOrderQty} subValue={stats.todayOrderCount} />
-        <KPICard label="Last Day Orders" value={stats.lastDayOrderQty} subValue={stats.lastDayOrderCount} />
-        <KPICard label="Weekly Orders" value={stats.weeklyOrderQty} subValue={stats.weeklyOrderCount} />
-        <KPICard label="Monthly Orders" value={stats.monthlyOrderQty} subValue={stats.monthlyOrderCount} />
-        <KPICard label="Weekly PR" value={stats.weeklyPrQty} subValue={stats.weeklyPrCount} />
-        <KPICard label="Monthly PR" value={stats.monthlyPrQty} subValue={stats.monthlyPrCount} />
+        {canViewKpiToday && <KPICard label="Today Orders" value={stats.todayOrderQty} subValue={stats.todayOrderCount} />}
+        {canViewKpiLastDay && <KPICard label="Last Day Orders" value={stats.lastDayOrderQty} subValue={stats.lastDayOrderCount} />}
+        {canViewKpiWeekly && <KPICard label="Weekly Orders" value={stats.weeklyOrderQty} subValue={stats.weeklyOrderCount} />}
+        {canViewKpiMonthly && <KPICard label="Monthly Orders" value={stats.monthlyOrderQty} subValue={stats.monthlyOrderCount} />}
+        {canViewKpiWeeklyPr && <KPICard label="Weekly PR" value={stats.weeklyPrQty} subValue={stats.weeklyPrCount} />}
+        {canViewKpiMonthlyPr && <KPICard label="Monthly PR" value={stats.monthlyPrQty} subValue={stats.monthlyPrCount} />}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col shadow-sm">
-          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between"><h3 className="text-xs font-bold text-gray-800 uppercase">PR Approvals</h3><span className="px-2 py-0.5 bg-orange-50 text-orange-600 text-[10px] font-bold rounded-full uppercase">{pendingPrs.length} Pending</span></div>
-          <div className="overflow-y-auto max-h-[220px] scrollbar-thin">
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-gray-50/50 sticky top-0"><tr className="text-[10px] font-medium text-gray-400 uppercase border-b border-gray-50"><th className="px-5 py-3">Date</th><th className="px-5 py-3">Reference</th><th className="px-5 py-3 text-right">Value</th></tr></thead>
-              <tbody className="text-xs font-medium text-gray-600">
-                {pendingPrs.map((pr) => (
-                  <tr key={pr.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
-                    <td className="px-5 py-3">{new Date(pr.created_at).toLocaleDateString()}</td>
-                    <td className="px-5 py-3"><button onClick={() => onPreviewPr(pr)} className="text-blue-500 font-bold hover:underline">{pr.pr_no}</button></td>
-                    <td className="px-5 py-3 text-right font-medium text-gray-800">{(pr.total_value || 0).toLocaleString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {canViewPrApprovals && (
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col shadow-sm">
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between"><h3 className="text-xs font-bold text-gray-800 uppercase">PR Approvals</h3><span className="px-2 py-0.5 bg-orange-50 text-orange-600 text-[10px] font-bold rounded-full uppercase">{pendingPrs.length} Pending</span></div>
+            <div className="overflow-y-auto max-h-[220px] scrollbar-thin">
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-gray-50/50 sticky top-0"><tr className="text-[10px] font-medium text-gray-400 uppercase border-b border-gray-50"><th className="px-5 py-3">Date</th><th className="px-5 py-3">Reference</th><th className="px-5 py-3 text-right">Value</th></tr></thead>
+                <tbody className="text-xs font-medium text-gray-600">
+                  {pendingPrs.map((pr) => (
+                    <tr key={pr.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
+                      <td className="px-5 py-3">{new Date(pr.created_at).toLocaleDateString()}</td>
+                      <td className="px-5 py-3"><button onClick={() => onPreviewPr(pr)} className="text-blue-500 font-bold hover:underline">{pr.pr_no}</button></td>
+                      <td className="px-5 py-3 text-right font-medium text-gray-800">{(pr.total_value || 0).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col shadow-sm">
-          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between"><h3 className="text-xs font-bold text-gray-800 uppercase">PO Approvals</h3><span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-full uppercase">{pendingPos.length} Pending</span></div>
-          <div className="overflow-y-auto max-h-[220px] scrollbar-thin">
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-gray-50/50 sticky top-0"><tr className="text-[10px] font-medium text-gray-400 uppercase border-b border-gray-50"><th className="px-5 py-3">Date</th><th className="px-5 py-3">Order No</th><th className="px-5 py-3 text-right">Value</th></tr></thead>
-              <tbody className="text-xs font-medium text-gray-600">
-                {pendingPos.map((po) => (
-                  <tr key={po.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
-                    <td className="px-5 py-3">{new Date(po.created_at).toLocaleDateString()}</td>
-                    <td className="px-5 py-3"><button onClick={() => onPreviewPo(po)} className="text-blue-500 font-bold hover:underline">{po.po_no}</button></td>
-                    <td className="px-5 py-3 text-right font-medium text-gray-800">{(po.total_value || 0).toLocaleString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        )}
+        {canViewPoApprovals && (
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col shadow-sm">
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between"><h3 className="text-xs font-bold text-gray-800 uppercase">PO Approvals</h3><span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-full uppercase">{pendingPos.length} Pending</span></div>
+            <div className="overflow-y-auto max-h-[220px] scrollbar-thin">
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-gray-50/50 sticky top-0"><tr className="text-[10px] font-medium text-gray-400 uppercase border-b border-gray-50"><th className="px-5 py-3">Date</th><th className="px-5 py-3">Order No</th><th className="px-5 py-3 text-right">Value</th></tr></thead>
+                <tbody className="text-xs font-medium text-gray-600">
+                  {pendingPos.map((po) => (
+                    <tr key={po.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
+                      <td className="px-5 py-3">{new Date(po.created_at).toLocaleDateString()}</td>
+                      <td className="px-5 py-3"><button onClick={() => onPreviewPo(po)} className="text-blue-500 font-bold hover:underline">{po.po_no}</button></td>
+                      <td className="px-5 py-3 text-right font-medium text-gray-800">{(po.total_value || 0).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col shadow-sm">
-          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between"><h3 className="text-xs font-bold text-gray-800 uppercase">MO Approvals</h3><span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded-full uppercase">{pendingMos.length} Pending</span></div>
-          <div className="overflow-y-auto max-h-[220px] scrollbar-thin">
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-gray-50/50 sticky top-0"><tr className="text-[10px] font-medium text-gray-400 uppercase border-b border-gray-50"><th className="px-5 py-3">Date</th><th className="px-5 py-3">Ref ID</th><th className="px-5 py-3 text-right">Value</th></tr></thead>
-              <tbody className="text-xs font-medium text-gray-600">
-                {pendingMos.map((mo) => (
-                  <tr key={mo.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
-                    <td className="px-5 py-3 whitespace-nowrap">{new Date(mo.created_at).toLocaleDateString()}</td>
-                    <td className="px-5 py-3"><button onClick={() => onPreviewMo(mo)} className="text-blue-500 font-bold hover:underline">{mo.mo_no}</button></td>
-                    <td className="px-5 py-3 text-right font-medium text-gray-800">{(mo.total_value || 0).toLocaleString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        )}
+        {canViewMoApprovals && (
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col shadow-sm">
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between"><h3 className="text-xs font-bold text-gray-800 uppercase">MO Approvals</h3><span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded-full uppercase">{pendingMos.length} Pending</span></div>
+            <div className="overflow-y-auto max-h-[220px] scrollbar-thin">
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-gray-50/50 sticky top-0"><tr className="text-[10px] font-medium text-gray-400 uppercase border-b border-gray-50"><th className="px-5 py-3">Date</th><th className="px-5 py-3">Ref ID</th><th className="px-5 py-3 text-right">Value</th></tr></thead>
+                <tbody className="text-xs font-medium text-gray-600">
+                  {pendingMos.map((mo) => (
+                    <tr key={mo.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
+                      <td className="px-5 py-3 whitespace-nowrap">{new Date(mo.created_at).toLocaleDateString()}</td>
+                      <td className="px-5 py-3"><button onClick={() => onPreviewMo(mo)} className="text-blue-500 font-bold hover:underline">{mo.mo_no}</button></td>
+                      <td className="px-5 py-3 text-right font-medium text-gray-800">{(mo.total_value || 0).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-          <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest mb-6">Weekly Movement Analytics</h3>
-          <div className="h-52">
-            <ResponsiveContainer width="100%" height="100%"><BarChart data={weeklyData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} /><YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} /><YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} /><Tooltip contentStyle={{ fontSize: '12px', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} /><Bar yAxisId="left" dataKey="qty" fill="#2d808e" radius={[4, 4, 0, 0]} barSize={24} /><Line yAxisId="right" type="monotone" dataKey="value" stroke="#f97316" strokeWidth={2} dot={{ fill: '#f97316', r: 4 }} /></BarChart></ResponsiveContainer>
+        {canViewChartWeekly && (
+          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+            <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest mb-6">Weekly Movement Analytics</h3>
+            <div className="h-52">
+              <ResponsiveContainer width="100%" height="100%"><BarChart data={weeklyData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} /><YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} /><YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} /><Tooltip contentStyle={{ fontSize: '12px', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} /><Bar yAxisId="left" dataKey="qty" fill="#2d808e" radius={[4, 4, 0, 0]} barSize={24} /><Line yAxisId="right" type="monotone" dataKey="value" stroke="#f97316" strokeWidth={2} dot={{ fill: '#f97316', r: 4 }} /></BarChart></ResponsiveContainer>
+            </div>
           </div>
-        </div>
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-          <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest mb-6">Annual Valuation Trend</h3>
-          <div className="h-52">
-            <ResponsiveContainer width="100%" height="100%"><LineChart data={monthlyData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} /><YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} /><Tooltip contentStyle={{ fontSize: '12px', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} /><Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} dot={{ fill: '#3b82f6', r: 6, strokeWidth: 2, stroke: '#fff' }} /></LineChart></ResponsiveContainer>
+        )}
+        {canViewChartAnnual && (
+          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+            <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest mb-6">Annual Valuation Trend</h3>
+            <div className="h-52">
+              <ResponsiveContainer width="100%" height="100%"><LineChart data={monthlyData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} /><YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} /><Tooltip contentStyle={{ fontSize: '12px', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} /><Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} dot={{ fill: '#3b82f6', r: 6, strokeWidth: 2, stroke: '#fff' }} /></LineChart></ResponsiveContainer>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <LiquidGauge label="DIESEL" value={dieselStock} subLabel="4457" color="#2d808e" colorLight="#60a5fa" />
-        <LiquidGauge label="OCTANE" value={octaneStock} subLabel="3121" color="#2589ff" colorLight="#8ebfff" />
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 flex flex-col shadow-sm">
-          <h3 className="text-xs font-bold text-gray-800 uppercase mb-6 text-center">Stock Segmentation</h3>
-          <div className="flex flex-1 items-center justify-around gap-4">
-            <div className="h-40 w-1/2">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={stockTypes} innerRadius={40} outerRadius={60} paddingAngle={4} dataKey="value">
-                    {stockTypes.map((entry, index) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />))}
-                  </Pie>
-                  <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px' }} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="w-1/2 flex flex-col space-y-2 overflow-y-auto max-h-[160px] scrollbar-thin pr-2">
-              {stockTypes.map((type, index) => { 
-                const total = stockTypes.reduce((acc, curr) => acc + curr.value, 0); 
-                const percent = total > 0 ? ((type.value / total) * 100).toFixed(0) : 0; 
-                return (
-                  <div key={index} className="flex items-center justify-between group hover:bg-gray-50 p-2 rounded-lg transition-colors">
-                    <div className="flex items-center space-x-2 overflow-hidden">
-                      <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
-                      <span className="text-[10px] font-medium text-gray-500 uppercase truncate leading-none">{type.name}</span>
+        {canViewGaugeDiesel && <LiquidGauge label="DIESEL" value={dieselStock} subLabel="4457" color="#2d808e" colorLight="#60a5fa" />}
+        {canViewGaugeOctane && <LiquidGauge label="OCTANE" value={octaneStock} subLabel="3121" color="#2589ff" colorLight="#8ebfff" />}
+        {canViewChartSegmentation && (
+          <div className="bg-white p-6 rounded-2xl border border-gray-100 flex flex-col shadow-sm">
+            <h3 className="text-xs font-bold text-gray-800 uppercase mb-6 text-center">Stock Segmentation</h3>
+            <div className="flex flex-1 items-center justify-around gap-4">
+              <div className="h-40 w-1/2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={stockTypes} innerRadius={40} outerRadius={60} paddingAngle={4} dataKey="value">
+                      {stockTypes.map((entry, index) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />))}
+                    </Pie>
+                    <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="w-1/2 flex flex-col space-y-2 overflow-y-auto max-h-[160px] scrollbar-thin pr-2">
+                {stockTypes.map((type, index) => { 
+                  const total = stockTypes.reduce((acc, curr) => acc + curr.value, 0); 
+                  const percent = total > 0 ? ((type.value / total) * 100).toFixed(0) : 0; 
+                  return (
+                    <div key={index} className="flex items-center justify-between group hover:bg-gray-50 p-2 rounded-lg transition-colors">
+                      <div className="flex items-center space-x-2 overflow-hidden">
+                        <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
+                        <span className="text-[10px] font-medium text-gray-500 uppercase truncate leading-none">{type.name}</span>
+                      </div>
+                      <span className="text-[10px] font-bold text-gray-800 ml-2">{percent}%</span>
                     </div>
-                    <span className="text-[10px] font-bold text-gray-800 ml-2">{percent}%</span>
-                  </div>
-                ); 
-              })}
+                  ); 
+                })}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm flex flex-col min-h-[400px]">
-          <h2 className="text-xl font-bold text-[#2d808e] mb-6">Latest Move orders</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="text-[10px] font-medium text-gray-400 border-b border-gray-50 uppercase">
-                  <th className="px-2 py-4 text-center w-12 border-r border-gray-50">#</th>
-                  <th className="px-4 py-4 text-center border-r border-gray-50">DATE</th>
-                  <th className="px-4 py-4 text-center border-r border-gray-50">TNX.NO</th>
-                  <th className="px-4 py-4 border-r border-gray-50">ITEM NAME</th>
-                  <th className="px-4 py-4 text-center border-r border-gray-50">QTY</th>
-                  <th className="px-4 py-4 text-right">VALUE</th>
-                </tr>
-              </thead>
-              <tbody className="text-[12px] font-medium">
-                {latestMOs.map((mo, idx) => {
-                  const firstItem = mo.items?.[0] || {};
-                  const itemNameDisplay = mo.items?.length > 1 
-                    ? `${firstItem.name || 'N/A'} (+${mo.items.length - 1})`
-                    : (firstItem.name || 'N/A');
-                  const totalQty = mo.items?.reduce((acc: number, i: any) => acc + (Number(i.reqQty) || 0), 0);
+        {canViewTableMo && (
+          <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm flex flex-col min-h-[400px]">
+            <h2 className="text-xl font-bold text-[#2d808e] mb-6">Latest Move orders</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="text-[10px] font-medium text-gray-400 border-b border-gray-50 uppercase">
+                    <th className="px-2 py-4 text-center w-12 border-r border-gray-50">#</th>
+                    <th className="px-4 py-4 text-center border-r border-gray-50">DATE</th>
+                    <th className="px-4 py-4 text-center border-r border-gray-50">TNX.NO</th>
+                    <th className="px-4 py-4 border-r border-gray-50">ITEM NAME</th>
+                    <th className="px-4 py-4 text-center border-r border-gray-50">QTY</th>
+                    <th className="px-4 py-4 text-right">VALUE</th>
+                  </tr>
+                </thead>
+                <tbody className="text-[12px] font-medium">
+                  {latestMOs.map((mo, idx) => {
+                    const firstItem = mo.items?.[0] || {};
+                    const itemNameDisplay = mo.items?.length > 1 
+                      ? `${firstItem.name || 'N/A'} (+${mo.items.length - 1})`
+                      : (firstItem.name || 'N/A');
+                    const totalQty = mo.items?.reduce((acc: number, i: any) => acc + (Number(i.reqQty) || 0), 0);
 
-                  return (
-                    <tr key={mo.id} className="hover:bg-gray-50/40 transition-colors">
-                      <td className="px-2 py-4 text-center text-gray-400 border-r border-gray-50">{idx + 1}</td>
-                      <td className="px-4 py-4 text-center border-r border-gray-50 whitespace-nowrap text-gray-600">{formatDateShort(mo.created_at)}</td>
-                      <td className="px-4 py-4 text-center border-r border-gray-50">
-                        <button onClick={() => onPreviewTnx(mo)} className="text-blue-500 font-bold hover:underline transition-all">{mo.mo_no}</button>
-                      </td>
-                      <td className="px-4 py-4 uppercase truncate max-w-[200px] font-medium text-gray-700 border-r border-gray-50" title={itemNameDisplay}>{itemNameDisplay}</td>
-                      <td className="px-4 py-4 text-center font-bold text-gray-800 border-r border-gray-50">{totalQty}</td>
-                      <td className="px-4 py-4 text-right font-bold text-gray-800">{formatCurrency(mo.total_value)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                    return (
+                      <tr key={mo.id} className="hover:bg-gray-50/40 transition-colors">
+                        <td className="px-2 py-4 text-center text-gray-400 border-r border-gray-50">{idx + 1}</td>
+                        <td className="px-4 py-4 text-center border-r border-gray-50 whitespace-nowrap text-gray-600">{formatDateShort(mo.created_at)}</td>
+                        <td className="px-4 py-4 text-center border-r border-gray-50">
+                          <button onClick={() => onPreviewTnx(mo)} className="text-blue-500 font-bold hover:underline transition-all">{mo.mo_no}</button>
+                        </td>
+                        <td className="px-4 py-4 uppercase truncate max-w-[200px] font-medium text-gray-700 border-r border-gray-50" title={itemNameDisplay}>{itemNameDisplay}</td>
+                        <td className="px-4 py-4 text-center font-bold text-gray-800 border-r border-gray-50">{totalQty}</td>
+                        <td className="px-4 py-4 text-right font-bold text-gray-800">{formatCurrency(mo.total_value)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm flex flex-col min-h-[400px]">
-          <h2 className="text-xl font-black text-[#2d808e] mb-6 tracking-tight">Latest PR</h2>
+        {canViewTablePr && (
+          <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm flex flex-col min-h-[400px]">
+            <h2 className="text-xl font-black text-[#2d808e] mb-6 tracking-tight">Latest PR</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="text-[10px] font-black text-gray-400 border-b border-gray-50 uppercase tracking-wider">
+                    <th className="px-2 py-4 text-center w-12 border-r border-gray-50">#</th>
+                    <th className="px-4 py-4 text-center border-r border-gray-50">DATE</th>
+                    <th className="px-4 py-4 text-center border-r border-gray-50">PR NO</th>
+                    <th className="px-4 py-4 border-r border-gray-50">REQUESTED BY</th>
+                    <th className="px-4 py-4 text-center border-r border-gray-50">QTY</th>
+                    <th className="px-4 py-4 text-right">VALUE</th>
+                  </tr>
+                </thead>
+                <tbody className="text-[12px] font-medium">
+                  {latestPRs.map((pr, idx) => {
+                    const totalQty = pr.items?.reduce((acc: number, i: any) => acc + (Number(i.reqQty) || 0), 0);
+                    
+                    return (
+                      <tr key={pr.id} className="hover:bg-gray-50/40 transition-colors">
+                        <td className="px-2 py-4 text-center text-gray-400 border-r border-gray-50">{idx + 1}</td>
+                        <td className="px-4 py-4 text-center border-r border-gray-50 whitespace-nowrap text-gray-600">{formatDateShort(pr.created_at)}</td>
+                        <td className="px-4 py-4 text-center border-r border-gray-50">
+                          <button onClick={() => onPreviewPr(pr)} className="text-blue-500 font-bold hover:underline transition-all">{pr.pr_no}</button>
+                        </td>
+                        <td className="px-4 py-4 uppercase truncate max-w-[150px] font-bold text-gray-700 border-r border-gray-50">{pr.req_by_name || 'N/A'}</td>
+                        <td className="px-4 py-4 text-center font-black text-gray-800 border-r border-gray-50">{totalQty}</td>
+                        <td className="px-4 py-4 text-right font-black text-gray-800">{formatCurrency(pr.total_value)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {canViewTableGrn && (
+        <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm flex flex-col min-h-[400px] mt-6">
+          <h2 className="text-xl font-black text-[#2d808e] mb-6 tracking-tight">Latest GRN</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="text-[10px] font-black text-gray-400 border-b border-gray-50 uppercase tracking-wider">
                   <th className="px-2 py-4 text-center w-12 border-r border-gray-50">#</th>
                   <th className="px-4 py-4 text-center border-r border-gray-50">DATE</th>
-                  <th className="px-4 py-4 text-center border-r border-gray-50">PR NO</th>
-                  <th className="px-4 py-4 border-r border-gray-50">REQUESTED BY</th>
+                  <th className="px-4 py-4 text-center border-r border-gray-50">GRN NO</th>
+                  <th className="px-4 py-4 border-r border-gray-50">SOURCE REF</th>
                   <th className="px-4 py-4 text-center border-r border-gray-50">QTY</th>
-                  <th className="px-4 py-4 text-right">VALUE</th>
+                  <th className="px-4 py-4 text-right">INVOICE NO</th>
                 </tr>
               </thead>
               <tbody className="text-[12px] font-medium">
-                {latestPRs.map((pr, idx) => {
-                  const totalQty = pr.items?.reduce((acc: number, i: any) => acc + (Number(i.reqQty) || 0), 0);
+                {latestGRNs.map((grn, idx) => {
+                  const totalQty = grn.items?.reduce((acc: number, i: any) => acc + (Number(i.grnQty || i.recQty) || 0), 0);
                   
                   return (
-                    <tr key={pr.id} className="hover:bg-gray-50/40 transition-colors">
+                    <tr key={grn.id} className="hover:bg-gray-50/40 transition-colors">
                       <td className="px-2 py-4 text-center text-gray-400 border-r border-gray-50">{idx + 1}</td>
-                      <td className="px-4 py-4 text-center border-r border-gray-50 whitespace-nowrap text-gray-600">{formatDateShort(pr.created_at)}</td>
-                      <td className="px-4 py-4 text-center border-r border-gray-50">
-                        <button onClick={() => onPreviewPr(pr)} className="text-blue-500 font-bold hover:underline transition-all">{pr.pr_no}</button>
+                      <td className="px-4 py-4 text-center border-r border-gray-50 whitespace-nowrap text-gray-600">{formatDateShort(grn.created_at)}</td>
+                      <td className="px-4 py-4 text-center border-r border-gray-50 font-bold text-[#2d808e]">
+                        <button onClick={() => onPreviewGrn(grn.grn_no)} className="hover:underline">
+                          {grn.grn_no}
+                        </button>
                       </td>
-                      <td className="px-4 py-4 uppercase truncate max-w-[150px] font-bold text-gray-700 border-r border-gray-50">{pr.req_by_name || 'N/A'}</td>
+                      <td className="px-4 py-4 uppercase truncate max-w-[150px] font-bold text-gray-700 border-r border-gray-50">{grn.source_ref || 'N/A'}</td>
                       <td className="px-4 py-4 text-center font-black text-gray-800 border-r border-gray-50">{totalQty}</td>
-                      <td className="px-4 py-4 text-right font-black text-gray-800">{formatCurrency(pr.total_value)}</td>
+                      <td className="px-4 py-4 text-right font-black text-gray-800">{grn.invoice_no || 'N/A'}</td>
                     </tr>
                   );
                 })}
@@ -496,45 +587,7 @@ const DashboardOverview: React.FC<{
             </table>
           </div>
         </div>
-      </div>
-
-      <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm flex flex-col min-h-[400px] mt-6">
-        <h2 className="text-xl font-black text-[#2d808e] mb-6 tracking-tight">Latest GRN</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="text-[10px] font-black text-gray-400 border-b border-gray-50 uppercase tracking-wider">
-                <th className="px-2 py-4 text-center w-12 border-r border-gray-50">#</th>
-                <th className="px-4 py-4 text-center border-r border-gray-50">DATE</th>
-                <th className="px-4 py-4 text-center border-r border-gray-50">GRN NO</th>
-                <th className="px-4 py-4 border-r border-gray-50">SOURCE REF</th>
-                <th className="px-4 py-4 text-center border-r border-gray-50">QTY</th>
-                <th className="px-4 py-4 text-right">INVOICE NO</th>
-              </tr>
-            </thead>
-            <tbody className="text-[12px] font-medium">
-              {latestGRNs.map((grn, idx) => {
-                const totalQty = grn.items?.reduce((acc: number, i: any) => acc + (Number(i.grnQty || i.recQty) || 0), 0);
-                
-                return (
-                  <tr key={grn.id} className="hover:bg-gray-50/40 transition-colors">
-                    <td className="px-2 py-4 text-center text-gray-400 border-r border-gray-50">{idx + 1}</td>
-                    <td className="px-4 py-4 text-center border-r border-gray-50 whitespace-nowrap text-gray-600">{formatDateShort(grn.created_at)}</td>
-                    <td className="px-4 py-4 text-center border-r border-gray-50 font-bold text-[#2d808e]">
-                      <button onClick={() => onPreviewGrn(grn.grn_no)} className="hover:underline">
-                        {grn.grn_no}
-                      </button>
-                    </td>
-                    <td className="px-4 py-4 uppercase truncate max-w-[150px] font-bold text-gray-700 border-r border-gray-50">{grn.source_ref || 'N/A'}</td>
-                    <td className="px-4 py-4 text-center font-black text-gray-800 border-r border-gray-50">{totalQty}</td>
-                    <td className="px-4 py-4 text-right font-black text-gray-800">{grn.invoice_no || 'N/A'}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      )}
     </div>
   );
 };
@@ -552,8 +605,12 @@ const ProfileModal: React.FC<{ user: any, isOpen: boolean, onClose: () => void, 
               <div className="absolute -top-10 -left-10 w-40 h-40 border-8 border-white rounded-full"></div>
               <div className="absolute -bottom-10 -right-10 w-60 h-60 border-4 border-white rounded-full"></div>
            </div>
-           <div className="w-24 h-24 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center mb-6 shadow-xl backdrop-blur-sm z-10">
-             <UserIcon size={56} className="text-white" />
+           <div className="w-24 h-24 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center mb-6 shadow-xl backdrop-blur-sm z-10 overflow-hidden">
+             {user?.avatarUrl ? (
+               <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+             ) : (
+               <UserIcon size={56} className="text-white" />
+             )}
            </div>
            <h2 className="text-2xl font-black uppercase tracking-tighter mb-1 z-10">SYSTEM ADMINISTRATOR</h2>
            <p className="text-[10px] font-black text-white/60 uppercase tracking-widest z-10">NODE ID: {user?.id?.substring(0,8).toUpperCase() || 'N/A'}</p>

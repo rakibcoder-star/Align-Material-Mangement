@@ -15,12 +15,13 @@ const PermissionCard: React.FC<PermissionCardProps> = ({ label, moduleId, permis
   const standardFields = ['view', 'edit', 'dl'] as const;
   const requisitionFields = ['prepared', 'checked', 'confirmed', 'approved'] as const;
   const poFields = ['prepared', 'checked', 'confirmed', 'approved', 'accepted'] as const;
+  const approvalFields = ['view'] as const;
   
   return (
     <div className="bg-white border border-cyan-100/50 rounded-lg p-3.5 flex flex-col space-y-3.5 shadow-sm">
       <span className="text-[10px] font-black text-gray-500 uppercase tracking-tighter">{label}</span>
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-        {standardFields.map((field) => (
+        {(moduleId.includes('approval') ? approvalFields : standardFields).map((field) => (
           <label key={field} className="flex items-center space-x-1.5 cursor-pointer group">
             <div 
               className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${
@@ -32,7 +33,7 @@ const PermissionCard: React.FC<PermissionCardProps> = ({ label, moduleId, permis
                 type="checkbox" 
                 className="hidden" 
                 checked={permissions[field]} 
-                onChange={(e) => onChange(moduleId, field, e.target.checked)} 
+                onChange={(e) => onChange(moduleId, field as keyof ModulePermissions, e.target.checked)} 
               />
             </div>
             <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{field}</span>
@@ -167,7 +168,28 @@ const UserManagement: React.FC = () => {
                 item_group: { view: true, edit: false, dl: false },
                 item_type: { view: true, edit: false, dl: false },
                 cost_center: { view: true, edit: false, dl: false },
-                user_management: { view: false, edit: false, dl: false }
+                pr_approval: { view: false, edit: false, dl: false },
+                po_approval: { view: false, edit: false, dl: false },
+                mo_approval: { view: false, edit: false, dl: false },
+                user_management: { view: false, edit: false, dl: false },
+                dash_kpi_today_orders: { view: true },
+                dash_kpi_last_day_orders: { view: true },
+                dash_kpi_weekly_orders: { view: true },
+                dash_kpi_monthly_orders: { view: true },
+                dash_kpi_weekly_pr: { view: true },
+                dash_kpi_monthly_pr: { view: true },
+                dash_chart_weekly_movement: { view: true },
+                dash_chart_annual_valuation: { view: true },
+                dash_chart_stock_segmentation: { view: true },
+                dash_gauge_diesel: { view: true },
+                dash_gauge_octane: { view: true },
+                dash_table_latest_mo: { view: true },
+                dash_table_latest_pr: { view: true },
+                dash_table_latest_grn: { view: true },
+                dash_action_print_labels: { view: true },
+                dash_action_check_stock: { view: true },
+                dash_action_move_order: { view: true },
+                dash_action_loc_transfer: { view: true }
               } 
             });
           }}
@@ -348,13 +370,30 @@ const UserManagement: React.FC = () => {
                 <div className="w-full md:w-[280px] bg-[#fcfcfc] rounded-xl border border-gray-100 p-8 flex flex-col items-center justify-center space-y-4 shadow-inner">
                   <div className="relative">
                     <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center shadow-inner border border-white overflow-hidden">
-                      <UserIcon size={44} className="text-gray-300" />
+                      {formData.avatarUrl ? (
+                        <img src={formData.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <UserIcon size={44} className="text-gray-300" />
+                      )}
                     </div>
-                    <button className="absolute bottom-0.5 right-0.5 bg-[#2d808e] text-white p-1.5 rounded-full border-2 border-white shadow-md hover:scale-110 transition-transform">
+                    <button 
+                      onClick={() => {
+                        const url = window.prompt("Enter Avatar Image URL:");
+                        if (url !== null) setFormData({...formData, avatarUrl: url});
+                      }}
+                      className="absolute bottom-0.5 right-0.5 bg-[#2d808e] text-white p-1.5 rounded-full border-2 border-white shadow-md hover:scale-110 transition-transform"
+                    >
                       <Plus size={14} strokeWidth={4} />
                     </button>
                   </div>
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Avatar</span>
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Avatar URL</span>
+                  <input 
+                    type="text" 
+                    placeholder="https://example.com/image.jpg"
+                    value={formData.avatarUrl || ''}
+                    onChange={(e) => setFormData({...formData, avatarUrl: e.target.value})}
+                    className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded text-[10px] outline-none focus:border-[#2d808e]"
+                  />
                 </div>
               </div>
 
@@ -366,6 +405,55 @@ const UserManagement: React.FC = () => {
                 </div>
 
                 <div className="space-y-10">
+                  {/* Dashboard Approvals */}
+                  <div className="space-y-4">
+                    <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-2.5">Dashboard Approvals</h5>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <PermissionCard label="PR Approvals" moduleId="pr_approval" permissions={formData.granularPermissions?.pr_approval || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                      <PermissionCard label="PO Approvals" moduleId="po_approval" permissions={formData.granularPermissions?.po_approval || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                      <PermissionCard label="MO Approvals" moduleId="mo_approval" permissions={formData.granularPermissions?.mo_approval || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                    </div>
+                  </div>
+
+                  {/* Dashboard KPI Cards */}
+                  <div className="space-y-4">
+                    <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-2.5">Dashboard KPI Cards</h5>
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                      <PermissionCard label="Today Orders" moduleId="dash_kpi_today_orders" permissions={formData.granularPermissions?.dash_kpi_today_orders || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                      <PermissionCard label="Last Day Orders" moduleId="dash_kpi_last_day_orders" permissions={formData.granularPermissions?.dash_kpi_last_day_orders || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                      <PermissionCard label="Weekly Orders" moduleId="dash_kpi_weekly_orders" permissions={formData.granularPermissions?.dash_kpi_weekly_orders || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                      <PermissionCard label="Monthly Orders" moduleId="dash_kpi_monthly_orders" permissions={formData.granularPermissions?.dash_kpi_monthly_orders || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                      <PermissionCard label="Weekly PR" moduleId="dash_kpi_weekly_pr" permissions={formData.granularPermissions?.dash_kpi_weekly_pr || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                      <PermissionCard label="Monthly PR" moduleId="dash_kpi_monthly_pr" permissions={formData.granularPermissions?.dash_kpi_monthly_pr || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                    </div>
+                  </div>
+
+                  {/* Dashboard Action Buttons */}
+                  <div className="space-y-4">
+                    <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-2.5">Dashboard Action Buttons</h5>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <PermissionCard label="Print Labels" moduleId="dash_action_print_labels" permissions={formData.granularPermissions?.dash_action_print_labels || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                      <PermissionCard label="Check Stock" moduleId="dash_action_check_stock" permissions={formData.granularPermissions?.dash_action_check_stock || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                      <PermissionCard label="Move Order" moduleId="dash_action_move_order" permissions={formData.granularPermissions?.dash_action_move_order || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                      <PermissionCard label="Loc. Transfer" moduleId="dash_action_loc_transfer" permissions={formData.granularPermissions?.dash_action_loc_transfer || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                    </div>
+                  </div>
+
+                  {/* Dashboard Charts & Tables */}
+                  <div className="space-y-4">
+                    <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-2.5">Dashboard Charts & Tables</h5>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <PermissionCard label="Weekly Movement" moduleId="dash_chart_weekly_movement" permissions={formData.granularPermissions?.dash_chart_weekly_movement || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                      <PermissionCard label="Annual Valuation" moduleId="dash_chart_annual_valuation" permissions={formData.granularPermissions?.dash_chart_annual_valuation || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                      <PermissionCard label="Stock Segmentation" moduleId="dash_chart_stock_segmentation" permissions={formData.granularPermissions?.dash_chart_stock_segmentation || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                      <PermissionCard label="Diesel Gauge" moduleId="dash_gauge_diesel" permissions={formData.granularPermissions?.dash_gauge_diesel || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                      <PermissionCard label="Octane Gauge" moduleId="dash_gauge_octane" permissions={formData.granularPermissions?.dash_gauge_octane || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                      <PermissionCard label="Latest MO Table" moduleId="dash_table_latest_mo" permissions={formData.granularPermissions?.dash_table_latest_mo || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                      <PermissionCard label="Latest PR Table" moduleId="dash_table_latest_pr" permissions={formData.granularPermissions?.dash_table_latest_pr || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                      <PermissionCard label="Latest GRN Table" moduleId="dash_table_latest_grn" permissions={formData.granularPermissions?.dash_table_latest_grn || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                    </div>
+                  </div>
+
                   {/* Purchase Management */}
                   <div className="space-y-4">
                     <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-2.5">Purchase Management</h5>

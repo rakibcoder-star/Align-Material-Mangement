@@ -34,14 +34,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const mappedUser: User = {
         id: data.id,
         email: data.email,
-        fullName: data.full_name,
+        fullName: data.fullName || data.full_name,
         username: data.username,
+        avatarUrl: data.avatarUrl || data.avatar_url,
         role: data.role as Role,
         status: data.status as 'Active' | 'Inactive',
-        lastLogin: data.last_login,
+        lastLogin: data.lastLogin || data.last_login,
         permissions: [],
-        granularPermissions: data.granular_permissions || {},
-        createdAt: data.created_at
+        granularPermissions: data.granularPermissions || data.granular_permissions || {},
+        createdAt: data.createdAt || data.created_at
       };
       setUser(mappedUser);
       setIsAuthenticated(true);
@@ -58,14 +59,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUsers(data.map(u => ({
         id: u.id,
         email: u.email,
-        fullName: u.full_name,
+        fullName: u.fullName || u.full_name,
         username: u.username,
+        avatarUrl: u.avatarUrl || u.avatar_url,
         role: u.role as Role,
         status: u.status as 'Active' | 'Inactive',
-        lastLogin: u.last_login,
+        lastLogin: u.lastLogin || u.last_login,
         permissions: [],
-        granularPermissions: u.granular_permissions || {},
-        createdAt: u.created_at
+        granularPermissions: u.granularPermissions || u.granular_permissions || {},
+        createdAt: u.createdAt || u.created_at
       })));
     }
   };
@@ -107,7 +109,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (error) return { success: false, message: error.message };
     
     // Update last login
-    await supabase.from('profiles').update({ last_login: new Date().toISOString() }).eq('id', data.user.id);
+    await supabase.from('profiles').update({ lastLogin: new Date().toISOString() }).eq('id', data.user.id);
     
     return { success: true };
   };
@@ -138,11 +140,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { error: profileError } = await supabase.from('profiles').insert([{
         id: data.user.id,
         email: userData.email,
-        full_name: userData.fullName,
+        fullName: userData.fullName,
         username: userData.username,
+        avatarUrl: userData.avatarUrl,
         role: userData.role,
         status: userData.status,
-        granular_permissions: userData.granularPermissions
+        granularPermissions: userData.granularPermissions
       }]);
       
       if (profileError) throw profileError;
@@ -153,11 +156,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateUser = async (userId: string, updates: Partial<User>) => {
     const { error } = await supabase.from('profiles').update({
-      full_name: updates.fullName,
+      fullName: updates.fullName,
       username: updates.username,
+      avatarUrl: updates.avatarUrl,
       role: updates.role,
       status: updates.status,
-      granular_permissions: updates.granularPermissions
+      granularPermissions: updates.granularPermissions
     }).eq('id', userId);
 
     if (error) throw error;
