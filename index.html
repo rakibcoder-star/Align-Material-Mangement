@@ -55,21 +55,23 @@
       }
 
       @media print {
-        body * {
-          visibility: hidden;
+        .no-print {
+          display: none !important;
         }
-        #print-section, #print-section * {
+        body {
+          visibility: hidden;
+          background: white !important;
+        }
+        .printable, .printable * {
           visibility: visible;
         }
-        #print-section {
+        .printable {
           position: absolute;
           left: 0;
           top: 0;
           width: 100%;
-          background: white !important;
-        }
-        .no-print {
-          display: none !important;
+          margin: 0;
+          padding: 0;
         }
       }
 

@@ -22,62 +22,70 @@ const POPrintTemplate: React.FC<POPrintTemplateProps> = ({ po, onPoChange }) => 
   const displayStatus = (po.status === 'Approved' || po.status === 'Open') ? 'Approved' : 'Pending';
 
   return (
-    <div className="p-8 bg-white text-black font-sans min-h-screen text-[10px]">
+    <div className="p-10 bg-white text-black font-roboto min-h-screen text-[12px] leading-relaxed">
       {/* Header Section */}
-      <div className="flex justify-between items-start mb-4">
+      <div className="flex justify-between items-start mb-8 relative">
+        <div className="w-24 h-24"></div> {/* Spacer for symmetry */}
         <div className="flex-1 text-center">
-          <h1 className="text-xl font-bold text-gray-900 leading-tight">Fair Technology Limited</h1>
-          <p className="text-[9px] text-gray-600">Plot- 12/A & 12/B, Block-C, Kaliakoir Hi-Tech Park</p>
-          <p className="text-[9px] text-gray-600">Gazipur, Bangladesh-1750. +#880 1787-670 786</p>
-          <div className="mt-2">
-            <h2 className="text-xs font-bold uppercase border-b-2 border-black inline-block px-4">PURCHASE ORDER (PO)</h2>
+          <h1 className="text-3xl font-black text-gray-900 leading-tight mb-1">Fair Technology Limited</h1>
+          <p className="text-[11px] text-gray-600 font-medium">Plot- 12/A & 12/B, Block-C, Kaliakoir Hi-Tech Park</p>
+          <p className="text-[11px] text-gray-600 font-medium">Gazipur, Bangladesh-1750. #+880 1787-670 786</p>
+          <div className="mt-4">
+            <h2 className="text-lg font-black uppercase tracking-widest">PURCHASE ORDER (PO)</h2>
           </div>
+        </div>
+        <div className="w-24 h-24 flex items-center justify-center border border-gray-100 p-1">
+           <img 
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=PO-${po.po_no}`} 
+            alt="QR Code" 
+            className="w-full h-full"
+           />
         </div>
       </div>
 
       {/* Meta Grid Section - Strictly dynamic based on PO data */}
-      <div className="grid grid-cols-3 gap-4 mb-4 border-t border-gray-100 pt-4">
+      <div className="grid grid-cols-3 gap-x-8 gap-y-1.5 mb-8 border-t border-gray-100 pt-6">
         {/* Left Column: Supplier Details */}
         <div className="space-y-1">
-          <p className="flex"><span className="font-bold w-24 shrink-0">PO No.:</span> <span className="font-black">{po.po_no}</span></p>
-          <p className="flex"><span className="font-bold w-24 shrink-0">Supplier Name:</span> <span className="uppercase">{po.supplier_name}</span></p>
-          <p className="flex text-[8px]"><span className="font-bold w-24 shrink-0">Supplier Address:</span> <span>{po.supplier_address || 'N/A'}</span></p>
-          <p className="flex"><span className="font-bold w-24 shrink-0">VAT No.:</span> {po.supplier_vat || 'N/A'}</p>
-          <p className="flex"><span className="font-bold w-24 shrink-0">TIN No.:</span> {po.supplier_tin || 'N/A'}</p>
-          <p className="flex"><span className="font-bold w-24 shrink-0">Email:</span> {po.supplier_email || 'N/A'}</p>
-          <p className="flex"><span className="font-bold w-24 shrink-0">Contact:</span> {po.supplier_contact || 'N/A'}</p>
+          <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">PO No.:</span> <span className="font-black text-gray-700">{po.po_no}</span></p>
+          <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">Supplier Name:</span> <span className="uppercase text-gray-700">{po.supplier_name}</span></p>
+          <p className="flex items-baseline text-[10px]"><span className="font-bold w-24 shrink-0">Supplier Address:</span> <span className="text-gray-700">{po.supplier_address || 'N/A'}</span></p>
+          <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">VAT No.:</span> <span className="text-gray-700">{po.supplier_vat || 'N/A'}</span></p>
+          <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">TIN No.:</span> <span className="text-gray-700">{po.supplier_tin || 'N/A'}</span></p>
+          <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">Email:</span> <span className="text-gray-700 lowercase">{po.supplier_email || 'N/A'}</span></p>
+          <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">Contact:</span> <span className="text-gray-700">{po.supplier_contact || 'N/A'}</span></p>
         </div>
         
         {/* Middle Column: Buyer Details */}
         <div className="space-y-1">
-          <p className="flex"><span className="font-bold w-24 shrink-0">Buyer Name:</span> Fair Technology Limited</p>
-          <p className="flex text-[8px]"><span className="font-bold w-24 shrink-0">Buyer Address:</span> 76/B, Khawaja Palace, Road-11 Banani, Dhaka, Bangladesh, 1213.</p>
-          <p className="flex"><span className="font-bold w-24 shrink-0">Buyer BIN Name:</span> XXXXX</p>
-          <p className="flex"><span className="font-bold w-24 shrink-0">Buyer BIN No.:</span> XXXX</p>
-          <p className="flex"><span className="font-bold w-24 shrink-0">Buyer BIN Address:</span> XXXX</p>
+          <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">Buyer Name:</span> <span className="text-gray-700">Fair Technology Limited</span></p>
+          <p className="flex items-baseline text-[10px]"><span className="font-bold w-24 shrink-0">Buyer Address:</span> <span className="text-gray-700">76/B, Khawaja Palace, Road-11 Banani, Dhaka, Bangladesh, 1213.</span></p>
+          <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">Buyer BIN Name:</span> <span className="text-gray-700">XXXXX</span></p>
+          <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">Buyer BIN No.:</span> <span className="text-gray-700">XXXX</span></p>
+          <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">Buyer BIN Address:</span> <span className="text-gray-700">XXXX</span></p>
         </div>
 
         {/* Right Column: Metadata */}
         <div className="space-y-1">
-          <p className="flex"><span className="font-bold w-24 shrink-0">Issue Date:</span> {new Date(po.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
-          <p className="flex"><span className="font-bold w-24 shrink-0">Delivery Date:</span> {terms.deliveryTarget || 'N/A'}</p>
-          <p className={`flex ${po.status === 'Approved' ? 'hidden' : ''}`}>
+          <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">Issue Date:</span> <span className="text-gray-700">{new Date(po.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span></p>
+          <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">Delivery Date:</span> <span className="text-gray-700">{terms.deliveryTarget || 'N/A'}</span></p>
+          <p className={`flex items-baseline ${po.status === 'Approved' ? 'hidden' : ''}`}>
             <span className="font-bold w-24 shrink-0">PO Status:</span> 
             <span className={`font-black uppercase ${displayStatus === 'Approved' ? 'text-green-600' : 'text-orange-600'}`}>
               {displayStatus}
             </span>
           </p>
-          <p className="flex"><span className="font-bold w-24 shrink-0">Currency:</span> {po.currency || 'BDT'}</p>
-          <p className="flex"><span className="font-bold w-24 shrink-0">Requested by:</span> {po.requested_by || 'N/A'}</p>
-          <p className="flex"><span className="font-bold w-24 shrink-0">Contact No.:</span> {po.requested_contact || 'N/A'}</p>
-          <p className="flex"><span className="font-bold w-24 shrink-0">PO Note:</span> {po.note || 'N/A'}</p>
+          <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">Currency:</span> <span className="text-gray-700">{po.currency || 'BDT'}</span></p>
+          <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">Requested by:</span> <span className="text-gray-700">{po.requested_by || 'N/A'}</span></p>
+          <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">Contact No.:</span> <span className="text-gray-700">{po.requested_contact || 'N/A'}</span></p>
+          <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">PO Note:</span> <span className="text-gray-700">{po.note || 'N/A'}</span></p>
         </div>
       </div>
 
       {/* Main Items Table */}
       <table className="w-full border-collapse border border-black mb-1">
         <thead>
-          <tr className="bg-gray-50 text-[9px] font-bold">
+          <tr className="bg-gray-50 text-[11px] font-bold">
             <th className="border border-black py-2 px-1 text-center w-8">SL</th>
             <th className="border border-black py-2 px-1 text-center">PR Ref.</th>
             <th className="border border-black py-2 px-1 text-center">Part Code</th>
@@ -92,7 +100,7 @@ const POPrintTemplate: React.FC<POPrintTemplateProps> = ({ po, onPoChange }) => 
         </thead>
         <tbody>
           {items.map((item: any, idx: number) => (
-            <tr key={idx} className="text-[9px]">
+            <tr key={idx} className="text-[11px]">
               <td className="border border-black py-2 px-1 text-center">{idx + 1}</td>
               <td className="border border-black py-2 px-1 text-center">{item.prNo}</td>
               <td className="border border-black py-2 px-1 text-center">{item.sku}</td>
@@ -105,16 +113,16 @@ const POPrintTemplate: React.FC<POPrintTemplateProps> = ({ po, onPoChange }) => 
               <td className="border border-black py-2 px-1 text-right font-bold">{formatCurrency(Number(item.poQty) * Number(item.poPrice))}</td>
             </tr>
           ))}
-          <tr className="font-bold text-[9px]">
+          <tr className="font-bold text-[11px]">
             <td colSpan={8} className="border border-black py-2 px-2 text-right">Total</td>
             <td className="border border-black py-2 px-1 text-center">{items.reduce((a: number, b: any) => a + Number(b.poQty), 0)}</td>
             <td className="border border-black py-2 px-1 text-right">{formatCurrency(totalValue)}</td>
           </tr>
-          <tr className="font-bold text-[9px]">
+          <tr className="font-bold text-[11px]">
             <td colSpan={9} className="border border-black py-2 px-2 text-right">VAT Amount</td>
             <td className="border border-black py-2 px-1 text-right">{formatCurrency(totalVat)}</td>
           </tr>
-          <tr className="font-bold text-[9px] bg-gray-50">
+          <tr className="font-bold text-[11px] bg-gray-50">
             <td colSpan={9} className="border border-black py-2 px-2 text-right">Grand Total</td>
             <td className="border border-black py-2 px-1 text-right">{formatCurrency(grandTotal)}</td>
           </tr>
@@ -122,7 +130,7 @@ const POPrintTemplate: React.FC<POPrintTemplateProps> = ({ po, onPoChange }) => 
       </table>
 
       {/* Amount In Words */}
-      <p className="text-[9px] font-bold mb-8 mt-4 uppercase italic">
+      <p className="text-[11px] font-bold mb-8 mt-4 uppercase italic">
         Total Amount In Word: {grandTotal.toLocaleString()} {po.currency || 'BDT'} ONLY.
       </p>
 
@@ -137,10 +145,10 @@ const POPrintTemplate: React.FC<POPrintTemplateProps> = ({ po, onPoChange }) => 
           { label: 'Payment Mode:', text: terms.paymentMethod || 'Bank A/C Name: N/A\nBank A/C Number: N/A\nBank Name: N/A\nBranch Name: N/A\nRouting No.: N/A\nSwift Code: N/A' },
         ].map((row, i) => (
           <div key={i} className="flex border-b last:border-0 border-black min-h-[50px]">
-            <div className="w-64 px-4 py-3 font-bold border-r border-black flex items-center bg-gray-50/30">
+            <div className="w-64 px-4 py-3 font-bold border-r border-black flex items-center bg-gray-50/30 text-[11px]">
               {row.label}
             </div>
-            <div className="flex-1 px-4 py-3 whitespace-pre-wrap leading-relaxed text-[8px] flex items-center">
+            <div className="flex-1 px-4 py-3 whitespace-pre-wrap leading-relaxed text-[10px] flex items-center">
               {row.text}
             </div>
           </div>
@@ -160,16 +168,16 @@ const POPrintTemplate: React.FC<POPrintTemplateProps> = ({ po, onPoChange }) => 
           return (
             <div key={i} className="text-center flex flex-col">
               <div className="border-t-[1.5px] border-black pt-2 mb-1">
-                <p className="font-black text-[9px] uppercase tracking-wider">{sig.title}</p>
+                <p className="font-black text-[11px] uppercase tracking-wider">{sig.title}</p>
               </div>
               <input 
-                className={`w-full text-[8px] font-bold uppercase text-center bg-transparent border-none outline-none focus:bg-yellow-50 ${!canEdit ? 'cursor-not-allowed' : ''}`}
+                className={`w-full text-[10px] font-bold uppercase text-center bg-transparent border-none outline-none focus:bg-yellow-50 ${!canEdit ? 'cursor-not-allowed' : ''}`}
                 value={po[sig.field] || (sig.field === 'accepted_by' ? po.supplier_name : '')}
                 onChange={(e) => canEdit && onPoChange && onPoChange(sig.field, e.target.value)}
                 readOnly={!canEdit}
                 placeholder={canEdit ? "Type Name..." : ""}
               />
-              <p className="text-[7px] text-gray-400 font-medium">{sig.field === 'accepted_by' ? 'Supplier' : 'Fair Technology Limited'}</p>
+              <p className="text-[9px] text-gray-400 font-medium">{sig.field === 'accepted_by' ? 'Supplier' : 'Fair Technology Limited'}</p>
             </div>
           );
         })}

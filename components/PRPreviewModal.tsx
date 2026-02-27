@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, Printer, FileSpreadsheet, FileText, CheckCircle2, Edit2, Loader2, Save, ThumbsUp } from 'lucide-react';
+import { X, Printer, FileSpreadsheet, FileText, CheckCircle2, Edit2, Loader2, Save, ThumbsUp, FileDown } from 'lucide-react';
 import PRPrintTemplate from './PRPrintTemplate';
 import * as XLSX from 'xlsx';
 import { supabase } from '../lib/supabase';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 interface PRPreviewModalProps {
   pr: any;
@@ -159,6 +161,33 @@ const PRPreviewModal: React.FC<PRPreviewModalProps> = ({ pr: initialPr, onClose 
     XLSX.writeFile(workbook, `PR_${pr.pr_no}.xlsx`);
   };
 
+  const handleDownloadPDF = async () => {
+    const element = document.getElementById('pr-print-area');
+    if (!element) return;
+    
+    setIsSaving(true);
+    try {
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`PR_${pr.pr_no}.pdf`);
+    } catch (err) {
+      console.error("PDF generation error:", err);
+      alert("Failed to generate PDF");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 overflow-y-auto no-print">
       <div className="bg-[#f8f9fa] w-full max-w-[1300px] rounded-2xl shadow-[0_32px_64px_-12px_rgba(0,0,0,0.5)] overflow-hidden animate-in fade-in zoom-in-95 duration-300 flex flex-col my-auto max-h-[96vh]">
@@ -200,8 +229,8 @@ const PRPreviewModal: React.FC<PRPreviewModalProps> = ({ pr: initialPr, onClose 
              <button onClick={handleExportExcel} className="p-2.5 text-green-600 hover:bg-green-50 border border-green-100 rounded-xl transition-all" title="Export Excel">
                <FileSpreadsheet size={18} />
              </button>
-             <button onClick={() => window.print()} className="p-2.5 text-red-600 hover:bg-red-50 border border-red-100 rounded-xl transition-all" title="Download PDF">
-               <FileText size={18} />
+             <button onClick={handleDownloadPDF} className="p-2.5 text-red-600 hover:bg-red-50 border border-red-100 rounded-xl transition-all" title="Download PDF">
+               <FileDown size={18} />
              </button>
              <div className="h-8 w-px bg-gray-200 mx-2"></div>
              <button 
@@ -215,7 +244,7 @@ const PRPreviewModal: React.FC<PRPreviewModalProps> = ({ pr: initialPr, onClose 
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-10 scrollbar-thin bg-gray-100/50">
-           <div className="bg-white shadow-2xl border border-gray-200 rounded-sm ring-1 ring-black/5">
+           <div id="pr-print-area" className="bg-white shadow-2xl border border-gray-200 rounded-sm ring-1 ring-black/5 printable">
              <PRPrintTemplate 
                 pr={pr} 
                 onPrChange={handlePrFieldChange}

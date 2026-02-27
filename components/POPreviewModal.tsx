@@ -162,7 +162,7 @@ const POPreviewModal: React.FC<POPreviewModalProps> = ({ po: initialPo, onClose 
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-10 scrollbar-thin bg-gray-100/30">
-           <div id="po-print-area" className="bg-white shadow-xl border border-gray-200 rounded-sm">
+           <div id="po-print-area" className="bg-white shadow-xl border border-gray-200 rounded-sm printable">
              <POPrintTemplate 
                po={po} 
                onPoChange={(field, val) => setPo({ ...po, [field]: val })}

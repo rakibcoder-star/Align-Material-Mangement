@@ -59,61 +59,50 @@ const PRPrintTemplate: React.FC<PRPrintTemplateProps> = ({
   };
 
   return (
-    <div className="bg-white text-black font-sans p-6 md:p-10 max-w-[1200px] mx-auto overflow-hidden print:p-0 select-text">
+    <div className="bg-white text-black font-roboto p-6 md:p-10 max-w-[1200px] mx-auto overflow-hidden print:p-0 select-text text-[12px] leading-relaxed">
       {/* Header Section */}
-      <div className="flex justify-between items-start mb-6">
+      <div className="flex justify-between items-start mb-8 relative">
+        <div className="w-24 h-24"></div> {/* Spacer for symmetry */}
         <div className="flex-1 text-center">
-          <input 
-            className="w-full text-2xl font-bold tracking-tight text-gray-900 leading-tight text-center bg-transparent border-none outline-none focus:ring-1 focus:ring-[#2d808e] uppercase"
-            value="Fair Technology Limited"
-            readOnly
-          />
-          <input 
-            className="w-full text-[10px] text-gray-600 mt-0.5 text-center bg-transparent border-none outline-none focus:ring-1 focus:ring-[#2d808e]"
-            value="Plot- 12/A & 12/B, Block-C, Kaliakoir Hi-Tech Park"
-            readOnly
-          />
-          <input 
-            className="w-full text-[10px] text-gray-600 text-center bg-transparent border-none outline-none focus:ring-1 focus:ring-[#2d808e]"
-            value="Gazipur, Bangladesh-1750. +#880 1787-670 786"
-            readOnly
-          />
+          <h1 className="text-3xl font-black text-gray-900 leading-tight mb-1">Fair Technology Limited</h1>
+          <p className="text-[11px] text-gray-600 font-medium">Plot- 12/A & 12/B, Block-C, Kaliakoir Hi-Tech Park</p>
+          <p className="text-[11px] text-gray-600 font-medium">Gazipur, Bangladesh-1750. #+880 1787-670 786</p>
           <div className="mt-4">
-            <h2 className="text-sm font-bold uppercase border-b-2 border-black inline-block px-8 py-0.5 tracking-wider">PURCHASE REQUISITION FORM</h2>
+            <h2 className="text-lg font-black uppercase tracking-widest">PURCHASE REQUISITION FORM</h2>
           </div>
         </div>
-        <div className="w-20 h-20 flex items-center justify-center border border-gray-100 p-1 no-print">
+        <div className="w-24 h-24 flex items-center justify-center border border-gray-100 p-1">
            <img 
             src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=PR-${pr.pr_no || pr.PR}`} 
             alt="QR Code" 
-            className="w-full h-full opacity-50 grayscale"
+            className="w-full h-full"
            />
         </div>
       </div>
 
-      {/* Meta Grid Section */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-y-1 gap-x-6 mb-6 text-[10px]">
+      {/* Meta Grid Section - Matching Image Exactly */}
+      <div className="grid grid-cols-3 gap-x-8 gap-y-1.5 mb-8 border-t border-gray-100 pt-6">
         <div className="space-y-1">
-          <div className="flex items-center">
+          <div className="flex items-baseline">
             <span className="font-bold w-24 shrink-0">PR No.:</span>
             <input 
-              className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5"
+              className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5 text-gray-700"
               value={pr.pr_no || ''}
               onChange={(e) => onPrChange('pr_no', e.target.value)}
             />
           </div>
-          <div className="flex items-center">
+          <div className="flex items-baseline">
             <span className="font-bold w-24 shrink-0">Reference:</span>
             <input 
-              className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5"
+              className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5 text-gray-700"
               value={pr.reference || ''}
               onChange={(e) => onPrChange('reference', e.target.value)}
             />
           </div>
-          <div className="flex items-center">
+          <div className="flex items-baseline">
             <span className="font-bold w-24 shrink-0">Requested By:</span>
             <input 
-              className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5"
+              className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5 text-gray-700"
               value={pr.req_by_name || ''}
               onChange={(e) => onPrChange('req_by_name', e.target.value)}
             />
@@ -121,26 +110,26 @@ const PRPrintTemplate: React.FC<PRPrintTemplateProps> = ({
         </div>
         
         <div className="space-y-1">
-          <div className="flex items-center">
+          <div className="flex items-baseline">
             <span className="font-bold w-24 shrink-0">Department:</span>
             <input 
-              className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5"
+              className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5 text-gray-700"
               value={pr.reqDpt || ''}
               onChange={(e) => onPrChange('reqDpt', e.target.value)}
             />
           </div>
-          <div className="flex items-center">
+          <div className="flex items-baseline">
             <span className="font-bold w-24 shrink-0">Email:</span>
             <input 
-              className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5"
+              className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5 text-gray-700 lowercase"
               value={pr.email || ''}
               onChange={(e) => onPrChange('email', e.target.value)}
             />
           </div>
-          <div className="flex items-center">
+          <div className="flex items-baseline">
             <span className="font-bold w-24 shrink-0">Phone No.:</span>
             <input 
-              className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5"
+              className="w-full bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5 text-gray-700"
               value={pr.contact || ''}
               onChange={(e) => onPrChange('contact', e.target.value)}
             />
@@ -148,16 +137,16 @@ const PRPrintTemplate: React.FC<PRPrintTemplateProps> = ({
         </div>
 
         <div className="space-y-1 md:text-right">
-          <div className="flex items-center justify-end">
+          <div className="flex items-baseline justify-end">
             <span className="font-bold w-24 shrink-0 text-left md:text-right mr-2">Req. Date:</span>
             <input 
               type="date"
-              className="bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5 text-right w-32"
+              className="bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5 text-right w-32 text-gray-700"
               value={formatDateForInput(pr.created_at)}
               onChange={(e) => onPrChange('created_at', e.target.value)}
             />
           </div>
-          <div className="flex items-center justify-end">
+          <div className="flex items-baseline justify-end">
             <span className="font-bold w-24 shrink-0 text-left md:text-right mr-2">PR Status:</span>
             <input 
               className="bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5 text-right w-32 font-bold text-[#2d808e]"
@@ -165,11 +154,11 @@ const PRPrintTemplate: React.FC<PRPrintTemplateProps> = ({
               onChange={(e) => onPrChange('status', e.target.value)}
             />
           </div>
-          <div className="flex items-center justify-end">
+          <div className="flex items-baseline justify-end">
             <span className="font-bold w-24 shrink-0 text-left md:text-right mr-2">Update On:</span>
             <input 
               type="date"
-              className="bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5 text-right w-32"
+              className="bg-transparent border-none outline-none focus:bg-yellow-50 px-1 py-0.5 text-right w-32 text-gray-700"
               value={formatDateForInput(pr.updated_at || pr.created_at)}
               onChange={(e) => onPrChange('updated_at', e.target.value)}
             />
@@ -180,7 +169,7 @@ const PRPrintTemplate: React.FC<PRPrintTemplateProps> = ({
       {/* Main Items Table */}
       <div className="mb-2 overflow-x-auto">
         <table className="w-full border-collapse border border-black">
-          <thead className="bg-[#fcfcfc] text-[9px] font-black uppercase">
+          <thead className="bg-[#fcfcfc] text-[11px] font-black uppercase">
             <tr>
               <th className="border border-black py-1.5 px-1 text-center w-8">SL</th>
               <th className="border border-black py-1.5 px-1 text-center w-24">Part Code</th>
@@ -196,7 +185,7 @@ const PRPrintTemplate: React.FC<PRPrintTemplateProps> = ({
               <th className="border border-black py-1.5 px-1 text-center w-8 no-print"></th>
             </tr>
           </thead>
-          <tbody className="text-[9px]">
+          <tbody className="text-[11px]">
             {items.map((item: any, idx: number) => (
               <tr key={idx} className="hover:bg-gray-50/50 group">
                 <td className="border border-black py-1 px-1 text-center">{idx + 1}</td>
@@ -237,7 +226,7 @@ const PRPrintTemplate: React.FC<PRPrintTemplateProps> = ({
                 </td>
               </tr>
             ))}
-            <tr className="font-bold text-[9px] bg-[#fcfcfc]">
+            <tr className="font-bold text-[11px] bg-[#fcfcfc]">
               <td colSpan={7} className="border border-black py-2 px-2 text-right uppercase tracking-widest">Total</td>
               <td className="border border-black py-2 px-1 text-center font-black">{totalQty}</td>
               <td className="border border-black py-2 px-1 text-right font-black">{formatCurrency(totalValue)}</td>
@@ -297,10 +286,10 @@ const PRPrintTemplate: React.FC<PRPrintTemplateProps> = ({
           return (
             <div key={i} className="text-center">
               <div className="border-t border-black mb-1.5 pt-1.5">
-                <p className="font-black text-[10px] uppercase tracking-tighter">{sig.label}</p>
+                <p className="font-black text-[11px] uppercase tracking-tighter">{sig.label}</p>
               </div>
               <input 
-                className={`w-full text-[9px] font-bold text-gray-600 uppercase text-center bg-transparent border-none outline-none focus:bg-yellow-50 ${!canEdit ? 'cursor-not-allowed' : ''}`}
+                className={`w-full text-[10px] font-bold text-gray-600 uppercase text-center bg-transparent border-none outline-none focus:bg-yellow-50 ${!canEdit ? 'cursor-not-allowed' : ''}`}
                 value={pr[sig.field] || (sig.field === 'req_by_name' ? pr.req_by_name : '')}
                 onChange={(e) => canEdit && onPrChange(sig.field, e.target.value)}
                 readOnly={!canEdit}
@@ -313,11 +302,11 @@ const PRPrintTemplate: React.FC<PRPrintTemplateProps> = ({
 
       {/* Justification Table - Matching Red Marked Area 2 */}
       <div className="space-y-0">
-        <h3 className="bg-[#fcfcfc] border border-black border-b-0 py-2 text-center text-[10px] font-black uppercase tracking-widest">
+        <h3 className="bg-[#fcfcfc] border border-black border-b-0 py-2 text-center text-[11px] font-black uppercase tracking-widest">
           Justification of Purchase Requisition
         </h3>
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse border border-black text-[9px]">
+          <table className="w-full border-collapse border border-black text-[11px]">
             <thead>
               <tr className="bg-white font-black text-center uppercase tracking-tighter">
                 <th className="border border-black py-2 px-2">Item Name</th>
