@@ -164,6 +164,7 @@ CREATE TABLE IF NOT EXISTS profiles (
     email TEXT UNIQUE NOT NULL,
     full_name TEXT,
     username TEXT UNIQUE,
+    password TEXT DEFAULT '123456',
     role TEXT DEFAULT 'USER',
     status TEXT DEFAULT 'Active',
     last_login TIMESTAMP WITH TIME ZONE,

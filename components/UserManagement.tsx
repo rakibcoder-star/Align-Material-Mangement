@@ -102,8 +102,8 @@ const UserManagement: React.FC = () => {
         await updateUser(editingUser.id, formData);
         setEditingUser(null);
       } else if (isAdding) {
-        if (!formData.email || !formData.fullName) {
-          alert("Full Name and Email are required for new users");
+        if (!formData.username || !formData.fullName) {
+          alert("Full Name and Username are required for new users");
           return;
         }
         await addUser(formData);
@@ -213,7 +213,6 @@ const UserManagement: React.FC = () => {
           <thead className="bg-white">
             <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
               <th className="px-6 py-6 text-left">User</th>
-              <th className="px-6 py-6 text-left">Username</th>
               <th className="px-6 py-6 text-left">Role</th>
               <th className="px-6 py-6 text-left">Status</th>
               <th className="px-6 py-6 text-left">Last Login</th>
@@ -230,12 +229,9 @@ const UserManagement: React.FC = () => {
                     </div>
                     <div className="ml-4">
                       <div className="text-[12px] font-black text-gray-800 uppercase tracking-tight">{u.fullName}</div>
-                      <div className="text-[10px] text-gray-400 font-medium">{u.email}</div>
+                      <div className="text-[10px] text-gray-400 font-medium">@{u.username}</div>
                     </div>
                   </div>
-                </td>
-                <td className="px-6 py-5 whitespace-nowrap text-[12px] font-medium text-gray-600">
-                  {u.username}
                 </td>
                 <td className="px-6 py-5 whitespace-nowrap">
                   <span className="px-3 py-1 text-[9px] font-black uppercase tracking-widest border border-gray-200 rounded-md text-gray-600 bg-white shadow-sm">
@@ -311,16 +307,6 @@ const UserManagement: React.FC = () => {
                       value={formData.username || ''}
                       onChange={(e) => setFormData({...formData, username: e.target.value})}
                       className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-medium transition-all" 
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Email Address</label>
-                    <input 
-                      type="text" 
-                      value={formData.email || ''}
-                      disabled={!isAdding}
-                      onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-medium transition-all disabled:bg-gray-50" 
                     />
                   </div>
                   <div className="space-y-1.5">

@@ -4,7 +4,7 @@ import { User, Role, AuthState } from '../types';
 import { supabase } from '../lib/supabase';
 
 interface AuthContextType extends AuthState {
-  login: (email: string, password: string) => Promise<{ success: boolean, message?: string }>;
+  login: (username: string, password: string) => Promise<{ success: boolean, message?: string }>;
   logout: () => void;
   addUser: (userData: any) => Promise<void>;
   updateUser: (userId: string, updates: Partial<User>) => Promise<void>;
@@ -46,35 +46,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
       setUser(mappedUser);
       setIsAuthenticated(true);
-    } else if (!data && !error) {
-      // Fallback for authenticated users without a profile
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (authUser) {
-        const fallbackUser: User = {
-          id: authUser.id,
-          email: authUser.email || '',
-          fullName: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
-          username: authUser.user_metadata?.username || authUser.email?.split('@')[0] || 'user',
-          role: Role.USER,
-          status: 'Active',
-          lastLogin: new Date().toISOString(),
-          permissions: [],
-          granularPermissions: {},
-          createdAt: authUser.created_at
-        };
-        setUser(fallbackUser);
-        setIsAuthenticated(true);
-        
-        // Try to create the missing profile
-        await supabase.from('profiles').insert([{
-          id: authUser.id,
-          email: authUser.email,
-          full_name: fallbackUser.fullName,
-          username: fallbackUser.username,
-          role: Role.USER,
-          status: 'Active'
-        }]);
-      }
     }
   };
 
@@ -102,131 +73,116 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    // Check current session
+    // Check current session from localStorage
     const initAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        await fetchUserProfile(session.user.id);
+      const savedUserId = localStorage.getItem('align_session_id');
+      if (savedUserId) {
+        await fetchUserProfile(savedUserId);
       }
       setLoading(false);
     };
 
     initAuth();
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session) {
-        await fetchUserProfile(session.user.id);
-      } else {
-        setUser(null);
-        setIsAuthenticated(false);
-      }
-    });
-
     const timer = setTimeout(() => {
       fetchUsers();
     }, 0);
 
     return () => {
-      subscription.unsubscribe();
       clearTimeout(timer);
     };
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const finalEmail = email.includes('@') ? email : `${email.trim()}@system.local`;
-    const cleanEmail = finalEmail.toLowerCase();
+  const login = async (username: string, password: string) => {
+    const cleanUsername = username.trim().toLowerCase();
     
-    let { data, error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
-    
-    // Auto-create 'rakib' if it doesn't exist or if login fails with standard credentials
-    if (error && (email.toLowerCase() === 'rakib' || cleanEmail === 'rakib@system.local') && password === '123456') {
-      console.log("Attempting to auto-create or repair 'rakib' user...");
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+    // Check profiles table directly
+    const { data: initialProfile, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('username', cleanUsername)
+      .maybeSingle();
+
+    let profile = initialProfile;
+
+    if (error) return { success: false, message: "Database connection error" };
+
+    // Auto-create 'rakib' if it doesn't exist
+    if (!profile && cleanUsername === 'rakib' && password === '123456') {
+      const newId = crypto.randomUUID();
+      const { data: newProfile, error: createError } = await supabase.from('profiles').insert([{
+        id: newId,
         email: 'rakib@system.local',
+        full_name: 'Rakib Admin',
+        username: 'rakib',
         password: '123456',
-        options: {
-          data: {
-            full_name: 'Rakib Admin',
-            username: 'rakib',
-          }
-        }
-      });
+        role: Role.ADMIN,
+        status: 'Active'
+      }]).select().single();
       
-      if (!signUpError || signUpError.message.includes('already registered')) {
-        // Try to sign in again after signup (or if already registered)
-        const retry = await supabase.auth.signInWithPassword({ email: 'rakib@system.local', password: '123456' });
-        data = retry.data;
-        error = retry.error;
-
-        // Ensure profile exists even if auth existed but profile didn't
-        if (data.user) {
-          await supabase.from('profiles').upsert([{
-            id: data.user.id,
-            email: 'rakib@system.local',
-            full_name: 'Rakib Admin',
-            username: 'rakib',
-            role: Role.ADMIN,
-            status: 'Active',
-            granular_permissions: {}
-          }], { onConflict: 'id' });
-        }
-      }
+      if (createError) return { success: false, message: "Failed to initialize admin" };
+      profile = newProfile;
     }
 
-    if (error) {
-      return { success: false, message: error.message === 'Invalid login credentials' ? 'Invalid username or password' : error.message };
-    }
+    if (!profile) return { success: false, message: "Invalid username or password" };
     
-    // Update last login
-    if (data.user) {
-      await supabase.from('profiles').update({ last_login: new Date().toISOString() }).eq('id', data.user.id);
+    // Check password (plain text as requested for simplicity)
+    if (profile.password !== password) {
+      return { success: false, message: "Invalid username or password" };
     }
+
+    const mappedUser: User = {
+      id: profile.id,
+      email: profile.email,
+      fullName: profile.full_name,
+      username: profile.username,
+      role: profile.role as Role,
+      status: profile.status as 'Active' | 'Inactive',
+      lastLogin: new Date().toISOString(),
+      avatarUrl: profile.avatar_url,
+      permissions: [],
+      granularPermissions: profile.granular_permissions || {},
+      createdAt: profile.created_at
+    };
+
+    setUser(mappedUser);
+    setIsAuthenticated(true);
+    localStorage.setItem('align_session_id', profile.id);
+
+    // Update last login
+    await supabase.from('profiles').update({ last_login: new Date().toISOString() }).eq('id', profile.id);
     
     return { success: true };
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
+    localStorage.removeItem('align_session_id');
     setUser(null);
     setIsAuthenticated(false);
   };
 
   const addUser = async (userData: any) => {
-    // Check if user already exists locally to avoid unnecessary signUp calls
-    if (users.some(u => u.email.toLowerCase() === userData.email.toLowerCase())) {
-      throw new Error("A user with this email already exists in the system.");
+    // Check if user already exists locally
+    if (users.some(u => u.username.toLowerCase() === userData.username.toLowerCase())) {
+      throw new Error("A user with this username already exists in the system.");
     }
 
-    // 1. Create the Auth User
-    const finalEmail = userData.email.includes('@') ? userData.email : `${userData.email}@system.local`;
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email: finalEmail,
-      password: userData.password || 'Fair@123456', // Default password if none provided
-      options: {
-        data: {
-          full_name: userData.fullName,
-          username: userData.username,
-        }
-      }
-    });
+    const newId = crypto.randomUUID();
+    const systemEmail = `${userData.username.trim().toLowerCase()}@system.local`;
 
-    if (signUpError) throw signUpError;
-
-    // 2. Create the Database Profile if user creation was successful
-    if (data.user) {
-      const { error: profileError } = await supabase.from('profiles').insert([{
-        id: data.user.id,
-        email: userData.email,
-        full_name: userData.fullName,
-        username: userData.username,
-        role: userData.role,
-        status: userData.status,
-        granular_permissions: userData.granularPermissions
-      }]);
-      
-      if (profileError) throw profileError;
-    }
+    // Create the Database Profile directly
+    const { error: profileError } = await supabase.from('profiles').insert([{
+      id: newId,
+      email: systemEmail,
+      full_name: userData.fullName,
+      username: userData.username,
+      password: userData.password || 'Fair@123456',
+      role: userData.role,
+      status: userData.status,
+      granular_permissions: userData.granularPermissions
+    }]);
+    
+    if (profileError) throw profileError;
     
     fetchUsers();
   };

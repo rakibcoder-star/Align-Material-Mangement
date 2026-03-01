@@ -4,7 +4,7 @@ import { Lock, User, EyeOff, Eye, Loader2, AlertCircle } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 
 const Login: React.FC = () => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -20,14 +20,14 @@ const Login: React.FC = () => {
     e.preventDefault();
     setErrorMsg(null);
 
-    if (!email || !password) {
+    if (!username || !password) {
       setErrorMsg("Required: Username and Password");
       return;
     }
 
     setLoading(true);
     try {
-      const result = await login(email, password);
+      const result = await login(username, password);
       if (!result.success) {
         setErrorMsg(result.message || "Invalid credentials");
       }
@@ -61,8 +61,8 @@ const Login: React.FC = () => {
             <input
               type="text"
               placeholder="Username"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#2D808E] focus:border-[#2D808E] text-sm"
             />
           </div>

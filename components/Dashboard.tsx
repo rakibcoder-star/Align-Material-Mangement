@@ -60,7 +60,6 @@ import {
   Tag,
   Boxes,
   ArrowUpRight,
-  Mail,
   Phone,
   Briefcase,
   IdCard,
@@ -614,7 +613,6 @@ const ProfileModal: React.FC<{ user: any, isOpen: boolean, onClose: () => void, 
         <div className="p-10 space-y-6">
           {[
             { icon: <Briefcase size={20} />, label: 'DESIGNATION', value: user?.role || 'Administrator' },
-            { icon: <Mail size={20} />, label: 'EMAIL NODE', value: user?.email || 'identity@fairtechnology.com' },
             { icon: <Phone size={20} />, label: 'CONTACT TERMINAL', value: '+880 1XXX-XXXXXX' },
             { icon: <IdCard size={20} />, label: 'UNIQUE ID', value: 'PROPRIETARY-ID' }
           ].map((field, idx) => (
