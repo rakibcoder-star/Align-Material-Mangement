@@ -27,10 +27,10 @@ export interface User {
   email: string;
   fullName: string;
   username: string;
-  avatarUrl?: string;
   role: Role;
   status: 'Active' | 'Inactive';
   lastLogin: string;
+  avatarUrl?: string;
   permissions: string[]; // Legacy support
   granularPermissions: Record<string, ModulePermissions>;
   createdAt: string;

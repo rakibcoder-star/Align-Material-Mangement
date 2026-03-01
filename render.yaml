@@ -1,6 +1,6 @@
 services:
   - type: static
-    name: allot-system-frontend
+    name: align-system-frontend
     buildCommand: npm install --legacy-peer-deps --force && npm run build
     staticPublishPath: dist
     routes:

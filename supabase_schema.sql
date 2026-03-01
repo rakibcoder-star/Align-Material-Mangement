@@ -158,5 +158,23 @@ ALTER TABLE cycle_counts ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow all" ON cycle_counts;
 CREATE POLICY "Allow all" ON cycle_counts FOR ALL USING (true) WITH CHECK (true);
 
+-- 9. Profiles Table for User Management
+CREATE TABLE IF NOT EXISTS profiles (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    email TEXT UNIQUE NOT NULL,
+    full_name TEXT,
+    username TEXT UNIQUE,
+    role TEXT DEFAULT 'USER',
+    status TEXT DEFAULT 'Active',
+    last_login TIMESTAMP WITH TIME ZONE,
+    avatar_url TEXT,
+    granular_permissions JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow all" ON profiles;
+CREATE POLICY "Allow all" ON profiles FOR ALL USING (true) WITH CHECK (true);
+
 -- FORCE CACHE RELOAD
 NOTIFY pgrst, 'reload schema';

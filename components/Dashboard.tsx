@@ -606,11 +606,7 @@ const ProfileModal: React.FC<{ user: any, isOpen: boolean, onClose: () => void, 
               <div className="absolute -bottom-10 -right-10 w-60 h-60 border-4 border-white rounded-full"></div>
            </div>
            <div className="w-24 h-24 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center mb-6 shadow-xl backdrop-blur-sm z-10 overflow-hidden">
-             {user?.avatarUrl ? (
-               <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-             ) : (
-               <UserIcon size={56} className="text-white" />
-             )}
+             <UserIcon size={56} className="text-white" />
            </div>
            <h2 className="text-2xl font-black uppercase tracking-tighter mb-1 z-10">SYSTEM ADMINISTRATOR</h2>
            <p className="text-[10px] font-black text-white/60 uppercase tracking-widest z-10">NODE ID: {user?.id?.substring(0,8).toUpperCase() || 'N/A'}</p>

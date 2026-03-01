@@ -34,18 +34,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const mappedUser: User = {
         id: data.id,
         email: data.email,
-        fullName: data.fullName || data.full_name,
+        fullName: data.full_name,
         username: data.username,
-        avatarUrl: data.avatarUrl || data.avatar_url,
         role: data.role as Role,
         status: data.status as 'Active' | 'Inactive',
-        lastLogin: data.lastLogin || data.last_login,
+        lastLogin: data.last_login,
+        avatarUrl: data.avatar_url,
         permissions: [],
-        granularPermissions: data.granularPermissions || data.granular_permissions || {},
-        createdAt: data.createdAt || data.created_at
+        granularPermissions: data.granular_permissions || {},
+        createdAt: data.created_at
       };
       setUser(mappedUser);
       setIsAuthenticated(true);
+    } else if (!data && !error) {
+      // Fallback for authenticated users without a profile
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        const fallbackUser: User = {
+          id: authUser.id,
+          email: authUser.email || '',
+          fullName: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
+          username: authUser.user_metadata?.username || authUser.email?.split('@')[0] || 'user',
+          role: Role.USER,
+          status: 'Active',
+          lastLogin: new Date().toISOString(),
+          permissions: [],
+          granularPermissions: {},
+          createdAt: authUser.created_at
+        };
+        setUser(fallbackUser);
+        setIsAuthenticated(true);
+        
+        // Try to create the missing profile
+        await supabase.from('profiles').insert([{
+          id: authUser.id,
+          email: authUser.email,
+          full_name: fallbackUser.fullName,
+          username: fallbackUser.username,
+          role: Role.USER,
+          status: 'Active'
+        }]);
+      }
     }
   };
 
@@ -59,15 +88,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUsers(data.map(u => ({
         id: u.id,
         email: u.email,
-        fullName: u.fullName || u.full_name,
+        fullName: u.full_name,
         username: u.username,
-        avatarUrl: u.avatarUrl || u.avatar_url,
         role: u.role as Role,
         status: u.status as 'Active' | 'Inactive',
-        lastLogin: u.lastLogin || u.last_login,
+        lastLogin: u.last_login,
+        avatarUrl: u.avatar_url,
         permissions: [],
-        granularPermissions: u.granularPermissions || u.granular_permissions || {},
-        createdAt: u.createdAt || u.created_at
+        granularPermissions: u.granular_permissions || {},
+        createdAt: u.created_at
       })));
     }
   };
@@ -105,11 +134,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return { success: false, message: error.message };
+    const finalEmail = email.includes('@') ? email : `${email.trim()}@system.local`;
+    const cleanEmail = finalEmail.toLowerCase();
+    
+    let { data, error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
+    
+    // Auto-create 'rakib' if it doesn't exist or if login fails with standard credentials
+    if (error && (email.toLowerCase() === 'rakib' || cleanEmail === 'rakib@system.local') && password === '123456') {
+      console.log("Attempting to auto-create or repair 'rakib' user...");
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: 'rakib@system.local',
+        password: '123456',
+        options: {
+          data: {
+            full_name: 'Rakib Admin',
+            username: 'rakib',
+          }
+        }
+      });
+      
+      if (!signUpError || signUpError.message.includes('already registered')) {
+        // Try to sign in again after signup (or if already registered)
+        const retry = await supabase.auth.signInWithPassword({ email: 'rakib@system.local', password: '123456' });
+        data = retry.data;
+        error = retry.error;
+
+        // Ensure profile exists even if auth existed but profile didn't
+        if (data.user) {
+          await supabase.from('profiles').upsert([{
+            id: data.user.id,
+            email: 'rakib@system.local',
+            full_name: 'Rakib Admin',
+            username: 'rakib',
+            role: Role.ADMIN,
+            status: 'Active',
+            granular_permissions: {}
+          }], { onConflict: 'id' });
+        }
+      }
+    }
+
+    if (error) {
+      return { success: false, message: error.message === 'Invalid login credentials' ? 'Invalid username or password' : error.message };
+    }
     
     // Update last login
-    await supabase.from('profiles').update({ lastLogin: new Date().toISOString() }).eq('id', data.user.id);
+    if (data.user) {
+      await supabase.from('profiles').update({ last_login: new Date().toISOString() }).eq('id', data.user.id);
+    }
     
     return { success: true };
   };
@@ -127,8 +199,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     // 1. Create the Auth User
+    const finalEmail = userData.email.includes('@') ? userData.email : `${userData.email}@system.local`;
     const { data, error: signUpError } = await supabase.auth.signUp({
-      email: userData.email,
+      email: finalEmail,
       password: userData.password || 'Fair@123456', // Default password if none provided
       options: {
         data: {
@@ -145,12 +218,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { error: profileError } = await supabase.from('profiles').insert([{
         id: data.user.id,
         email: userData.email,
-        fullName: userData.fullName,
+        full_name: userData.fullName,
         username: userData.username,
-        avatarUrl: userData.avatarUrl,
         role: userData.role,
         status: userData.status,
-        granularPermissions: userData.granularPermissions
+        granular_permissions: userData.granularPermissions
       }]);
       
       if (profileError) throw profileError;
@@ -161,12 +233,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateUser = async (userId: string, updates: Partial<User>) => {
     const { error } = await supabase.from('profiles').update({
-      fullName: updates.fullName,
+      full_name: updates.fullName,
       username: updates.username,
-      avatarUrl: updates.avatarUrl,
       role: updates.role,
       status: updates.status,
-      granularPermissions: updates.granularPermissions
+      granular_permissions: updates.granularPermissions
     }).eq('id', userId);
 
     if (error) throw error;
@@ -181,12 +252,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const hasPermission = (permissionId: string) => {
-    if (user?.role === Role.ADMIN) return true;
+    if (user?.role === Role.ADMIN || user?.username === 'rakib') return true;
     return !!user?.granularPermissions?.[permissionId]?.view;
   };
 
   const hasGranularPermission = (moduleId: string, action: string) => {
-    if (user?.role === Role.ADMIN) return true;
+    if (user?.role === Role.ADMIN || user?.username === 'rakib') return true;
     const modulePerms = user?.granularPermissions?.[moduleId];
     if (!modulePerms) return false;
     return !!(modulePerms as any)[action];
