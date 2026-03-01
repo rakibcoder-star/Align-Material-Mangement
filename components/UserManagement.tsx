@@ -213,6 +213,8 @@ const UserManagement: React.FC = () => {
           <thead className="bg-white">
             <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
               <th className="px-6 py-6 text-left">User</th>
+              <th className="px-6 py-6 text-left">Office ID</th>
+              <th className="px-6 py-6 text-left">Department</th>
               <th className="px-6 py-6 text-left">Role</th>
               <th className="px-6 py-6 text-left">Status</th>
               <th className="px-6 py-6 text-left">Last Login</th>
@@ -232,6 +234,12 @@ const UserManagement: React.FC = () => {
                       <div className="text-[10px] text-gray-400 font-medium">@{u.username}</div>
                     </div>
                   </div>
+                </td>
+                <td className="px-6 py-5 whitespace-nowrap text-[11px] font-medium text-gray-600">
+                  {u.officeId || 'N/A'}
+                </td>
+                <td className="px-6 py-5 whitespace-nowrap text-[11px] font-medium text-gray-600">
+                  {u.department || 'N/A'}
                 </td>
                 <td className="px-6 py-5 whitespace-nowrap">
                   <span className="px-3 py-1 text-[9px] font-black uppercase tracking-widest border border-gray-200 rounded-md text-gray-600 bg-white shadow-sm">
@@ -290,13 +298,49 @@ const UserManagement: React.FC = () => {
             <div className="p-8 space-y-12 overflow-y-auto max-h-[75vh] scrollbar-thin">
               {/* Profile Setup */}
               <div className="flex flex-col md:flex-row gap-10 items-start">
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 w-full">
+                <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6 w-full">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Full Name</label>
                     <input 
                       type="text" 
                       value={formData.fullName || ''}
                       onChange={(e) => setFormData({...formData, fullName: e.target.value})}
+                      className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-medium transition-all" 
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Office ID</label>
+                    <input 
+                      type="text" 
+                      value={formData.officeId || ''}
+                      onChange={(e) => setFormData({...formData, officeId: e.target.value})}
+                      className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-medium transition-all" 
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Contact Number</label>
+                    <input 
+                      type="text" 
+                      value={formData.contactNumber || ''}
+                      onChange={(e) => setFormData({...formData, contactNumber: e.target.value})}
+                      className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-medium transition-all" 
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Email</label>
+                    <input 
+                      type="text" 
+                      value={formData.email || ''}
+                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                      className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-medium transition-all" 
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Department</label>
+                    <input 
+                      type="text" 
+                      value={formData.department || ''}
+                      onChange={(e) => setFormData({...formData, department: e.target.value})}
                       className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-medium transition-all" 
                     />
                   </div>
@@ -308,6 +352,25 @@ const UserManagement: React.FC = () => {
                       onChange={(e) => setFormData({...formData, username: e.target.value})}
                       className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-medium transition-all" 
                     />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Password</label>
+                    <div className="relative">
+                      <input 
+                        type={showPassword ? "text" : "password"} 
+                        placeholder="Set secure password"
+                        value={formData.password || ''}
+                        onChange={(e) => setFormData({...formData, password: e.target.value})}
+                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-medium transition-all" 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-[#2d808e]"
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Role Template</label>
@@ -324,27 +387,6 @@ const UserManagement: React.FC = () => {
                       <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
                     </div>
                   </div>
-                  {isAdding && (
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Initial Password</label>
-                      <div className="relative">
-                        <input 
-                          type={showPassword ? "text" : "password"} 
-                          placeholder="Set secure password"
-                          value={formData.password || ''}
-                          onChange={(e) => setFormData({...formData, password: e.target.value})}
-                          className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-medium transition-all" 
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-[#2d808e]"
-                        >
-                          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                        </button>
-                      </div>
-                    </div>
-                  )}
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Account Status</label>
                     <div className="relative">

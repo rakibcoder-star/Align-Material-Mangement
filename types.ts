@@ -27,6 +27,10 @@ export interface User {
   email: string;
   fullName: string;
   username: string;
+  officeId?: string;
+  contactNumber?: string;
+  department?: string;
+  roleTemplate?: string;
   role: Role;
   status: 'Active' | 'Inactive';
   lastLogin: string;
