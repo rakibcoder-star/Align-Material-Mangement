@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Home, Search, Edit2, FileUp, Plus, Trash2, Loader2, ListFilter, RefreshCw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Filter } from 'lucide-react';
+import { Home, Search, Edit2, FileUp, Plus, Trash2, Loader2, ListFilter, RefreshCw } from 'lucide-react';
 import NewItem from './NewItem';
 import ItemHistoryModal from './ItemHistoryModal';
 import * as XLSX from 'xlsx';
@@ -34,7 +34,7 @@ const ItemList: React.FC = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
-  const pageSize = 1000;
+  const pageSize = 10000;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchItems = async () => {
@@ -211,8 +211,6 @@ const ItemList: React.FC = () => {
     }
   };
 
-  const totalPages = Math.ceil(totalCount / pageSize);
-
   if (view === 'add' || view === 'edit') {
     return (
       <NewItem 
@@ -295,60 +293,6 @@ const ItemList: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Pagination Footer - TOP VERSION */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-2 bg-white border border-gray-100 rounded shadow-sm">
-          <div className="text-[11px] font-bold text-gray-400 uppercase tracking-tighter">
-            Showing <span className="text-gray-700">{(currentPage - 1) * pageSize + 1}</span> to <span className="text-gray-700">{Math.min(currentPage * pageSize, totalCount)}</span> of <span className="text-gray-700">{totalCount}</span> items
-          </div>
-          <div className="flex items-center space-x-1">
-            <button 
-              onClick={() => setCurrentPage(1)} 
-              disabled={currentPage === 1 || loading}
-              className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors"
-            >
-              <ChevronsLeft size={16} className="text-gray-500" />
-            </button>
-            <button 
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} 
-              disabled={currentPage === 1 || loading}
-              className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors"
-            >
-              <ChevronLeft size={16} className="text-gray-500" />
-            </button>
-            
-            <div className="flex items-center px-4">
-              <span className="text-[11px] font-black uppercase text-gray-400 mr-2">Page</span>
-              <input 
-                type="number" 
-                value={currentPage}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value);
-                  if (val > 0 && val <= totalPages) setCurrentPage(val);
-                }}
-                className="w-12 text-center border border-gray-200 rounded px-1 py-0.5 text-[11px] font-black text-[#2d808e] outline-none"
-              />
-              <span className="text-[11px] font-black uppercase text-gray-400 ml-2">of {totalPages}</span>
-            </div>
-
-            <button 
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} 
-              disabled={currentPage === totalPages || loading}
-              className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors"
-            >
-              <ChevronRight size={16} className="text-gray-500" />
-            </button>
-            <button 
-              onClick={() => setCurrentPage(totalPages)} 
-              disabled={currentPage === totalPages || loading}
-              className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors"
-            >
-              <ChevronsRight size={16} className="text-gray-500" />
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Main Table */}
       <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-100 overflow-auto scrollbar-thin relative">
@@ -441,7 +385,7 @@ const ItemList: React.FC = () => {
                 <td colSpan={14} className="py-32 text-center text-gray-400">
                   <div className="flex flex-col items-center justify-center space-y-4">
                     <Loader2 className="animate-spin text-[#2d808e]" size={32} />
-                    <span className="font-black uppercase tracking-widest text-[10px]">Querying Database Page {currentPage}...</span>
+                    <span className="font-black uppercase tracking-widest text-[10px]">Querying Database...</span>
                   </div>
                 </td>
               </tr>
@@ -508,52 +452,6 @@ const ItemList: React.FC = () => {
           </tbody>
         </table>
       </div>
-
-      {/* Pagination Footer - BOTTOM VERSION */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-3 bg-white border border-gray-100 rounded shadow-sm shrink-0">
-          <div className="text-[10px] font-black text-gray-300 uppercase tracking-widest">
-            Master SKU Registry • Page {currentPage} of {totalPages}
-          </div>
-          <div className="flex items-center space-x-2">
-            <button 
-              onClick={() => setCurrentPage(1)} 
-              disabled={currentPage === 1 || loading}
-              className="flex items-center space-x-1 px-3 py-1 border border-gray-200 rounded text-[10px] font-black text-gray-500 uppercase hover:bg-gray-50 disabled:opacity-30 transition-all"
-            >
-              <ChevronsLeft size={12} />
-              <span>First</span>
-            </button>
-            <button 
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} 
-              disabled={currentPage === 1 || loading}
-              className="flex items-center space-x-1 px-3 py-1 border border-gray-200 rounded text-[10px] font-black text-gray-500 uppercase hover:bg-gray-50 disabled:opacity-30 transition-all"
-            >
-              <ChevronLeft size={12} />
-              <span>Prev</span>
-            </button>
-            <div className="px-6 text-[11px] font-black text-[#2d808e]">
-              {currentPage}
-            </div>
-            <button 
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} 
-              disabled={currentPage === totalPages || loading}
-              className="flex items-center space-x-1 px-3 py-1 border border-gray-200 rounded text-[10px] font-black text-gray-500 uppercase hover:bg-gray-50 disabled:opacity-30 transition-all"
-            >
-              <span>Next</span>
-              <ChevronRight size={12} />
-            </button>
-            <button 
-              onClick={() => setCurrentPage(totalPages)} 
-              disabled={currentPage === totalPages || loading}
-              className="flex items-center space-x-1 px-3 py-1 border border-gray-200 rounded text-[10px] font-black text-gray-500 uppercase hover:bg-gray-50 disabled:opacity-30 transition-all"
-            >
-              <span>Last</span>
-              <ChevronsRight size={12} />
-            </button>
-          </div>
-        </div>
-      )}
 
       {historyItem && (
         <ItemHistoryModal item={historyItem} onClose={() => setHistoryItem(null)} />

@@ -20,7 +20,7 @@ interface InventoryItem {
 
 const Inventory: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(10000);
   const [currentPage, setCurrentPage] = useState(1);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -265,45 +265,48 @@ const Inventory: React.FC = () => {
         </div>
       </div>
 
-      {/* Pagination Footer Section */}
-      <div className="flex items-center justify-end space-x-4 pt-2 pb-6">
-        <div className="flex items-center space-x-1">
-          <button 
-            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-            disabled={currentPage === 1}
-            className="p-1.5 text-gray-300 hover:text-gray-500 disabled:opacity-50"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          
+      {/* Pagination Footer Section - Hidden as all items are shown on one page */}
+      {totalCount > pageSize && (
+        <div className="flex items-center justify-end space-x-4 pt-2 pb-6">
           <div className="flex items-center space-x-1">
-            <span className="text-xs font-bold text-gray-500 px-2">
-              Page {currentPage} of {Math.ceil(totalCount / pageSize) || 1}
-            </span>
-          </div>
+            <button 
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="p-1.5 text-gray-300 hover:text-gray-500 disabled:opacity-50"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            
+            <div className="flex items-center space-x-1">
+              <span className="text-xs font-bold text-gray-500 px-2">
+                Page {currentPage} of {Math.ceil(totalCount / pageSize) || 1}
+              </span>
+            </div>
 
-          <button 
-            onClick={() => setCurrentPage(prev => Math.min(Math.ceil(totalCount / pageSize), prev + 1))}
-            disabled={currentPage >= Math.ceil(totalCount / pageSize)}
-            className="p-1.5 text-gray-400 hover:text-[#2d808e] disabled:opacity-50"
-          >
-            <ChevronRight size={16} />
-          </button>
+            <button 
+              onClick={() => setCurrentPage(prev => Math.min(Math.ceil(totalCount / pageSize), prev + 1))}
+              disabled={currentPage >= Math.ceil(totalCount / pageSize)}
+              className="p-1.5 text-gray-400 hover:text-[#2d808e] disabled:opacity-50"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+          
+          <div className="flex items-center space-x-2 border border-gray-200 rounded bg-white px-2 py-1">
+            <select 
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value))}
+              className="text-[11px] font-bold text-gray-600 outline-none appearance-none pr-4 bg-transparent cursor-pointer"
+            >
+              <option value={10}>10 / page</option>
+              <option value={20}>20 / page</option>
+              <option value={50}>50 / page</option>
+              <option value={10000}>All</option>
+            </select>
+            <ChevronDown size={12} className="text-gray-400 pointer-events-none" />
+          </div>
         </div>
-        
-        <div className="flex items-center space-x-2 border border-gray-200 rounded bg-white px-2 py-1">
-          <select 
-            value={pageSize}
-            onChange={(e) => setPageSize(Number(e.target.value))}
-            className="text-[11px] font-bold text-gray-600 outline-none appearance-none pr-4 bg-transparent cursor-pointer"
-          >
-            <option value={10}>10 / page</option>
-            <option value={20}>20 / page</option>
-            <option value={50}>50 / page</option>
-          </select>
-          <ChevronDown size={12} className="text-gray-400 pointer-events-none" />
-        </div>
-      </div>
+      )}
     </div>
   );
 };
