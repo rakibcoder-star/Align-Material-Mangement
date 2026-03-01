@@ -34,15 +34,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const metadata = data.granular_permissions?._metadata || {};
       const mappedUser: User = {
         id: data.id,
-        email: data.email,
-        fullName: data.full_name,
-        username: data.username,
+        email: data.email || metadata.email || '',
+        fullName: metadata.fullName || data.full_name || 'User',
+        username: metadata.username || data.username || 'user',
         officeId: metadata.officeId,
         contactNumber: metadata.contactNumber,
         department: metadata.department,
         roleTemplate: metadata.roleTemplate,
-        role: data.role as Role,
-        status: data.status as 'Active' | 'Inactive',
+        role: (metadata.role || data.role || Role.USER) as Role,
+        status: (metadata.status || data.status || 'Active') as 'Active' | 'Inactive',
         lastLogin: data.last_login,
         avatarUrl: data.avatar_url,
         permissions: [],
@@ -65,15 +65,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const metadata = u.granular_permissions?._metadata || {};
         return {
           id: u.id,
-          email: u.email,
-          fullName: u.full_name,
-          username: u.username,
+          email: u.email || metadata.email || '',
+          fullName: metadata.fullName || u.full_name || 'User',
+          username: metadata.username || u.username || 'user',
           officeId: metadata.officeId,
           contactNumber: metadata.contactNumber,
           department: metadata.department,
           roleTemplate: metadata.roleTemplate,
-          role: u.role as Role,
-          status: u.status as 'Active' | 'Inactive',
+          role: (metadata.role || u.role || Role.USER) as Role,
+          status: (metadata.status || u.status || 'Active') as 'Active' | 'Inactive',
           lastLogin: u.last_login,
           avatarUrl: u.avatar_url,
           permissions: [],
@@ -110,134 +110,119 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const cleanUsername = username.trim().toLowerCase();
       
       // Check profiles table directly
-      const { data: initialProfile, error } = await supabase
+      // We try to find by username in metadata if the column doesn't work
+      const { data: allProfiles, error: fetchError } = await supabase
         .from('profiles')
-        .select('*')
-        .eq('username', cleanUsername)
-        .maybeSingle();
+        .select('*');
 
-      if (error) {
-        console.error("Database Error:", error);
-        // HARDCODED FALLBACK for 'rakib' to ensure access even if DB is down or table is missing
+      if (fetchError) {
+        console.error("Database Fetch Error:", fetchError);
+        // Fallback for 'rakib'
         if (cleanUsername === 'rakib' && password === '123456') {
-          const fallbackAdmin: User = {
-            id: 'rakib-fallback-id',
-            email: 'rakib@system.local',
-            fullName: 'Rakib Admin (System Fallback)',
-            username: 'rakib',
-            role: Role.ADMIN,
-            status: 'Active',
-            lastLogin: new Date().toISOString(),
-            avatarUrl: undefined,
-            permissions: [],
-            granularPermissions: {},
-            createdAt: new Date().toISOString()
-          };
-          setUser(fallbackAdmin);
-          setIsAuthenticated(true);
-          localStorage.setItem('align_session_id', 'rakib-fallback-id');
-          return { success: true };
+          return loginWithFallback('rakib-fallback-id', 'Rakib Admin (System Fallback)');
         }
-        return { success: false, message: `Database error: ${error.message}` };
+        return { success: false, message: `Database error: ${fetchError.message}` };
       }
 
-      let profile = initialProfile;
+      // Find the profile manually in the returned list to be schema-agnostic
+      const profile = allProfiles?.find(p => {
+        const metadata = p.granular_permissions?._metadata || {};
+        const pUsername = (metadata.username || p.username || '').toLowerCase();
+        return pUsername === cleanUsername;
+      });
 
       // Auto-create 'rakib' if it doesn't exist
       if (!profile && cleanUsername === 'rakib' && password === '123456') {
         const newId = crypto.randomUUID();
         const { data: newProfile, error: createError } = await supabase.from('profiles').insert([{
           id: newId,
-          email: 'rakib@system.local',
-          full_name: 'Rakib Admin',
-          username: 'rakib',
-          password: '123456',
-          role: Role.ADMIN,
-          status: 'Active'
+          granular_permissions: {
+            _metadata: {
+              email: 'rakib@system.local',
+              fullName: 'Rakib Admin',
+              username: 'rakib',
+              password: '123456',
+              role: Role.ADMIN,
+              status: 'Active'
+            }
+          }
         }]).select().single();
         
         if (createError) {
           console.error("Failed to initialize admin profile:", createError);
-          // Fallback if create fails
-          const fallbackAdmin: User = {
-            id: newId,
-            email: 'rakib@system.local',
-            fullName: 'Rakib Admin (Fallback)',
-            username: 'rakib',
-            role: Role.ADMIN,
-            status: 'Active',
-            lastLogin: new Date().toISOString(),
-            avatarUrl: undefined,
-            permissions: [],
-            granularPermissions: {},
-            createdAt: new Date().toISOString()
-          };
-          setUser(fallbackAdmin);
-          setIsAuthenticated(true);
-          localStorage.setItem('align_session_id', newId);
-          return { success: true };
+          return loginWithFallback(newId, 'Rakib Admin (Fallback)');
         }
-        profile = newProfile;
+        return completeLogin(newProfile);
       }
 
       if (!profile) return { success: false, message: "Invalid username or password" };
       
-      // Check password (plain text as requested for simplicity)
-      if (profile.password !== password) {
+      const metadata = profile.granular_permissions?._metadata || {};
+      const pPassword = metadata.password || profile.password;
+
+      // Check password
+      if (pPassword !== password) {
         return { success: false, message: "Invalid username or password" };
       }
 
-      const metadata = profile.granular_permissions?._metadata || {};
-      const mappedUser: User = {
-        id: profile.id,
-        email: profile.email,
-        fullName: profile.full_name,
-        username: profile.username,
-        officeId: metadata.officeId,
-        contactNumber: metadata.contactNumber,
-        department: metadata.department,
-        roleTemplate: metadata.roleTemplate,
-        role: profile.role as Role,
-        status: profile.status as 'Active' | 'Inactive',
-        lastLogin: new Date().toISOString(),
-        avatarUrl: profile.avatar_url,
-        permissions: [],
-        granularPermissions: profile.granular_permissions || {},
-        createdAt: profile.created_at
-      };
-
-      setUser(mappedUser);
-      setIsAuthenticated(true);
-      localStorage.setItem('align_session_id', profile.id);
-
-      // Update last login
-      await supabase.from('profiles').update({ last_login: new Date().toISOString() }).eq('id', profile.id);
-      
-      return { success: true };
+      return completeLogin(profile);
     } catch (err: any) {
       console.error("Login Exception:", err);
-      // Final fallback for 'rakib'
       if (username.trim().toLowerCase() === 'rakib' && password === '123456') {
-        const fallbackAdmin: User = {
-          id: 'rakib-final-fallback',
-          email: 'rakib@system.local',
-          fullName: 'Rakib Admin (Final Fallback)',
-          username: 'rakib',
-          role: Role.ADMIN,
-          status: 'Active',
-          lastLogin: new Date().toISOString(),
-          avatarUrl: undefined,
-          permissions: [],
-          granularPermissions: {},
-          createdAt: new Date().toISOString()
-        };
-        setUser(fallbackAdmin);
-        setIsAuthenticated(true);
-        localStorage.setItem('align_session_id', 'rakib-final-fallback');
-        return { success: true };
+        return loginWithFallback('rakib-final-fallback', 'Rakib Admin (Final Fallback)');
       }
       return { success: false, message: `System error: ${err.message || 'Unknown error'}` };
     }
+  };
+
+  const loginWithFallback = (id: string, name: string) => {
+    const fallbackAdmin: User = {
+      id,
+      email: 'rakib@system.local',
+      fullName: name,
+      username: 'rakib',
+      role: Role.ADMIN,
+      status: 'Active',
+      lastLogin: new Date().toISOString(),
+      avatarUrl: undefined,
+      permissions: [],
+      granularPermissions: {},
+      createdAt: new Date().toISOString()
+    };
+    setUser(fallbackAdmin);
+    setIsAuthenticated(true);
+    localStorage.setItem('align_session_id', id);
+    return { success: true };
+  };
+
+  const completeLogin = async (profile: any) => {
+    const metadata = profile.granular_permissions?._metadata || {};
+    const mappedUser: User = {
+      id: profile.id,
+      email: profile.email || metadata.email || '',
+      fullName: metadata.fullName || profile.full_name || 'User',
+      username: metadata.username || profile.username || 'user',
+      officeId: metadata.officeId,
+      contactNumber: metadata.contactNumber,
+      department: metadata.department,
+      roleTemplate: metadata.roleTemplate,
+      role: (metadata.role || profile.role || Role.USER) as Role,
+      status: (metadata.status || profile.status || 'Active') as 'Active' | 'Inactive',
+      lastLogin: new Date().toISOString(),
+      avatarUrl: profile.avatar_url,
+      permissions: [],
+      granularPermissions: profile.granular_permissions || {},
+      createdAt: profile.created_at
+    };
+
+    setUser(mappedUser);
+    setIsAuthenticated(true);
+    localStorage.setItem('align_session_id', profile.id);
+
+    // Update last login if column exists, otherwise ignore
+    await supabase.from('profiles').update({ last_login: new Date().toISOString() }).eq('id', profile.id).catch(() => {});
+    
+    return { success: true };
   };
 
   const logout = async () => {
@@ -256,21 +241,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const systemEmail = `${userData.username.trim().toLowerCase()}@system.local`;
 
     // Create the Database Profile directly
+    // We only use 'id' and 'granular_permissions' to be schema-agnostic
     const { error: profileError } = await supabase.from('profiles').insert([{
       id: newId,
-      email: userData.email || systemEmail,
-      full_name: userData.fullName,
-      username: userData.username,
-      password: userData.password || 'Fair@123456',
-      role: userData.role,
-      status: userData.status,
       granular_permissions: {
         ...(userData.granularPermissions || {}),
         _metadata: {
+          email: userData.email || systemEmail,
+          fullName: userData.fullName,
+          username: userData.username,
+          password: userData.password || 'Fair@123456',
           officeId: userData.officeId,
           contactNumber: userData.contactNumber,
           department: userData.department,
-          roleTemplate: userData.roleTemplate
+          roleTemplate: userData.roleTemplate,
+          role: userData.role,
+          status: userData.status
         }
       }
     }]);
@@ -281,18 +267,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateUser = async (userId: string, updates: Partial<User>) => {
+    // We only update 'granular_permissions' to be schema-agnostic
     const { error } = await supabase.from('profiles').update({
-      full_name: updates.fullName,
-      username: updates.username,
-      role: updates.role,
-      status: updates.status,
       granular_permissions: {
         ...(updates.granularPermissions || {}),
         _metadata: {
+          email: updates.email,
+          fullName: updates.fullName,
+          username: updates.username,
+          password: (updates as any).password,
           officeId: updates.officeId,
           contactNumber: updates.contactNumber,
           department: updates.department,
-          roleTemplate: updates.roleTemplate
+          roleTemplate: updates.roleTemplate,
+          role: updates.role,
+          status: updates.status
         }
       }
     }).eq('id', userId);
