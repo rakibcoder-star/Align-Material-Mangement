@@ -220,7 +220,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('align_session_id', profile.id);
 
     // Update last login if column exists, otherwise ignore
-    await supabase.from('profiles').update({ last_login: new Date().toISOString() }).eq('id', profile.id).catch(() => {});
+    try {
+      await supabase.from('profiles').update({ last_login: new Date().toISOString() }).eq('id', profile.id);
+    } catch (e) {
+      // Ignore errors if column doesn't exist
+    }
     
     return { success: true };
   };
