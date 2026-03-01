@@ -31,15 +31,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .maybeSingle();
 
     if (data && !error) {
+      const metadata = data.granular_permissions?._metadata || {};
       const mappedUser: User = {
         id: data.id,
         email: data.email,
         fullName: data.full_name,
         username: data.username,
-        officeId: data.office_id,
-        contactNumber: data.contact_number,
-        department: data.department,
-        roleTemplate: data.role_template,
+        officeId: metadata.officeId,
+        contactNumber: metadata.contactNumber,
+        department: metadata.department,
+        roleTemplate: metadata.roleTemplate,
         role: data.role as Role,
         status: data.status as 'Active' | 'Inactive',
         lastLogin: data.last_login,
@@ -60,23 +61,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .order('created_at', { ascending: false });
 
     if (data && !error) {
-      setUsers(data.map(u => ({
-        id: u.id,
-        email: u.email,
-        fullName: u.full_name,
-        username: u.username,
-        officeId: u.office_id,
-        contactNumber: u.contact_number,
-        department: u.department,
-        roleTemplate: u.role_template,
-        role: u.role as Role,
-        status: u.status as 'Active' | 'Inactive',
-        lastLogin: u.last_login,
-        avatarUrl: u.avatar_url,
-        permissions: [],
-        granularPermissions: u.granular_permissions || {},
-        createdAt: u.created_at
-      })));
+      setUsers(data.map(u => {
+        const metadata = u.granular_permissions?._metadata || {};
+        return {
+          id: u.id,
+          email: u.email,
+          fullName: u.full_name,
+          username: u.username,
+          officeId: metadata.officeId,
+          contactNumber: metadata.contactNumber,
+          department: metadata.department,
+          roleTemplate: metadata.roleTemplate,
+          role: u.role as Role,
+          status: u.status as 'Active' | 'Inactive',
+          lastLogin: u.last_login,
+          avatarUrl: u.avatar_url,
+          permissions: [],
+          granularPermissions: u.granular_permissions || {},
+          createdAt: u.created_at
+        };
+      }));
     }
   };
 
@@ -183,15 +187,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, message: "Invalid username or password" };
       }
 
+      const metadata = profile.granular_permissions?._metadata || {};
       const mappedUser: User = {
         id: profile.id,
         email: profile.email,
         fullName: profile.full_name,
         username: profile.username,
-        officeId: profile.office_id,
-        contactNumber: profile.contact_number,
-        department: profile.department,
-        roleTemplate: profile.role_template,
+        officeId: metadata.officeId,
+        contactNumber: metadata.contactNumber,
+        department: metadata.department,
+        roleTemplate: metadata.roleTemplate,
         role: profile.role as Role,
         status: profile.status as 'Active' | 'Inactive',
         lastLogin: new Date().toISOString(),
@@ -257,13 +262,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       full_name: userData.fullName,
       username: userData.username,
       password: userData.password || 'Fair@123456',
-      office_id: userData.officeId,
-      contact_number: userData.contactNumber,
-      department: userData.department,
-      role_template: userData.roleTemplate,
       role: userData.role,
       status: userData.status,
-      granular_permissions: userData.granularPermissions
+      granular_permissions: {
+        ...(userData.granularPermissions || {}),
+        _metadata: {
+          officeId: userData.officeId,
+          contactNumber: userData.contactNumber,
+          department: userData.department,
+          roleTemplate: userData.roleTemplate
+        }
+      }
     }]);
     
     if (profileError) throw profileError;
@@ -275,13 +284,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { error } = await supabase.from('profiles').update({
       full_name: updates.fullName,
       username: updates.username,
-      office_id: updates.officeId,
-      contact_number: updates.contactNumber,
-      department: updates.department,
-      role_template: updates.roleTemplate,
       role: updates.role,
       status: updates.status,
-      granular_permissions: updates.granularPermissions
+      granular_permissions: {
+        ...(updates.granularPermissions || {}),
+        _metadata: {
+          officeId: updates.officeId,
+          contactNumber: updates.contactNumber,
+          department: updates.department,
+          roleTemplate: updates.roleTemplate
+        }
+      }
     }).eq('id', userId);
 
     if (error) throw error;
