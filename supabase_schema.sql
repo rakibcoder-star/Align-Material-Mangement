@@ -160,8 +160,8 @@ CREATE POLICY "Allow all" ON cycle_counts FOR ALL USING (true) WITH CHECK (true)
 
 -- 9. Profiles Table for User Management
 CREATE TABLE IF NOT EXISTS profiles (
-    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-    email TEXT UNIQUE NOT NULL,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email TEXT UNIQUE,
     full_name TEXT,
     username TEXT UNIQUE,
     password TEXT DEFAULT '123456',
