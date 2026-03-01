@@ -13,6 +13,7 @@ interface AuthContextType extends AuthState {
   hasPermission: (permissionId: string) => boolean;
   hasGranularPermission: (moduleId: string, action: string) => boolean;
   loading: boolean;
+  dbError: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,65 +23,120 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [users, setUsers] = useState<User[]>([]);
+  const [dbError, setDbError] = useState<string | null>(null);
 
-  const fetchUserProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle();
-
-    if (data && !error) {
-      const metadata = data.granular_permissions?._metadata || {};
-      const mappedUser: User = {
-        id: data.id,
-        email: data.email || metadata.email || '',
-        fullName: metadata.fullName || data.full_name || 'User',
-        username: metadata.username || data.username || 'user',
-        officeId: metadata.officeId,
-        contactNumber: metadata.contactNumber,
-        department: metadata.department,
-        roleTemplate: metadata.roleTemplate,
-        role: (metadata.role || data.role || Role.USER) as Role,
-        status: (metadata.status || data.status || 'Active') as 'Active' | 'Inactive',
-        lastLogin: data.last_login,
-        avatarUrl: data.avatar_url,
-        permissions: [],
-        granularPermissions: data.granular_permissions || {},
-        createdAt: data.created_at
-      };
-      setUser(mappedUser);
-      setIsAuthenticated(true);
+  // Load users from LocalStorage as a primary/fallback source
+  const loadLocalUsers = () => {
+    const saved = localStorage.getItem('align_managed_users');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        return [];
+      }
     }
+    return [];
   };
 
-  const fetchUsers = async () => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
+  const saveLocalUsers = (newUsers: User[]) => {
+    localStorage.setItem('align_managed_users', JSON.stringify(newUsers));
+    setUsers(newUsers);
+  };
 
-    if (data && !error) {
-      setUsers(data.map(u => {
-        const metadata = u.granular_permissions?._metadata || {};
-        return {
-          id: u.id,
-          email: u.email || metadata.email || '',
-          fullName: metadata.fullName || u.full_name || 'User',
-          username: metadata.username || u.username || 'user',
+  const fetchUserProfile = async (userId: string) => {
+    // First check local users
+    const localUsers = loadLocalUsers();
+    const localUser = localUsers.find((u: User) => u.id === userId);
+    
+    if (localUser) {
+      setUser(localUser);
+      setIsAuthenticated(true);
+    }
+
+    // Then try to refresh from DB
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (data && !error) {
+        const metadata = data.granular_permissions?._metadata || {};
+        const mappedUser: User = {
+          id: data.id,
+          email: data.email || metadata.email || '',
+          fullName: metadata.fullName || data.full_name || 'User',
+          username: metadata.username || data.username || 'user',
           officeId: metadata.officeId,
           contactNumber: metadata.contactNumber,
           department: metadata.department,
           roleTemplate: metadata.roleTemplate,
-          role: (metadata.role || u.role || Role.USER) as Role,
-          status: (metadata.status || u.status || 'Active') as 'Active' | 'Inactive',
-          lastLogin: u.last_login,
-          avatarUrl: u.avatar_url,
+          role: (metadata.role || data.role || Role.USER) as Role,
+          status: (metadata.status || data.status || 'Active') as 'Active' | 'Inactive',
+          lastLogin: data.last_login,
+          avatarUrl: data.avatar_url,
           permissions: [],
-          granularPermissions: u.granular_permissions || {},
-          createdAt: u.created_at
+          granularPermissions: data.granular_permissions || {},
+          createdAt: data.created_at
         };
-      }));
+        setUser(mappedUser);
+        setIsAuthenticated(true);
+        
+        // Update local cache for this user
+        const updatedLocal = localUsers.map((u: User) => u.id === userId ? mappedUser : u);
+        if (!localUser) updatedLocal.push(mappedUser);
+        localStorage.setItem('align_managed_users', JSON.stringify(updatedLocal));
+      }
+    } catch (e) {
+      console.warn("Profile fetch failed, using local session");
+    }
+  };
+
+  const fetchUsers = async () => {
+    // Start with local data
+    const localUsers = loadLocalUsers();
+    setUsers(localUsers);
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        setDbError(error.message);
+        return;
+      }
+
+      if (data) {
+        const mappedUsers = data.map(u => {
+          const metadata = u.granular_permissions?._metadata || {};
+          return {
+            id: u.id,
+            email: u.email || metadata.email || '',
+            fullName: metadata.fullName || u.full_name || 'User',
+            username: metadata.username || u.username || 'user',
+            officeId: metadata.officeId,
+            contactNumber: metadata.contactNumber,
+            department: metadata.department,
+            roleTemplate: metadata.roleTemplate,
+            role: (metadata.role || u.role || Role.USER) as Role,
+            status: (metadata.status || u.status || 'Active') as 'Active' | 'Inactive',
+            lastLogin: u.last_login,
+            avatarUrl: u.avatar_url,
+            permissions: [],
+            granularPermissions: u.granular_permissions || {},
+            createdAt: u.created_at
+          };
+        });
+        
+        setUsers(mappedUsers);
+        localStorage.setItem('align_managed_users', JSON.stringify(mappedUsers));
+        setDbError(null);
+      }
+    } catch (e: any) {
+      setDbError(e.message);
     }
   };
 
@@ -236,69 +292,93 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const addUser = async (userData: any) => {
-    // Check if user already exists locally
-    if (users.some(u => u.username.toLowerCase() === userData.username.toLowerCase())) {
-      throw new Error("A user with this username already exists in the system.");
-    }
-
     const newId = crypto.randomUUID();
     const systemEmail = `${userData.username.trim().toLowerCase()}@system.local`;
-
-    // Create the Database Profile directly
-    // We only use 'id' and 'granular_permissions' to be schema-agnostic
-    const { error: profileError } = await supabase.from('profiles').insert([{
+    
+    const newUser: User = {
       id: newId,
-      granular_permissions: {
-        ...(userData.granularPermissions || {}),
-        _metadata: {
-          email: userData.email || systemEmail,
-          fullName: userData.fullName,
-          username: userData.username,
-          password: userData.password || 'Fair@123456',
-          officeId: userData.officeId,
-          contactNumber: userData.contactNumber,
-          department: userData.department,
-          roleTemplate: userData.roleTemplate,
-          role: userData.role,
-          status: userData.status
+      email: userData.email || systemEmail,
+      fullName: userData.fullName,
+      username: userData.username,
+      officeId: userData.officeId,
+      contactNumber: userData.contactNumber,
+      department: userData.department,
+      roleTemplate: userData.roleTemplate,
+      role: userData.role,
+      status: userData.status,
+      lastLogin: 'Never',
+      permissions: [],
+      granularPermissions: userData.granularPermissions || {},
+      createdAt: new Date().toISOString()
+    };
+
+    // Update local first
+    const updatedUsers = [newUser, ...users];
+    saveLocalUsers(updatedUsers);
+
+    // Try to sync with DB
+    try {
+      const { error: profileError } = await supabase.from('profiles').insert([{
+        id: newId,
+        granular_permissions: {
+          ...(userData.granularPermissions || {}),
+          _metadata: {
+            ...userData,
+            email: userData.email || systemEmail,
+            password: userData.password || 'Fair@123456'
+          }
         }
+      }]);
+      
+      if (profileError) {
+        console.error("DB Sync Error:", profileError);
+        setDbError(`Sync failed: ${profileError.message}. Data is saved locally.`);
       }
-    }]);
-    
-    if (profileError) throw profileError;
-    
-    fetchUsers();
+    } catch (e: any) {
+      setDbError(`System error during sync: ${e.message}`);
+    }
   };
 
   const updateUser = async (userId: string, updates: Partial<User>) => {
-    // We only update 'granular_permissions' to be schema-agnostic
-    const { error } = await supabase.from('profiles').update({
-      granular_permissions: {
-        ...(updates.granularPermissions || {}),
-        _metadata: {
-          email: updates.email,
-          fullName: updates.fullName,
-          username: updates.username,
-          password: (updates as any).password,
-          officeId: updates.officeId,
-          contactNumber: updates.contactNumber,
-          department: updates.department,
-          roleTemplate: updates.roleTemplate,
-          role: updates.role,
-          status: updates.status
-        }
-      }
-    }).eq('id', userId);
+    // Update local first
+    const updatedUsers = users.map(u => u.id === userId ? { ...u, ...updates } : u);
+    saveLocalUsers(updatedUsers);
+    if (user?.id === userId) setUser({ ...user, ...updates });
 
-    if (error) throw error;
-    fetchUsers();
-    if (user?.id === userId) fetchUserProfile(userId);
+    // Try to sync with DB
+    try {
+      const { error } = await supabase.from('profiles').update({
+        granular_permissions: {
+          ...(updates.granularPermissions || {}),
+          _metadata: {
+            ...updates
+          }
+        }
+      }).eq('id', userId);
+
+      if (error) {
+        console.error("DB Sync Error:", error);
+        setDbError(`Sync failed: ${error.message}. Changes saved locally.`);
+      }
+    } catch (e: any) {
+      setDbError(`System error during sync: ${e.message}`);
+    }
   };
 
   const deleteUser = async (userId: string) => {
-    const { error } = await supabase.from('profiles').delete().eq('id', userId);
-    if (error) throw error;
-    fetchUsers();
+    // Update local first
+    const updatedUsers = users.filter(u => u.id !== userId);
+    saveLocalUsers(updatedUsers);
+
+    // Try to sync with DB
+    try {
+      const { error } = await supabase.from('profiles').delete().eq('id', userId);
+      if (error) {
+        setDbError(`Delete sync failed: ${error.message}. User removed locally.`);
+      }
+    } catch (e: any) {
+      setDbError(`System error during delete sync: ${e.message}`);
+    }
   };
 
   const hasPermission = (permissionId: string) => {
@@ -325,7 +405,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       users,
       hasPermission,
       hasGranularPermission,
-      loading
+      loading,
+      dbError
     }}>
       {children}
     </AuthContext.Provider>

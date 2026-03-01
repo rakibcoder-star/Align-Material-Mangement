@@ -81,7 +81,7 @@ const PermissionCard: React.FC<PermissionCardProps> = ({ label, moduleId, permis
 };
 
 const UserManagement: React.FC = () => {
-  const { users, addUser, updateUser, deleteUser, user: currentUser } = useAuth();
+  const { users, addUser, updateUser, deleteUser, user: currentUser, dbError } = useAuth();
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -154,6 +154,12 @@ const UserManagement: React.FC = () => {
         <div>
           <h2 className="text-xl font-bold text-gray-900 tracking-tight">User Management</h2>
           <p className="text-xs text-gray-400 font-medium uppercase tracking-widest mt-0.5">Control system access levels and permissions</p>
+          {dbError && (
+            <div className="mt-2 px-3 py-1 bg-amber-50 border border-amber-100 rounded flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></div>
+              <span className="text-[10px] font-bold text-amber-700 uppercase tracking-tight">Sync Warning: {dbError} (Using Local Storage)</span>
+            </div>
+          )}
         </div>
         <button
           onClick={() => {
