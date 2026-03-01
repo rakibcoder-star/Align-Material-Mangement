@@ -27,6 +27,7 @@ export interface User {
   email: string;
   fullName: string;
   username: string;
+  password?: string;
   officeId?: string;
   contactNumber?: string;
   department?: string;

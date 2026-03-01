@@ -64,7 +64,10 @@ import {
   Briefcase,
   IdCard,
   MapPin,
-  ClipboardList
+  ClipboardList,
+  Mail,
+  Lock,
+  Activity
 } from 'lucide-react';
 
 const SidebarItem: React.FC<{ 
@@ -595,44 +598,56 @@ const ProfileModal: React.FC<{ user: any, isOpen: boolean, onClose: () => void, 
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
-      <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300 relative">
+      <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300 relative">
         <button onClick={onClose} className="absolute top-4 right-4 text-white hover:text-gray-200 transition-colors z-20">
           <X size={24} />
         </button>
-        <div className="bg-[#2d808e] p-10 flex flex-col items-center justify-center text-white text-center relative overflow-hidden">
+        <div className="bg-[#2d808e] p-8 flex flex-col items-center justify-center text-white text-center relative overflow-hidden">
            <div className="absolute inset-0 opacity-10 pointer-events-none">
-              <div className="absolute -top-10 -left-10 w-40 h-40 border-8 border-white rounded-full"></div>
-              <div className="absolute -bottom-10 -right-10 w-60 h-60 border-4 border-white rounded-full"></div>
+              <div className="absolute -top-10 -left-10 w-32 h-32 border-8 border-white rounded-full"></div>
+              <div className="absolute -bottom-10 -right-10 w-48 h-48 border-4 border-white rounded-full"></div>
            </div>
-           <div className="w-24 h-24 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center mb-6 shadow-xl backdrop-blur-sm z-10 overflow-hidden">
-             <UserIcon size={56} className="text-white" />
+           <div className="w-20 h-20 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center mb-4 shadow-xl backdrop-blur-sm z-10 overflow-hidden">
+             {user?.avatarUrl ? (
+               <img src={user.avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+             ) : (
+               <UserIcon size={40} className="text-white" />
+             )}
            </div>
-           <h2 className="text-2xl font-black uppercase tracking-tighter mb-1 z-10">SYSTEM ADMINISTRATOR</h2>
+           <h2 className="text-xl font-black uppercase tracking-tighter mb-1 z-10">{user?.fullName || 'SYSTEM ADMINISTRATOR'}</h2>
            <p className="text-[10px] font-black text-white/60 uppercase tracking-widest z-10">NODE ID: {user?.id?.substring(0,8).toUpperCase() || 'N/A'}</p>
         </div>
-        <div className="p-10 space-y-6">
+        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto scrollbar-thin">
           {[
-            { icon: <Briefcase size={20} />, label: 'DESIGNATION', value: user?.role || 'Administrator' },
-            { icon: <Phone size={20} />, label: 'CONTACT TERMINAL', value: '+880 1XXX-XXXXXX' },
-            { icon: <IdCard size={20} />, label: 'UNIQUE ID', value: 'PROPRIETARY-ID' }
+            { icon: <UserIcon size={18} />, label: 'Full Name', value: user?.fullName },
+            { icon: <IdCard size={18} />, label: 'Office ID', value: user?.officeId || 'N/A' },
+            { icon: <Phone size={18} />, label: 'Contact Number', value: user?.contactNumber || 'N/A' },
+            { icon: <Mail size={18} />, label: 'Email Address', value: user?.email },
+            { icon: <Briefcase size={18} />, label: 'Department', value: user?.department || 'N/A' },
+            { icon: <UserIcon size={18} />, label: 'Username', value: user?.username },
+            { icon: <Lock size={18} />, label: 'Password', value: user?.password || '********' },
+            { icon: <ShieldAlert size={18} />, label: 'Role Template', value: user?.roleTemplate || user?.role },
+            { icon: <Activity size={18} />, label: 'Account Status', value: user?.status, isStatus: true }
           ].map((field, idx) => (
-            <div key={idx} className="flex items-start gap-5 group">
-              <div className="w-12 h-12 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center text-[#2d808e] group-hover:bg-[#2d808e] group-hover:text-white transition-all duration-300">
+            <div key={idx} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100 hover:border-[#2d808e]/30 transition-all group">
+              <div className="w-10 h-10 rounded-lg bg-white border border-gray-100 flex items-center justify-center text-[#2d808e] group-hover:bg-[#2d808e] group-hover:text-white transition-all duration-300 shrink-0">
                 {field.icon}
               </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-1">{field.label}</span>
-                <span className="text-base font-black text-gray-700 tracking-tight">{field.value}</span>
+              <div className="flex flex-col min-w-0">
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">{field.label}</span>
+                <span className={`text-xs font-bold tracking-tight truncate ${field.isStatus ? (field.value === 'Active' ? 'text-emerald-600' : 'text-red-500') : 'text-gray-700'}`}>
+                  {field.value}
+                </span>
               </div>
             </div>
           ))}
         </div>
-        <div className="px-10 pb-10">
+        <div className="px-6 pb-6">
           <button 
             onClick={logout}
-            className="w-full py-4 border border-red-100 rounded-2xl flex items-center justify-center gap-3 text-red-500 font-black text-sm uppercase tracking-widest hover:bg-red-50 transition-all active:scale-[0.98]"
+            className="w-full py-3 border border-red-100 rounded-xl flex items-center justify-center gap-3 text-red-500 font-black text-xs uppercase tracking-widest hover:bg-red-50 transition-all active:scale-[0.98]"
           >
-            <LogOutIcon size={18} />
+            <LogOutIcon size={16} />
             <span>TERMINATE SESSION</span>
           </button>
         </div>
