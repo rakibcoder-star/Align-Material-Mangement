@@ -198,6 +198,7 @@ const DashboardOverview: React.FC<{
   const [latestPRs, setLatestPRs] = useState<any[]>([]);
   const [latestMOs, setLatestMOs] = useState<any[]>([]);
   const [latestGRNs, setLatestGRNs] = useState<any[]>([]);
+  const [latestPOs, setLatestPOs] = useState<any[]>([]);
   const [stockTypes, setStockTypes] = useState<any[]>([]);
   const [dieselStock, setDieselStock] = useState(41);
   const [octaneStock, setOctaneStock] = useState(57);
@@ -232,6 +233,7 @@ const DashboardOverview: React.FC<{
   const canViewGaugeOctane = hasGranularPermission('dash_gauge_octane', 'view');
   const canViewTableMo = hasGranularPermission('dash_table_latest_mo', 'view');
   const canViewTablePr = hasGranularPermission('dash_table_latest_pr', 'view');
+  const canViewTablePo = hasGranularPermission('dash_table_latest_po', 'view');
   const canViewTableGrn = hasGranularPermission('dash_table_latest_grn', 'view');
 
   // Action Buttons Visibility
@@ -256,6 +258,9 @@ const DashboardOverview: React.FC<{
       const { data: grnLogs, error: grnError } = await supabase.from('grns').select('*').order('created_at', { ascending: false }).limit(5);
       if (grnError) console.error('Error fetching GRNs:', grnError);
       if (grnLogs) setLatestGRNs(grnLogs);
+      const { data: poLogs, error: poError } = await supabase.from('purchase_orders').select('*').order('created_at', { ascending: false }).limit(5);
+      if (poError) console.error('Error fetching POs:', poError);
+      if (poLogs) setLatestPOs(poLogs);
 
       const { data: items } = await supabase.from('items').select('*');
       if (items) {
@@ -551,45 +556,87 @@ const DashboardOverview: React.FC<{
         )}
       </div>
 
-      {canViewTableGrn && (
-        <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm flex flex-col min-h-[400px] mt-6">
-          <h2 className="text-xl font-black text-[#2d808e] mb-6 tracking-tight">Latest GRN</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="text-[10px] font-black text-gray-400 border-b border-gray-50 uppercase tracking-wider">
-                  <th className="px-2 py-4 text-center w-12 border-r border-gray-50">#</th>
-                  <th className="px-4 py-4 text-center border-r border-gray-50">DATE</th>
-                  <th className="px-4 py-4 text-center border-r border-gray-50">GRN NO</th>
-                  <th className="px-4 py-4 border-r border-gray-50">SOURCE REF</th>
-                  <th className="px-4 py-4 text-center border-r border-gray-50">QTY</th>
-                  <th className="px-4 py-4 text-right">INVOICE NO</th>
-                </tr>
-              </thead>
-              <tbody className="text-[12px] font-medium">
-                {latestGRNs.map((grn, idx) => {
-                  const totalQty = grn.items?.reduce((acc: number, i: any) => acc + (Number(i.grnQty || i.recQty) || 0), 0);
-                  
-                  return (
-                    <tr key={grn.id} className="hover:bg-gray-50/40 transition-colors">
-                      <td className="px-2 py-4 text-center text-gray-400 border-r border-gray-50">{idx + 1}</td>
-                      <td className="px-4 py-4 text-center border-r border-gray-50 whitespace-nowrap text-gray-600">{formatDateShort(grn.created_at)}</td>
-                      <td className="px-4 py-4 text-center border-r border-gray-50 font-bold text-[#2d808e]">
-                        <button onClick={() => onPreviewGrn(grn.grn_no)} className="hover:underline">
-                          {grn.grn_no}
-                        </button>
-                      </td>
-                      <td className="px-4 py-4 uppercase truncate max-w-[150px] font-bold text-gray-700 border-r border-gray-50">{grn.source_ref || 'N/A'}</td>
-                      <td className="px-4 py-4 text-center font-black text-gray-800 border-r border-gray-50">{totalQty}</td>
-                      <td className="px-4 py-4 text-right font-black text-gray-800">{grn.invoice_no || 'N/A'}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        {canViewTableGrn && (
+          <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm flex flex-col min-h-[400px]">
+            <h2 className="text-xl font-black text-[#2d808e] mb-6 tracking-tight">Latest GRN</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="text-[10px] font-black text-gray-400 border-b border-gray-50 uppercase tracking-wider">
+                    <th className="px-2 py-4 text-center w-12 border-r border-gray-50">#</th>
+                    <th className="px-4 py-4 text-center border-r border-gray-50">DATE</th>
+                    <th className="px-4 py-4 text-center border-r border-gray-50">GRN NO</th>
+                    <th className="px-4 py-4 border-r border-gray-50">SOURCE REF</th>
+                    <th className="px-4 py-4 text-center border-r border-gray-50">QTY</th>
+                    <th className="px-4 py-4 text-right">INVOICE NO</th>
+                  </tr>
+                </thead>
+                <tbody className="text-[12px] font-medium">
+                  {latestGRNs.map((grn, idx) => {
+                    const totalQty = grn.items?.reduce((acc: number, i: any) => acc + (Number(i.grnQty || i.recQty) || 0), 0);
+                    
+                    return (
+                      <tr key={grn.id} className="hover:bg-gray-50/40 transition-colors">
+                        <td className="px-2 py-4 text-center text-gray-400 border-r border-gray-50">{idx + 1}</td>
+                        <td className="px-4 py-4 text-center border-r border-gray-50 whitespace-nowrap text-gray-600">{formatDateShort(grn.created_at)}</td>
+                        <td className="px-4 py-4 text-center border-r border-gray-50 font-bold text-[#2d808e]">
+                          <button onClick={() => onPreviewGrn(grn.grn_no)} className="hover:underline">
+                            {grn.grn_no}
+                          </button>
+                        </td>
+                        <td className="px-4 py-4 uppercase truncate max-w-[150px] font-bold text-gray-700 border-r border-gray-50">{grn.source_ref || 'N/A'}</td>
+                        <td className="px-4 py-4 text-center font-black text-gray-800 border-r border-gray-50">{totalQty}</td>
+                        <td className="px-4 py-4 text-right font-black text-gray-800">{grn.invoice_no || 'N/A'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {canViewTablePo && (
+          <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm flex flex-col min-h-[400px]">
+            <h2 className="text-xl font-black text-[#2d808e] mb-6 tracking-tight">Latest PO</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="text-[10px] font-black text-gray-400 border-b border-gray-50 uppercase tracking-wider">
+                    <th className="px-2 py-4 text-center w-12 border-r border-gray-50">#</th>
+                    <th className="px-4 py-4 text-center border-r border-gray-50">DATE</th>
+                    <th className="px-4 py-4 text-center border-r border-gray-50">PO NO</th>
+                    <th className="px-4 py-4 border-r border-gray-50">SUPPLIER</th>
+                    <th className="px-4 py-4 text-center border-r border-gray-50">QTY</th>
+                    <th className="px-4 py-4 text-right">VALUE</th>
+                  </tr>
+                </thead>
+                <tbody className="text-[12px] font-medium">
+                  {latestPOs.map((po, idx) => {
+                    const totalQty = po.items?.reduce((acc: number, i: any) => acc + (Number(i.poQty) || 0), 0);
+                    
+                    return (
+                      <tr key={po.id} className="hover:bg-gray-50/40 transition-colors">
+                        <td className="px-2 py-4 text-center text-gray-400 border-r border-gray-50">{idx + 1}</td>
+                        <td className="px-4 py-4 text-center border-r border-gray-50 whitespace-nowrap text-gray-600">{formatDateShort(po.created_at)}</td>
+                        <td className="px-4 py-4 text-center border-r border-gray-50 font-bold text-[#2d808e]">
+                          <button onClick={() => onPreviewPo(po)} className="hover:underline">
+                            {po.po_no}
+                          </button>
+                        </td>
+                        <td className="px-4 py-4 uppercase truncate max-w-[150px] font-bold text-gray-700 border-r border-gray-50">{po.supplier_name || 'N/A'}</td>
+                        <td className="px-4 py-4 text-center font-black text-gray-800 border-r border-gray-50">{totalQty}</td>
+                        <td className="px-4 py-4 text-right font-black text-gray-800">{formatCurrency(po.total_value)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

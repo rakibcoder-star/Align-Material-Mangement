@@ -118,7 +118,7 @@ const GRNPreviewModal: React.FC<GRNPreviewModalProps> = ({ grnId, onClose }) => 
           </style>
         </head>
         <body>
-          <div class="p-8">
+          <div class="p-0">
             ${printContent.innerHTML}
           </div>
           <script>
@@ -258,7 +258,7 @@ const GRNPreviewModal: React.FC<GRNPreviewModalProps> = ({ grnId, onClose }) => 
         <div className="flex-1 overflow-y-auto p-8 bg-gray-100/50">
           <div 
             ref={printRef}
-            className="bg-white shadow-lg mx-auto p-12 min-h-[1123px] w-[794px] text-black"
+            className="bg-white shadow-lg mx-auto p-8 min-h-[1000px] w-[794px] text-black"
             style={{ fontFamily: "'Times New Roman', Times, serif" }}
           >
             {/* Header */}
@@ -300,7 +300,7 @@ const GRNPreviewModal: React.FC<GRNPreviewModalProps> = ({ grnId, onClose }) => 
               </thead>
               <tbody>
                 {grnData.items.map((item: any, index: number) => (
-                  <tr key={index} className="h-10">
+                  <tr key={index} className="h-8">
                     <td className="border border-black px-2 py-1 text-center">{index + 1}</td>
                     <td className="border border-black px-2 py-1">{item.sku}</td>
                     <td className="border border-black px-2 py-1">{item.name}</td>
@@ -312,7 +312,7 @@ const GRNPreviewModal: React.FC<GRNPreviewModalProps> = ({ grnId, onClose }) => 
                 ))}
                 {/* Empty rows to fill space if needed */}
                 {Array.from({ length: Math.max(0, 15 - grnData.items.length) }).map((_, i) => (
-                  <tr key={`empty-${i}`} className="h-10">
+                  <tr key={`empty-${i}`} className="h-8">
                     <td className="border border-black px-2 py-1"></td>
                     <td className="border border-black px-2 py-1"></td>
                     <td className="border border-black px-2 py-1"></td>
@@ -326,7 +326,7 @@ const GRNPreviewModal: React.FC<GRNPreviewModalProps> = ({ grnId, onClose }) => 
             </table>
 
             {/* Footer */}
-            <div className="mt-20 grid grid-cols-3 gap-4 text-sm text-center">
+            <div className="mt-10 grid grid-cols-3 gap-4 text-sm text-center">
               <div className="border-t border-black pt-2 font-bold">Received By</div>
               <div className="border-t border-black pt-2 font-bold">Checked by</div>
               <div className="border-t border-black pt-2 font-bold">Approved by</div>
@@ -339,7 +339,7 @@ const GRNPreviewModal: React.FC<GRNPreviewModalProps> = ({ grnId, onClose }) => 
             </div>
 
             <div className="mt-8 flex justify-between items-end text-[10px]">
-              <p>Note: This is a computer genareted invoice and printed by FTLGNWH01</p>
+              <p>Note: This is a computer generated invoice and printed by FTLGNWH01</p>
               <p>1 of 1</p>
             </div>
           </div>
