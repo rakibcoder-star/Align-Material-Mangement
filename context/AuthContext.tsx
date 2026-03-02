@@ -133,8 +133,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
         });
         
-        setUsers(mappedUsers);
-        localStorage.setItem('align_managed_users', JSON.stringify(mappedUsers));
+        // Merge: Keep local users that are not in DB yet (likely unsynced)
+        const dbIds = new Set(mappedUsers.map((u: User) => u.id));
+        const unsyncedUsers = localUsers.filter((u: User) => !dbIds.has(u.id));
+        const mergedUsers = [...mappedUsers, ...unsyncedUsers];
+        
+        setUsers(mergedUsers);
+        localStorage.setItem('align_managed_users', JSON.stringify(mergedUsers));
         setDbError(null);
       }
     } catch (e: any) {
@@ -323,6 +328,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { error: profileError } = await supabase.from('profiles').insert([{
         id: newId,
+        email: userData.email || systemEmail,
+        full_name: userData.fullName,
+        username: userData.username,
+        office_id: userData.officeId,
+        contact_number: userData.contactNumber,
+        department: userData.department,
+        role_template: userData.roleTemplate,
+        role: userData.role,
+        status: userData.status,
         granular_permissions: {
           ...(userData.granularPermissions || {}),
           _metadata: {
@@ -335,7 +349,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (profileError) {
         console.error("DB Sync Error:", profileError);
-        setDbError(`Sync failed: ${profileError.message}. Data is saved locally.`);
+        const msg = profileError.message.includes("granular_permissions") 
+          ? "Database schema is outdated (missing 'granular_permissions' column). Please run the SQL repair script in Supabase."
+          : profileError.message;
+        setDbError(`Sync failed: ${msg}. Data is saved locally.`);
       }
     } catch (e: any) {
       setDbError(`System error during sync: ${e.message}`);
@@ -351,6 +368,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Try to sync with DB
     try {
       const { error } = await supabase.from('profiles').update({
+        email: updates.email,
+        full_name: updates.fullName,
+        username: updates.username,
+        office_id: updates.officeId,
+        contact_number: updates.contactNumber,
+        department: updates.department,
+        role_template: updates.roleTemplate,
+        role: updates.role,
+        status: updates.status,
         granular_permissions: {
           ...(updates.granularPermissions || {}),
           _metadata: {

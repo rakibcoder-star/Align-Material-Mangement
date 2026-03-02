@@ -177,6 +177,22 @@ CREATE TABLE IF NOT EXISTS profiles (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Ensure all columns exist even if table was created earlier
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS full_name TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS username TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS password TEXT DEFAULT '123456';
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS office_id TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS contact_number TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS department TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS role_template TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'USER';
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'Active';
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS last_login TIMESTAMP WITH TIME ZONE;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS granular_permissions JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+
 -- Break infinite recursion by dropping ALL existing policies first
 DO $$ 
 DECLARE 
