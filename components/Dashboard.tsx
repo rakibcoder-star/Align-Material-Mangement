@@ -203,6 +203,7 @@ const DashboardOverview: React.FC<{
   const [dieselStock, setDieselStock] = useState(41);
   const [octaneStock, setOctaneStock] = useState(57);
   const [weeklyData, setWeeklyData] = useState<any[]>([]);
+  const [weeklyPoData, setWeeklyPoData] = useState<any[]>([]);
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [stats, setStats] = useState({
     todayOrderQty: '0', todayOrderCount: '0',
@@ -228,6 +229,7 @@ const DashboardOverview: React.FC<{
   // Charts & Tables Visibility
   const canViewChartWeekly = hasGranularPermission('dash_chart_weekly_movement', 'view');
   const canViewChartAnnual = hasGranularPermission('dash_chart_annual_valuation', 'view');
+  const canViewChartPo = hasGranularPermission('dash_chart_weekly_po', 'view');
   const canViewChartSegmentation = hasGranularPermission('dash_chart_stock_segmentation', 'view');
   const canViewGaugeDiesel = hasGranularPermission('dash_gauge_diesel', 'view');
   const canViewGaugeOctane = hasGranularPermission('dash_gauge_octane', 'view');
@@ -286,6 +288,21 @@ const DashboardOverview: React.FC<{
           weeklyAgg.push({ name: dateStr, qty, value });
         }
         setWeeklyData(weeklyAgg);
+
+        const { data: allPurchaseOrders } = await supabase.from('purchase_orders').select('*').order('created_at', { ascending: true });
+        if (allPurchaseOrders) {
+          const weeklyPoAgg: any[] = [];
+          for (let i = 6; i >= 0; i--) {
+            const d = new Date(todayObj); d.setDate(d.getDate() - i);
+            const dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+            const dayOrders = allPurchaseOrders.filter(po => new Date(po.created_at).toDateString() === d.toDateString());
+            const qty = dayOrders.reduce((acc, po) => acc + (po.items?.reduce((iAcc: number, item: any) => iAcc + (Number(item.poQty) || 0), 0) || 0), 0);
+            const value = dayOrders.reduce((acc, po) => acc + (Number(po.total_value) || 0), 0);
+            weeklyPoAgg.push({ name: dateStr, qty, value });
+          }
+          setWeeklyPoData(weeklyPoAgg);
+        }
+
         const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
         setMonthlyData(months.map((month, idx) => {
           const value = moveOrders.filter(mo => new Date(mo.created_at).getMonth() === idx).reduce((acc, mo) => acc + (Number(mo.total_value) || 0), 0);
@@ -432,6 +449,24 @@ const DashboardOverview: React.FC<{
             <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest mb-6">Annual Valuation Trend</h3>
             <div className="h-52">
               <ResponsiveContainer width="100%" height="100%"><LineChart data={monthlyData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} /><YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} /><Tooltip contentStyle={{ fontSize: '12px', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} /><Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} dot={{ fill: '#3b82f6', r: 6, strokeWidth: 2, stroke: '#fff' }} /></LineChart></ResponsiveContainer>
+            </div>
+          </div>
+        )}
+        {canViewChartPo && (
+          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+            <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest mb-6">Weekly PO Analytics</h3>
+            <div className="h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={weeklyPoData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                  <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                  <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                  <Tooltip contentStyle={{ fontSize: '12px', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
+                  <Bar yAxisId="left" dataKey="qty" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={24} />
+                  <Line yAxisId="right" type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2} dot={{ fill: '#10b981', r: 4 }} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
         )}
@@ -923,7 +958,7 @@ const Dashboard: React.FC = () => {
         </div>
         {!isSidebarCollapsed && (
           <>
-            <h3 className="text-[13px] font-black text-gray-800 uppercase tracking-tight">{user?.role === 'ADMIN' ? 'SYSTEM ADMIN' : user?.role || 'USER'}</h3>
+            <h3 className="text-[13px] font-black text-gray-800 uppercase tracking-tight">{user?.fullName || 'SYSTEM ADMIN'}</h3>
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">{user?.roleTemplate || user?.role || 'ADMINISTRATOR'}</p>
           </>
         )}

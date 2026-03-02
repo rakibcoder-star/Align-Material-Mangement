@@ -453,6 +453,8 @@ const UserManagement: React.FC = () => {
                       <PermissionCard label="Latest MO Table" moduleId="dash_table_latest_mo" permissions={formData.granularPermissions?.dash_table_latest_mo || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
                       <PermissionCard label="Latest PR Table" moduleId="dash_table_latest_pr" permissions={formData.granularPermissions?.dash_table_latest_pr || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
                       <PermissionCard label="Latest GRN Table" moduleId="dash_table_latest_grn" permissions={formData.granularPermissions?.dash_table_latest_grn || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                      <PermissionCard label="Latest PO Table" moduleId="dash_table_latest_po" permissions={formData.granularPermissions?.dash_table_latest_po || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                      <PermissionCard label="Weekly PO Chart" moduleId="dash_chart_weekly_po" permissions={formData.granularPermissions?.dash_chart_weekly_po || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
                     </div>
                   </div>
 
