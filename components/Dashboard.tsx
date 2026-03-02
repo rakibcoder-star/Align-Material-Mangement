@@ -794,7 +794,7 @@ const SearchResults: React.FC<{
 };
 
 const Dashboard: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, hasGranularPermission } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const activeTab = location.pathname.substring(1) || 'overview';
@@ -890,8 +890,7 @@ const Dashboard: React.FC = () => {
         />
       )}
       
-  return (
-    <aside className={`fixed md:relative z-50 transition-all duration-300 ease-in-out ${isSidebarCollapsed ? '-translate-x-full md:translate-x-0 md:w-16 lg:w-20' : 'translate-x-0 w-[240px]'} bg-white flex flex-col h-full shadow-2xl shrink-0 border-r border-gray-100`}>
+      <aside className={`fixed md:relative z-50 transition-all duration-300 ease-in-out ${isSidebarCollapsed ? '-translate-x-full md:translate-x-0 md:w-16 lg:w-20' : 'translate-x-0 w-[240px]'} bg-white flex flex-col h-full shadow-2xl shrink-0 border-r border-gray-100`}>
       <div className="p-6 flex flex-col items-center border-b border-gray-50 mb-4">
         <div className="w-16 h-16 rounded-full bg-[#f0f9fa] flex items-center justify-center mb-3 shadow-inner">
           <UserIcon size={32} className="text-[#2d808e]" />

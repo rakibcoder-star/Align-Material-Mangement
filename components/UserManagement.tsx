@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 import { Role, User, ModulePermissions } from '../types';
 import { X, User as UserIcon, Plus, Check, ChevronDown, Save, Eye, EyeOff, Loader2 } from 'lucide-react';
 
