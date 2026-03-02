@@ -86,8 +86,17 @@ const UserManagement: React.FC = () => {
   const [isAdding, setIsAdding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [costCenters, setCostCenters] = useState<any[]>([]);
   
   const [formData, setFormData] = useState<any>({});
+
+  React.useEffect(() => {
+    const fetchCostCenters = async () => {
+      const { data } = await supabase.from('cost_centers').select('name').order('name');
+      if (data) setCostCenters(data);
+    };
+    fetchCostCenters();
+  }, []);
 
   const handleEditClick = (user: User) => {
     setEditingUser(user);
@@ -166,47 +175,16 @@ const UserManagement: React.FC = () => {
           onClick={() => {
             setIsAdding(true);
             setFormData({ 
-              role: Role.ADMIN, 
-              status: 'Active',
+              role: '', 
+              status: '',
+              username: '',
               password: '',
-              granularPermissions: {
-                requisition: { view: true, edit: true, dl: true, prepared: true, checked: true, confirmed: true, approved: true },
-                purchase_order: { view: true, edit: true, dl: true, prepared: true, checked: true, confirmed: true, approved: true, accepted: true },
-                supplier: { view: true, edit: true, dl: true },
-                purchase_report: { view: true, edit: true, dl: true },
-                inventory: { view: true, edit: true, dl: true },
-                receive: { view: true, edit: true, dl: true },
-                issue: { view: true, edit: true, dl: true },
-                tnx_report: { view: true, edit: true, dl: true },
-                mo_report: { view: true, edit: true, dl: true },
-                item_list: { view: true, edit: true, dl: true },
-                item_uom: { view: true, edit: true, dl: true },
-                item_group: { view: true, edit: true, dl: true },
-                item_type: { view: true, edit: true, dl: true },
-                cost_center: { view: true, edit: true, dl: true },
-                pr_approval: { view: true, edit: true, dl: true },
-                po_approval: { view: true, edit: true, dl: true },
-                mo_approval: { view: true, edit: true, dl: true },
-                user_management: { view: true, edit: true, dl: true },
-                dash_kpi_today_orders: { view: true },
-                dash_kpi_last_day_orders: { view: true },
-                dash_kpi_weekly_orders: { view: true },
-                dash_kpi_monthly_orders: { view: true },
-                dash_kpi_weekly_pr: { view: true },
-                dash_kpi_monthly_pr: { view: true },
-                dash_chart_weekly_movement: { view: true },
-                dash_chart_annual_valuation: { view: true },
-                dash_chart_stock_segmentation: { view: true },
-                dash_gauge_diesel: { view: true },
-                dash_gauge_octane: { view: true },
-                dash_table_latest_mo: { view: true },
-                dash_table_latest_pr: { view: true },
-                dash_table_latest_grn: { view: true },
-                dash_action_print_labels: { view: true },
-                dash_action_check_stock: { view: true },
-                dash_action_move_order: { view: true },
-                dash_action_loc_transfer: { view: true }
-              } 
+              fullName: '',
+              officeId: '',
+              contactNumber: '',
+              email: '',
+              department: '',
+              granularPermissions: {} 
             });
           }}
           className="flex items-center px-6 py-2 bg-[#2d808e] text-white text-xs font-bold rounded shadow-sm hover:bg-[#256b78] transition-all uppercase tracking-widest"
@@ -344,12 +322,19 @@ const UserManagement: React.FC = () => {
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Department</label>
-                    <input 
-                      type="text" 
-                      value={formData.department || ''}
-                      onChange={(e) => setFormData({...formData, department: e.target.value})}
-                      className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-medium transition-all" 
-                    />
+                    <div className="relative">
+                      <select 
+                        value={formData.department || ''}
+                        onChange={(e) => setFormData({...formData, department: e.target.value})}
+                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-medium appearance-none transition-all"
+                      >
+                        <option value="">Select Department</option>
+                        {costCenters.map((cc, idx) => (
+                          <option key={idx} value={cc.name}>{cc.name}</option>
+                        ))}
+                      </select>
+                      <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
+                    </div>
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Username</label>
@@ -383,10 +368,11 @@ const UserManagement: React.FC = () => {
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Role Template</label>
                     <div className="relative">
                       <select 
-                        value={formData.role}
+                        value={formData.role || ''}
                         onChange={(e) => setFormData({...formData, role: e.target.value as Role})}
                         className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-bold appearance-none transition-all"
                       >
+                        <option value="">Select Role</option>
                         <option value={Role.USER}>User</option>
                         <option value={Role.MANAGER}>Manager</option>
                         <option value={Role.ADMIN}>Admin</option>
@@ -398,10 +384,11 @@ const UserManagement: React.FC = () => {
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Account Status</label>
                     <div className="relative">
                       <select 
-                        value={formData.status}
+                        value={formData.status || ''}
                         onChange={(e) => setFormData({...formData, status: e.target.value})}
                         className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded outline-none focus:border-[#2d808e] text-sm text-gray-700 font-bold appearance-none transition-all"
                       >
+                        <option value="">Select Status</option>
                         <option value="Active">Active</option>
                         <option value="Inactive">Inactive</option>
                       </select>

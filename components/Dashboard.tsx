@@ -890,29 +890,35 @@ const Dashboard: React.FC = () => {
         />
       )}
       
-      <aside className={`fixed md:relative z-50 transition-all duration-300 ease-in-out ${isSidebarCollapsed ? '-translate-x-full md:translate-x-0 md:w-16 lg:w-20' : 'translate-x-0 w-[240px]'} bg-white flex flex-col h-full shadow-2xl shrink-0 border-r border-gray-100`}>
-        <div className="p-6 flex flex-col items-center border-b border-gray-50 mb-4">
-          <div className="w-16 h-16 rounded-full bg-[#f0f9fa] flex items-center justify-center mb-3 shadow-inner">
-            <UserIcon size={32} className="text-[#2d808e]" />
-          </div>
-          {!isSidebarCollapsed && (
-            <>
-              <h3 className="text-[13px] font-black text-gray-800 uppercase tracking-tight">SYSTEM ADMIN</h3>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">ADMINISTRATOR</p>
-            </>
-          )}
+  return (
+    <aside className={`fixed md:relative z-50 transition-all duration-300 ease-in-out ${isSidebarCollapsed ? '-translate-x-full md:translate-x-0 md:w-16 lg:w-20' : 'translate-x-0 w-[240px]'} bg-white flex flex-col h-full shadow-2xl shrink-0 border-r border-gray-100`}>
+      <div className="p-6 flex flex-col items-center border-b border-gray-50 mb-4">
+        <div className="w-16 h-16 rounded-full bg-[#f0f9fa] flex items-center justify-center mb-3 shadow-inner">
+          <UserIcon size={32} className="text-[#2d808e]" />
         </div>
-        <div className="flex-1 py-2 overflow-y-auto overflow-x-hidden space-y-1 scrollbar-thin scrollbar-thumb-gray-200">
-          <SidebarItem 
-            icon={<Gauge />} 
-            label="Dashboard" 
-            active={activeTab === 'overview'} 
-            isCollapsed={isSidebarCollapsed} 
-            onClick={() => {
-              if (isSidebarCollapsed) setIsSidebarCollapsed(false);
-              menuNavigate('/overview');
-            }} 
-          />
+        {!isSidebarCollapsed && (
+          <>
+            <h3 className="text-[13px] font-black text-gray-800 uppercase tracking-tight">{user?.role === 'ADMIN' ? 'SYSTEM ADMIN' : user?.role || 'USER'}</h3>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">{user?.roleTemplate || user?.role || 'ADMINISTRATOR'}</p>
+          </>
+        )}
+      </div>
+      <div className="flex-1 py-2 overflow-y-auto overflow-x-hidden space-y-1 scrollbar-thin scrollbar-thumb-gray-200">
+        <SidebarItem 
+          icon={<Gauge />} 
+          label="Dashboard" 
+          active={activeTab === 'overview'} 
+          isCollapsed={isSidebarCollapsed} 
+          onClick={() => {
+            if (isSidebarCollapsed) setIsSidebarCollapsed(false);
+            menuNavigate('/overview');
+          }} 
+        />
+        
+        {(hasGranularPermission('requisition', 'view') || 
+          hasGranularPermission('purchase_order', 'view') || 
+          hasGranularPermission('supplier', 'view') || 
+          hasGranularPermission('purchase_report', 'view')) && (
           <SidebarItem 
             icon={<ShoppingCart />} 
             label="Purchase" 
@@ -924,11 +930,19 @@ const Dashboard: React.FC = () => {
             }} 
             isCollapsed={isSidebarCollapsed}
           >
-            <SubmenuItem icon={<FileText />} label="Requisition" active={activeTab === 'requisition'} onClick={() => menuNavigate('/requisition')} />
-            <SubmenuItem icon={<ShoppingBag />} label="Order" active={activeTab === 'purchase-order'} onClick={() => menuNavigate('/purchase-order')} />
-            <SubmenuItem icon={<Truck />} label="Supplier" active={activeTab === 'supplier'} onClick={() => menuNavigate('/supplier')} />
-            <SubmenuItem icon={<BarChart3 />} label="Report" active={activeTab === 'purchase-report'} onClick={() => menuNavigate('/purchase-report')} />
+            {hasGranularPermission('requisition', 'view') && <SubmenuItem icon={<FileText />} label="Requisition" active={activeTab === 'requisition'} onClick={() => menuNavigate('/requisition')} />}
+            {hasGranularPermission('purchase_order', 'view') && <SubmenuItem icon={<ShoppingBag />} label="Order" active={activeTab === 'purchase-order'} onClick={() => menuNavigate('/purchase-order')} />}
+            {hasGranularPermission('supplier', 'view') && <SubmenuItem icon={<Truck />} label="Supplier" active={activeTab === 'supplier'} onClick={() => menuNavigate('/supplier')} />}
+            {hasGranularPermission('purchase_report', 'view') && <SubmenuItem icon={<BarChart3 />} label="Report" active={activeTab === 'purchase-report'} onClick={() => menuNavigate('/purchase-report')} />}
           </SidebarItem>
+        )}
+
+        {(hasGranularPermission('inventory', 'view') || 
+          hasGranularPermission('receive', 'view') || 
+          hasGranularPermission('issue', 'view') || 
+          hasGranularPermission('tnx_report', 'view') || 
+          hasGranularPermission('mo_report', 'view') || 
+          hasGranularPermission('cycle_counting', 'view')) && (
           <SidebarItem 
             icon={<Warehouse />} 
             label="Warehouse" 
@@ -940,13 +954,20 @@ const Dashboard: React.FC = () => {
             }} 
             isCollapsed={isSidebarCollapsed}
           >
-            <SubmenuItem icon={<LayoutGrid />} label="Inventory" active={activeTab === 'inventory'} onClick={() => menuNavigate('/inventory')} />
-            <SubmenuItem icon={<ArrowRight />} label="Receive" active={activeTab === 'receive'} onClick={() => menuNavigate('/receive')} />
-            <SubmenuItem icon={<ArrowLeft />} label="Issue" active={activeTab === 'issue'} onClick={() => menuNavigate('/issue')} />
-            <SubmenuItem icon={<FileText />} label="Tnx-Report" active={activeTab === 'tnx-report'} onClick={() => menuNavigate('/tnx-report')} />
-            <SubmenuItem icon={<FileText />} label="MO-Report" active={activeTab === 'mo-report'} onClick={() => menuNavigate('/mo-report')} />
-            <SubmenuItem icon={<ClipboardList />} label="Cycle Counting" active={activeTab === 'cycle-counting'} onClick={() => menuNavigate('/cycle-counting')} />
+            {hasGranularPermission('inventory', 'view') && <SubmenuItem icon={<LayoutGrid />} label="Inventory" active={activeTab === 'inventory'} onClick={() => menuNavigate('/inventory')} />}
+            {hasGranularPermission('receive', 'view') && <SubmenuItem icon={<ArrowRight />} label="Receive" active={activeTab === 'receive'} onClick={() => menuNavigate('/receive')} />}
+            {hasGranularPermission('issue', 'view') && <SubmenuItem icon={<ArrowLeft />} label="Issue" active={activeTab === 'issue'} onClick={() => menuNavigate('/issue')} />}
+            {hasGranularPermission('tnx_report', 'view') && <SubmenuItem icon={<FileText />} label="Tnx-Report" active={activeTab === 'tnx-report'} onClick={() => menuNavigate('/tnx-report')} />}
+            {hasGranularPermission('mo_report', 'view') && <SubmenuItem icon={<FileText />} label="MO-Report" active={activeTab === 'mo-report'} onClick={() => menuNavigate('/mo-report')} />}
+            {hasGranularPermission('cycle_counting', 'view') && <SubmenuItem icon={<ClipboardList />} label="Cycle Counting" active={activeTab === 'cycle-counting'} onClick={() => menuNavigate('/cycle-counting')} />}
           </SidebarItem>
+        )}
+
+        {(hasGranularPermission('item_list', 'view') || 
+          hasGranularPermission('item_uom', 'view') || 
+          hasGranularPermission('item_group', 'view') || 
+          hasGranularPermission('item_type', 'view') || 
+          hasGranularPermission('cost_center', 'view')) && (
           <SidebarItem 
             icon={<LayoutGrid />} 
             label="Item Master" 
@@ -958,12 +979,15 @@ const Dashboard: React.FC = () => {
             }} 
             isCollapsed={isSidebarCollapsed}
           >
-            <SubmenuItem icon={<FileText />} label="Item List" active={activeTab === 'item-list'} onClick={() => menuNavigate('/item-list')} />
-            <SubmenuItem icon={<Boxes />} label="Item UOM" active={activeTab === 'item-uom'} onClick={() => menuNavigate('/item-uom')} />
-            <SubmenuItem icon={<Layers />} label="Item Group" active={activeTab === 'item-group'} onClick={() => menuNavigate('/item-group')} />
-            <SubmenuItem icon={<Tag />} label="Item Type" active={activeTab === 'item-type'} onClick={() => menuNavigate('/item-type')} />
-            <SubmenuItem icon={<Home />} label="Cost Center" active={activeTab === 'cost-center'} onClick={() => menuNavigate('/cost-center')} />
+            {hasGranularPermission('item_list', 'view') && <SubmenuItem icon={<FileText />} label="Item List" active={activeTab === 'item-list'} onClick={() => menuNavigate('/item-list')} />}
+            {hasGranularPermission('item_uom', 'view') && <SubmenuItem icon={<Boxes />} label="Item UOM" active={activeTab === 'item-uom'} onClick={() => menuNavigate('/item-uom')} />}
+            {hasGranularPermission('item_group', 'view') && <SubmenuItem icon={<Layers />} label="Item Group" active={activeTab === 'item-group'} onClick={() => menuNavigate('/item-group')} />}
+            {hasGranularPermission('item_type', 'view') && <SubmenuItem icon={<Tag />} label="Item Type" active={activeTab === 'item-type'} onClick={() => menuNavigate('/item-type')} />}
+            {hasGranularPermission('cost_center', 'view') && <SubmenuItem icon={<Home />} label="Cost Center" active={activeTab === 'cost-center'} onClick={() => menuNavigate('/cost-center')} />}
           </SidebarItem>
+        )}
+
+        {hasGranularPermission('user_management', 'view') && (
           <SidebarItem 
             icon={<ShieldAlert />} 
             label="Admin" 
@@ -978,7 +1002,8 @@ const Dashboard: React.FC = () => {
           >
             <SubmenuItem icon={<UserIcon />} label="Users" active={activeTab === 'users'} onClick={() => menuNavigate('/users')} />
           </SidebarItem>
-        </div>
+        )}
+      </div>
         <div className="p-4 border-t border-gray-50">
           <button onClick={logout} className="w-full flex items-center space-x-3 px-3 py-2 text-red-500 font-black text-xs uppercase tracking-widest hover:bg-red-50 rounded-lg transition-all"><LogOutIcon size={18} />{!isSidebarCollapsed && <span>EXIT</span>}</button>
         </div>
