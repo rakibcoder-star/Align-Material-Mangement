@@ -31,7 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (saved) {
       try {
         return JSON.parse(saved);
-      } catch (e) {
+      } catch {
         return [];
       }
     }
@@ -43,7 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUsers(newUsers);
   };
 
-  const fetchUserProfile = async (userId: string) => {
+  const fetchUserProfile = React.useCallback(async (userId: string) => {
     // First check local users
     const localUsers = loadLocalUsers();
     const localUser = localUsers.find((u: User) => u.id === userId);
@@ -89,12 +89,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!localUser) updatedLocal.push(mappedUser);
         localStorage.setItem('align_managed_users', JSON.stringify(updatedLocal));
       }
-    } catch (e) {
+    } catch {
       console.warn("Profile fetch failed, using local session");
     }
-  };
+  }, []);
 
-  const fetchUsers = async () => {
+  const fetchUsers = React.useCallback(async () => {
     // Start with local data
     const localUsers = loadLocalUsers();
     setUsers(localUsers);
@@ -111,7 +111,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data) {
-        const mappedUsers = data.map(u => {
+        const mappedUsers = data.map((u: any) => {
           const metadata = u.granular_permissions?._metadata || {};
           return {
             id: u.id,
@@ -145,7 +145,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e: any) {
       setDbError(e.message);
     }
-  };
+  }, []);
 
   useEffect(() => {
     // Check current session from localStorage
@@ -166,21 +166,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       clearTimeout(timer);
     };
-  }, []);
+  }, [fetchUserProfile, fetchUsers]);
 
   const login = async (username: string, password: string) => {
     try {
       const cleanUsername = username.trim().toLowerCase();
       
-      // Check profiles table directly
-      // We try to find by username in metadata if the column doesn't work
+      // 1. Check local users first (Resilience fallback)
+      // This ensures that if a user was added but sync failed, they can still log in
+      const localUsers = loadLocalUsers();
+      const localProfile = localUsers.find((u: User) => 
+        (u.username || '').toLowerCase() === cleanUsername
+      );
+
+      if (localProfile) {
+        const pPassword = localProfile.password;
+        if (pPassword === password) {
+          return completeLogin(localProfile);
+        } else {
+          return { success: false, message: "Invalid password" };
+        }
+      }
+      
+      // 2. If not found locally, check profiles table directly
       const { data: allProfiles, error: fetchError } = await supabase
         .from('profiles')
         .select('*');
 
       if (fetchError) {
         console.error("Database Fetch Error:", fetchError);
-        // Fallback for 'rakib'
+        // Special fallback for 'rakib' if DB is completely down
         if (cleanUsername === 'rakib' && password === '123456') {
           return loginWithFallback('rakib-fallback-id', 'Rakib Admin (System Fallback)');
         }
@@ -194,7 +209,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return pUsername === cleanUsername;
       });
 
-      // Auto-create 'rakib' if it doesn't exist
+      // Auto-create 'rakib' if it doesn't exist in DB or Local
       if (!profile && cleanUsername === 'rakib' && password === '123456') {
         const newId = crypto.randomUUID();
         const { data: newProfile, error: createError } = await supabase.from('profiles').insert([{
@@ -259,35 +274,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const completeLogin = async (profile: any) => {
+    // Handle both DB profile (snake_case) and Local User (camelCase)
     const metadata = profile.granular_permissions?._metadata || {};
     const mappedUser: User = {
       id: profile.id,
       email: profile.email || metadata.email || '',
-      fullName: metadata.fullName || profile.full_name || 'User',
-      username: metadata.username || profile.username || 'user',
-      password: metadata.password || profile.password,
-      officeId: metadata.officeId,
-      contactNumber: metadata.contactNumber,
-      department: metadata.department,
-      roleTemplate: metadata.roleTemplate,
-      role: (metadata.role || profile.role || Role.USER) as Role,
-      status: (metadata.status || profile.status || 'Active') as 'Active' | 'Inactive',
+      fullName: profile.fullName || metadata.fullName || profile.full_name || 'User',
+      username: profile.username || metadata.username || profile.username || 'user',
+      password: profile.password || metadata.password,
+      officeId: profile.officeId || metadata.officeId,
+      contactNumber: profile.contactNumber || metadata.contactNumber,
+      department: profile.department || metadata.department,
+      roleTemplate: profile.roleTemplate || metadata.roleTemplate,
+      role: (profile.role || metadata.role || Role.USER) as Role,
+      status: (profile.status || metadata.status || 'Active') as 'Active' | 'Inactive',
       lastLogin: new Date().toISOString(),
-      avatarUrl: profile.avatar_url,
+      avatarUrl: profile.avatarUrl || profile.avatar_url,
       permissions: [],
-      granularPermissions: profile.granular_permissions || {},
-      createdAt: profile.created_at
+      granularPermissions: profile.granularPermissions || profile.granular_permissions || {},
+      createdAt: profile.createdAt || profile.created_at
     };
 
     setUser(mappedUser);
     setIsAuthenticated(true);
     localStorage.setItem('align_session_id', profile.id);
 
-    // Update last login if column exists, otherwise ignore
+    // Update last login if possible
     try {
       await supabase.from('profiles').update({ last_login: new Date().toISOString() }).eq('id', profile.id);
-    } catch (e) {
-      // Ignore errors if column doesn't exist
+    } catch {
+      // Ignore errors
     }
     
     return { success: true };
@@ -308,6 +324,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email: userData.email || systemEmail,
       fullName: userData.fullName,
       username: userData.username,
+      password: userData.password || 'Fair@123456',
       officeId: userData.officeId,
       contactNumber: userData.contactNumber,
       department: userData.department,
@@ -337,6 +354,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role_template: userData.roleTemplate,
         role: userData.role,
         status: userData.status,
+        password: userData.password || 'Fair@123456',
         granular_permissions: {
           ...(userData.granularPermissions || {}),
           _metadata: {
@@ -349,9 +367,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (profileError) {
         console.error("DB Sync Error:", profileError);
-        const msg = profileError.message.includes("granular_permissions") 
-          ? "Database schema is outdated (missing 'granular_permissions' column). Please run the SQL repair script in Supabase."
-          : profileError.message;
+        let msg = profileError.message;
+        if (msg.includes("granular_permissions")) {
+          msg = "Database schema is outdated (missing 'granular_permissions' column). Please run the SQL repair script in Supabase.";
+        } else if (msg.includes("profiles_id_fkey")) {
+          msg = "Foreign key constraint error. Please run the SQL repair script in Supabase to remove the 'profiles_id_fkey' constraint.";
+        }
         setDbError(`Sync failed: ${msg}. Data is saved locally.`);
       }
     } catch (e: any) {
@@ -377,6 +398,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role_template: updates.roleTemplate,
         role: updates.role,
         status: updates.status,
+        password: updates.password,
         granular_permissions: {
           ...(updates.granularPermissions || {}),
           _metadata: {

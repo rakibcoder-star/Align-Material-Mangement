@@ -100,6 +100,8 @@ const MaterialsMovementForm: React.FC<MaterialsMovementFormProps> = ({ selectedI
     };
 
     fetchMasterData();
+    // Only run once on mount based on initial items
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const updateItem = (id: string, field: keyof MovementItem, value: any) => {

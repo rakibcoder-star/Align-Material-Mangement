@@ -177,6 +177,10 @@ CREATE TABLE IF NOT EXISTS profiles (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- IMPORTANT: Remove the foreign key constraint that blocks manual user creation
+-- This allows us to manage users directly in the profiles table without auth.users
+ALTER TABLE IF EXISTS public.profiles DROP CONSTRAINT IF EXISTS profiles_id_fkey;
+
 -- Ensure all columns exist even if table was created earlier
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS email TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS full_name TEXT;
