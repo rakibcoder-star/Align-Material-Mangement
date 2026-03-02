@@ -433,12 +433,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const hasPermission = (permissionId: string) => {
-    if (user?.role === Role.ADMIN || user?.username === 'rakib') return true;
+    if (user?.username === 'rakib') return true;
     return !!user?.granularPermissions?.[permissionId]?.view;
   };
 
   const hasGranularPermission = (moduleId: string, action: string) => {
-    if (user?.role === Role.ADMIN || user?.username === 'rakib') return true;
+    if (user?.username === 'rakib') return true;
     const modulePerms = user?.granularPermissions?.[moduleId];
     if (!modulePerms) return false;
     return !!(modulePerms as any)[action];

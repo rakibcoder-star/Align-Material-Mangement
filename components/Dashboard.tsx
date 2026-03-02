@@ -664,7 +664,7 @@ const ProfileModal: React.FC<{ user: any, isOpen: boolean, onClose: () => void, 
            <h2 className="text-xl font-black uppercase tracking-tighter mb-1 z-10">{user?.fullName || 'SYSTEM ADMINISTRATOR'}</h2>
            <p className="text-[10px] font-black text-white/60 uppercase tracking-widest z-10">NODE ID: {user?.id?.substring(0,8).toUpperCase() || 'N/A'}</p>
         </div>
-        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto scrollbar-thin">
+        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[45vh] overflow-y-auto scrollbar-thin">
           {[
             { icon: <UserIcon size={18} />, label: 'Full Name', value: user?.fullName },
             { icon: <IdCard size={18} />, label: 'Office ID', value: user?.officeId || 'N/A' },
@@ -688,6 +688,32 @@ const ProfileModal: React.FC<{ user: any, isOpen: boolean, onClose: () => void, 
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Active Permissions Section */}
+        <div className="px-6 pb-4">
+          <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 border-b border-gray-50 pb-2">Active Module Restrictions</h3>
+          <div className="flex flex-wrap gap-2 max-h-[150px] overflow-y-auto scrollbar-thin pr-2">
+            {user?.granularPermissions && Object.entries(user.granularPermissions).map(([moduleId, perms]: [string, any]) => {
+              if (moduleId === '_metadata') return null;
+              const activeActions = Object.entries(perms).filter(([_, val]) => val === true).map(([action]) => action);
+              if (activeActions.length === 0) return null;
+              
+              return (
+                <div key={moduleId} className="px-3 py-2 bg-cyan-50/50 border border-cyan-100 rounded-lg flex flex-col gap-1">
+                  <span className="text-[9px] font-black text-[#2d808e] uppercase tracking-tighter">{moduleId.replace(/_/g, ' ')}</span>
+                  <div className="flex gap-1">
+                    {activeActions.map(action => (
+                      <span key={action} className="text-[8px] font-bold text-gray-400 uppercase bg-white px-1 rounded border border-gray-100">{action}</span>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+            {(!user?.granularPermissions || Object.keys(user.granularPermissions).filter(k => k !== '_metadata').length === 0) && (
+              <p className="text-[10px] text-gray-400 font-medium italic">No specific module restrictions applied.</p>
+            )}
+          </div>
         </div>
         <div className="px-6 pb-6">
           <button 
