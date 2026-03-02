@@ -135,8 +135,9 @@ const UserManagement: React.FC = () => {
   };
 
   const formatDate = (dateStr: string) => {
-    if (!dateStr) return 'Never';
+    if (!dateStr || dateStr === 'Never') return 'Never';
     const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return 'Never';
     return date.toLocaleDateString('en-US', { 
       month: 'short', 
       day: '2-digit', 

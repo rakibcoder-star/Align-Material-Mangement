@@ -177,8 +177,18 @@ CREATE TABLE IF NOT EXISTS profiles (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Break infinite recursion by dropping ALL existing policies first
+DO $$ 
+DECLARE 
+    pol record;
+BEGIN 
+    FOR pol IN SELECT policyname FROM pg_policies WHERE tablename = 'profiles' AND schemaname = 'public' 
+    LOOP
+        EXECUTE format('DROP POLICY %I ON public.profiles', pol.policyname);
+    END LOOP;
+END $$;
+
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Allow all" ON profiles;
 CREATE POLICY "Allow all" ON profiles FOR ALL USING (true) WITH CHECK (true);
 
 -- FORCE CACHE RELOAD

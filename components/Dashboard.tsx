@@ -984,43 +984,43 @@ const Dashboard: React.FC = () => {
         </div>
       </aside>
       <div className="flex-1 flex flex-col overflow-hidden relative">
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-30 shrink-0">
+        <header className="h-12 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-30 shrink-0">
           <div className="flex items-center gap-2 md:gap-6">
-            <button onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} className="p-2 hover:bg-gray-50 rounded-xl text-[#2d808e] transition-all"><Menu size={24} /></button>
-            <div onClick={() => navigate('/overview')} className="text-xl md:text-2xl font-black text-gray-800 tracking-tighter cursor-pointer select-none">ALIGN</div>
+            <button onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} className="p-1.5 hover:bg-gray-50 rounded-lg text-[#2d808e] transition-all"><Menu size={20} /></button>
+            <div onClick={() => navigate('/overview')} className="text-lg md:text-xl font-black text-gray-800 tracking-tighter cursor-pointer select-none">ALIGN</div>
           </div>
           <div ref={searchContainerRef} className="hidden md:block flex-1 max-w-[600px] mx-4 lg:mx-10 relative">
-            <div className="bg-[#f8f9fa] rounded-2xl flex items-center px-4 py-1.5 border border-transparent focus-within:border-[#2d808e]/30 focus-within:bg-white focus-within:shadow-lg transition-all">
-              <Search size={20} className="text-gray-300" />
+            <div className="bg-[#f8f9fa] rounded-xl flex items-center px-4 py-1 border border-transparent focus-within:border-[#2d808e]/30 focus-within:bg-white focus-within:shadow-lg transition-all">
+              <Search size={16} className="text-gray-300" />
               <input 
                 type="text" 
                 placeholder="Search PR, PO, MO, SKU, Item..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => searchQuery.length >= 2 && setShowSearchResults(true)}
-                className="flex-1 bg-transparent border-none outline-none px-4 text-sm font-bold text-gray-700 placeholder:text-gray-300 placeholder:font-medium"
+                className="flex-1 bg-transparent border-none outline-none px-4 text-xs font-bold text-gray-700 placeholder:text-gray-300 placeholder:font-medium"
               />
               {isSearching ? (
-                <Loader2 size={18} className="animate-spin text-[#2d808e] mr-2" />
+                <Loader2 size={14} className="animate-spin text-[#2d808e] mr-2" />
               ) : null}
-              <button className="w-10 h-10 bg-[#2d808e] rounded-xl flex items-center justify-center text-white shadow-lg shadow-cyan-900/20 hover:bg-[#256b78] transition-all active:scale-95">
-                <ArrowUpRight size={20} />
+              <button className="w-8 h-8 bg-[#2d808e] rounded-lg flex items-center justify-center text-white shadow-lg shadow-cyan-900/20 hover:bg-[#256b78] transition-all active:scale-95">
+                <ArrowUpRight size={16} />
               </button>
             </div>
             {showSearchResults && <SearchResults results={searchResults} onNavigate={handleSearchResultNavigation} />}
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => setIsNotificationOpen(!isNotificationOpen)} className="relative p-2.5 hover:bg-gray-50 rounded-xl text-[#2d808e] transition-all group">
-              <Bell size={24} />
-              <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
+            <button onClick={() => setIsNotificationOpen(!isNotificationOpen)} className="relative p-2 hover:bg-gray-50 rounded-lg text-[#2d808e] transition-all group">
+              <Bell size={20} />
+              <span className="absolute top-1.5 right-2 w-1.5 h-1.5 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
             </button>
-            <div className="h-8 w-px bg-gray-100 mx-2"></div>
-            <button onClick={() => setIsProfileOpen(true)} className="w-11 h-11 rounded-xl bg-[#f0f9fa] border border-gray-100 flex items-center justify-center text-[#2d808e] shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group">
-              <UserIcon size={24} className="group-hover:scale-110 transition-transform" />
+            <div className="h-6 w-px bg-gray-100 mx-1"></div>
+            <button onClick={() => setIsProfileOpen(true)} className="w-9 h-9 rounded-lg bg-[#f0f9fa] border border-gray-100 flex items-center justify-center text-[#2d808e] shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group">
+              <UserIcon size={20} className="group-hover:scale-110 transition-transform" />
             </button>
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto p-6 md:p-8 bg-[#f9fafb] pb-12 scrollbar-thin">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-[#f9fafb] scrollbar-thin">
           <div className="max-w-[1600px] mx-auto w-full">
             <Routes>
               <Route path="/overview" element={<DashboardOverview onCheckStock={() => setIsStockStatusModalOpen(true)} onMoveOrder={() => setIsMoveOrderModalOpen(true)} onLocTransfer={() => setIsLocationTransferModalOpen(true)} onPreviewPr={setPreviewPr} onPreviewPo={setPreviewPo} onPreviewMo={setPreviewMo} onPreviewTnx={setPreviewTnx} onPreviewGrn={setPreviewGrn} />} />
@@ -1028,6 +1028,18 @@ const Dashboard: React.FC = () => {
             </Routes>
           </div>
         </main>
+        <footer className="h-8 bg-white border-t border-gray-200 flex items-center justify-between px-6 z-30 shrink-0 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+          <div className="flex items-center gap-4">
+            <span>&copy; 2024 ALIGN SYSTEMS</span>
+            <span className="h-3 w-px bg-gray-100"></span>
+            <span>v1.0.4-STABLE</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1.5"><Activity size={10} className="text-emerald-500" /> SYSTEM ONLINE</span>
+            <span className="h-3 w-px bg-gray-100"></span>
+            <span>{new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+          </div>
+        </footer>
       </div>
       <MoveOrderModal isOpen={isMoveOrderModalOpen} onClose={() => setIsMoveOrderModalOpen(false)} />
       <LocationTransferModal isOpen={isLocationTransferModalOpen} onClose={() => setIsLocationTransferModalOpen(false)} />

@@ -32,82 +32,77 @@ const ItemList: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
-  const pageSize = 10000;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const fetchItems = async () => {
+  const fetchItems = React.useCallback(async () => {
     setLoading(true);
     
     try {
-      // 1. Get total count for pagination
-      let countQuery = supabase.from('items').select('*', { count: 'exact', head: true });
-      if (searchTerm) {
-        countQuery = countQuery.or(`name.ilike.%${searchTerm}%,sku.ilike.%${searchTerm}%,code.ilike.%${searchTerm}%`);
-      }
+      let allData: any[] = [];
+      let from = 0;
+      const step = 1000;
+      let hasMore = true;
 
-      // Apply column filters
-      Object.entries(columnFilters).forEach(([column, value]) => {
-        if (value) {
-          if (['code', 'sku', 'name', 'uom', 'location', 'type', 'group_name'].includes(column)) {
-            countQuery = countQuery.ilike(column, `%${value}%`);
-          } else if (['last_price', 'avg_price', 'safety_stock', 'on_hand_stock'].includes(column)) {
-            countQuery = countQuery.eq(column, parseFloat(value) || 0);
-          }
+      while (hasMore) {
+        let dataQuery = supabase
+          .from('items')
+          .select('*');
+
+        if (searchTerm) {
+          dataQuery = dataQuery.or(`name.ilike.%${searchTerm}%,sku.ilike.%${searchTerm}%,code.ilike.%${searchTerm}%`);
         }
-      });
 
-      const { count } = await countQuery;
-      setTotalCount(count || 0);
-
-      // 2. Fetch paginated data
-      const from = (currentPage - 1) * pageSize;
-      const to = from + pageSize - 1;
-
-      let dataQuery = supabase
-        .from('items')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .range(from, to);
-
-      if (searchTerm) {
-        dataQuery = dataQuery.or(`name.ilike.%${searchTerm}%,sku.ilike.%${searchTerm}%,code.ilike.%${searchTerm}%`);
-      }
-
-      // Apply column filters to data query too
-      Object.entries(columnFilters).forEach(([column, value]) => {
-        if (value) {
-          if (['code', 'sku', 'name', 'uom', 'location', 'type', 'group_name'].includes(column)) {
-            dataQuery = dataQuery.ilike(column, `%${value}%`);
-          } else if (['last_price', 'avg_price', 'safety_stock', 'on_hand_stock'].includes(column)) {
-            dataQuery = dataQuery.eq(column, parseFloat(value) || 0);
+        // Apply column filters
+        Object.entries(columnFilters).forEach(([column, value]) => {
+          if (value) {
+            if (['code', 'sku', 'name', 'uom', 'location', 'type', 'group_name'].includes(column)) {
+              dataQuery = dataQuery.ilike(column, `%${value}%`);
+            } else if (['last_price', 'avg_price', 'safety_stock', 'on_hand_stock'].includes(column)) {
+              dataQuery = dataQuery.eq(column, parseFloat(value) || 0);
+            }
           }
-        }
-      });
+        });
 
-      const { data, error } = await dataQuery;
+        const { data, error } = await dataQuery
+          .order('created_at', { ascending: false })
+          .range(from, from + step - 1);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          allData = [...allData, ...data];
+          if (data.length < step) {
+            hasMore = false;
+          } else {
+            from += step;
+          }
+        } else {
+          hasMore = false;
+        }
+
+        // Safety break
+        if (from > 20000) hasMore = false;
+      }
       
-      if (data && !error) {
-        setItems(data.map((item, index) => ({
-          ...item,
-          sl: from + index + 1
-        })));
-      }
+      setTotalCount(allData.length);
+      setItems(allData.map((item, index) => ({
+        ...item,
+        sl: index + 1
+      })));
     } catch (err) {
       console.error("Fetch items error:", err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchTerm, columnFilters]);
 
   useEffect(() => {
     fetchItems();
-  }, [currentPage, searchTerm, columnFilters]);
+  }, [fetchItems]);
 
   const handleColumnFilter = (column: string, value: string) => {
     setColumnFilters(prev => ({ ...prev, [column]: value }));
-    setCurrentPage(1);
   };
 
   const columnSuggestions = React.useMemo(() => {
@@ -125,7 +120,6 @@ const ItemList: React.FC = () => {
   }, [items]);
 
   const handleSearch = () => {
-    setCurrentPage(1);
     fetchItems();
   };
 
@@ -225,7 +219,7 @@ const ItemList: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-140px)] space-y-4">
+    <div className="flex flex-col h-[calc(100vh-120px)] space-y-4">
       <div className="flex items-center justify-between shrink-0">
         <div className="flex items-center space-x-2 text-[11px] font-bold text-[#2d808e] uppercase tracking-wider">
           <Home size={14} className="text-gray-400" />
@@ -389,7 +383,7 @@ const ItemList: React.FC = () => {
                   </div>
                 </td>
               </tr>
-            ) : items.map((item, idx) => (
+            ) : items.map((item) => (
               <tr 
                 key={item.id} 
                 className={`hover:bg-cyan-50/20 transition-colors border-b border-gray-50 last:border-0 group ${selectedIds.has(item.id!) ? 'bg-cyan-50/40' : ''}`}

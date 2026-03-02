@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Home, FileSpreadsheet, Search, List, ChevronLeft, ChevronRight, ChevronDown, Loader2 } from 'lucide-react';
+import { Home, FileSpreadsheet, Search, List, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { supabase } from '../lib/supabase';
 import ColumnFilter from './ColumnFilter';
@@ -20,64 +20,79 @@ interface InventoryItem {
 
 const Inventory: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [pageSize, setPageSize] = useState(10000);
-  const [currentPage, setCurrentPage] = useState(1);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [totalCount, setTotalCount] = useState(0);
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
 
   const fetchInventory = React.useCallback(async () => {
     setLoading(true);
     try {
-      let query = supabase
-        .from('items')
-        .select('*', { count: 'exact' });
+      let allData: any[] = [];
+      let from = 0;
+      const step = 1000;
+      let hasMore = true;
 
-      if (searchTerm) {
-        query = query.or(`name.ilike.%${searchTerm}%,code.ilike.%${searchTerm}%,sku.ilike.%${searchTerm}%`);
-      }
+      while (hasMore) {
+        let query = supabase
+          .from('items')
+          .select('*');
 
-      // Apply column filters
-      Object.entries(columnFilters).forEach(([column, value]) => {
-        if (value) {
-          if (column === 'code' || column === 'sku' || column === 'name' || column === 'uom' || column === 'type' || column === 'group_name') {
-            query = query.ilike(column, `%${value}%`);
-          } else if (column === 'received_qty' || column === 'issued_qty' || column === 'on_hand_stock' || column === 'safety_stock') {
-            query = query.eq(column, parseInt(value) || 0);
-          }
+        if (searchTerm) {
+          query = query.or(`name.ilike.%${searchTerm}%,code.ilike.%${searchTerm}%,sku.ilike.%${searchTerm}%`);
         }
-      });
 
-      const { data, count, error } = await query
-        .order('name', { ascending: true })
-        .range((currentPage - 1) * pageSize, currentPage * pageSize - 1);
+        // Apply column filters
+        Object.entries(columnFilters).forEach(([column, value]) => {
+          if (value) {
+            if (column === 'code' || column === 'sku' || column === 'name' || column === 'uom' || column === 'type' || column === 'group_name') {
+              query = query.ilike(column, `%${value}%`);
+            } else if (column === 'received_qty' || column === 'issued_qty' || column === 'on_hand_stock' || column === 'safety_stock') {
+              query = query.eq(column, parseInt(value) || 0);
+            }
+          }
+        });
 
-      if (error) throw error;
+        const { data, error } = await query
+          .order('name', { ascending: true })
+          .range(from, from + step - 1);
 
-      if (data) {
-        const mapped: InventoryItem[] = data.map(item => ({
-          id: item.id,
-          code: item.code || 'N/A',
-          sku: item.sku || 'N/A',
-          name: item.name,
-          uom: item.uom || 'N/A',
-          receivedQty: item.received_qty || 0,
-          issuedQty: item.issued_qty || 0,
-          onHandQty: item.on_hand_stock || 0,
-          safetyStock: item.safety_stock || 0,
-          itemType: item.type || 'N/A',
-          itemDetails: item.group_name || 'N/A'
-        }));
-        setInventory(mapped);
-        setTotalCount(count || 0);
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          allData = [...allData, ...data];
+          if (data.length < step) {
+            hasMore = false;
+          } else {
+            from += step;
+          }
+        } else {
+          hasMore = false;
+        }
+        
+        // Safety break to prevent infinite loops if something goes wrong
+        if (from > 20000) hasMore = false;
       }
+
+      const mapped: InventoryItem[] = allData.map(item => ({
+        id: item.id,
+        code: item.code || 'N/A',
+        sku: item.sku || 'N/A',
+        name: item.name,
+        uom: item.uom || 'N/A',
+        receivedQty: item.received_qty || 0,
+        issuedQty: item.issued_qty || 0,
+        onHandQty: item.on_hand_stock || 0,
+        safetyStock: item.safety_stock || 0,
+        itemType: item.type || 'N/A',
+        itemDetails: item.group_name || 'N/A'
+      }));
+      setInventory(mapped);
     } catch (err) {
       console.error('Error fetching inventory:', err);
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, columnFilters, currentPage, pageSize]);
+  }, [searchTerm, columnFilters]);
 
   useEffect(() => {
     fetchInventory();
@@ -85,12 +100,10 @@ const Inventory: React.FC = () => {
 
   const handleColumnFilter = (column: string, value: string) => {
     setColumnFilters(prev => ({ ...prev, [column]: value }));
-    setCurrentPage(1);
   };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setCurrentPage(1);
     fetchInventory();
   };
 
@@ -117,16 +130,16 @@ const Inventory: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col space-y-4">
+    <div className="flex flex-col h-[calc(100vh-120px)] space-y-4">
       {/* Breadcrumb Section */}
-      <div className="flex items-center space-x-2 text-[11px] font-bold text-[#2d808e] uppercase tracking-wider">
+      <div className="flex items-center space-x-2 text-[11px] font-bold text-[#2d808e] uppercase tracking-wider shrink-0">
         <Home size={14} className="text-gray-400" />
         <span className="text-gray-400">/</span>
         <span>INVENTORY</span>
       </div>
 
       {/* Header Actions Bar */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between shrink-0">
         <div className="flex items-center space-x-2">
           <button className="flex items-center space-x-1.5 bg-[#2d808e] text-white px-4 py-1.5 rounded text-[12px] font-bold shadow-sm">
             <span>Stock</span>
@@ -161,11 +174,11 @@ const Inventory: React.FC = () => {
       </div>
 
       {/* Table Section */}
-      <div className="bg-white rounded shadow-sm border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[1200px]">
-            <thead className="bg-[#fcfcfc]">
+      <div className="flex-1 bg-white rounded shadow-sm border border-gray-100 overflow-auto scrollbar-thin relative">
+        <table className="w-full text-left border-collapse min-w-[1200px]">
+            <thead className="bg-[#fcfcfc] sticky top-0 z-10 shadow-[0_1px_0_rgba(0,0,0,0.05)]">
               <tr className="text-[12px] font-bold text-gray-800 border-b border-gray-100">
+                <th className="px-6 py-4 text-center w-16 border-r border-gray-50">SL</th>
                 <th className="px-6 py-4 text-left w-32">
                   <div className="flex items-center">
                     <span>Code</span>
@@ -231,7 +244,7 @@ const Inventory: React.FC = () => {
             <tbody className="text-[12px] text-gray-700 font-medium">
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="px-6 py-12 text-center text-gray-400 uppercase tracking-widest">
+                  <td colSpan={11} className="px-6 py-12 text-center text-gray-400 uppercase tracking-widest">
                     <div className="flex flex-col items-center space-y-2">
                       <Loader2 size={24} className="animate-spin text-[#2d808e]" />
                       <span>Loading Inventory...</span>
@@ -239,8 +252,9 @@ const Inventory: React.FC = () => {
                   </td>
                 </tr>
               ) : inventory.length > 0 ? (
-                inventory.map((item) => (
+                inventory.map((item, idx) => (
                   <tr key={item.id} className="hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0">
+                    <td className="px-6 py-4 text-center border-r border-gray-50 text-gray-400">{idx + 1}</td>
                     <td className="px-6 py-4 text-left">{item.code}</td>
                     <td className="px-6 py-4 text-left font-mono text-xs">{item.sku}</td>
                     <td className="px-6 py-4 font-bold uppercase">{item.name}</td>
@@ -255,58 +269,16 @@ const Inventory: React.FC = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={9} className="px-6 py-12 text-center text-gray-400 uppercase tracking-widest">
+                  <td colSpan={11} className="px-6 py-12 text-center text-gray-400 uppercase tracking-widest">
                     No items found in inventory
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
-        </div>
       </div>
 
-      {/* Pagination Footer Section - Hidden as all items are shown on one page */}
-      {totalCount > pageSize && (
-        <div className="flex items-center justify-end space-x-4 pt-2 pb-6">
-          <div className="flex items-center space-x-1">
-            <button 
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-              className="p-1.5 text-gray-300 hover:text-gray-500 disabled:opacity-50"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            
-            <div className="flex items-center space-x-1">
-              <span className="text-xs font-bold text-gray-500 px-2">
-                Page {currentPage} of {Math.ceil(totalCount / pageSize) || 1}
-              </span>
-            </div>
-
-            <button 
-              onClick={() => setCurrentPage(prev => Math.min(Math.ceil(totalCount / pageSize), prev + 1))}
-              disabled={currentPage >= Math.ceil(totalCount / pageSize)}
-              className="p-1.5 text-gray-400 hover:text-[#2d808e] disabled:opacity-50"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
-          
-          <div className="flex items-center space-x-2 border border-gray-200 rounded bg-white px-2 py-1">
-            <select 
-              value={pageSize}
-              onChange={(e) => setPageSize(Number(e.target.value))}
-              className="text-[11px] font-bold text-gray-600 outline-none appearance-none pr-4 bg-transparent cursor-pointer"
-            >
-              <option value={10}>10 / page</option>
-              <option value={20}>20 / page</option>
-              <option value={50}>50 / page</option>
-              <option value={10000}>All</option>
-            </select>
-            <ChevronDown size={12} className="text-gray-400 pointer-events-none" />
-          </div>
-        </div>
-      )}
+      {/* Pagination Footer Section - Removed as all items are shown on one page */}
     </div>
   );
 };
