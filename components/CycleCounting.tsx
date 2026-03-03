@@ -33,7 +33,12 @@ const CycleCounting: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
-  const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toISOString().substring(0, 7)); // YYYY-MM
+  const getLocalToday = () => {
+    const now = new Date();
+    return now.toISOString().split('T')[0];
+  };
+
+  const [selectedDate, setSelectedDate] = useState<string>(getLocalToday()); // YYYY-MM-DD
 
   // Form State
   const [sku, setSku] = useState('');
@@ -55,34 +60,42 @@ const CycleCounting: React.FC = () => {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (selectedMonth) {
-        query = query.ilike('counting_date', `${selectedMonth}%`);
+      if (selectedDate) {
+        const start = `${selectedDate}T00:00:00Z`;
+        const end = `${selectedDate}T23:59:59Z`;
+        query = query.gte('counting_date', start).lte('counting_date', end);
       }
 
       const { data, error } = await query;
 
-      if (data && !error) {
+      if (error) throw error;
+
+      if (data) {
         setCounts(data);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error fetching counts:", err);
+      // If it's a schema error, maybe the table is missing columns
+      if (err.message?.includes("column") || err.message?.includes("relation")) {
+        console.warn("Database schema issue detected for cycle_counts");
+      }
     } finally {
       setLoading(false);
     }
-  }, [selectedMonth]);
+  }, [selectedDate]);
 
   useEffect(() => {
     fetchCounts();
   }, [fetchCounts]);
 
-  const setThisMonth = () => {
-    setSelectedMonth(new Date().toISOString().substring(0, 7));
+  const setToday = () => {
+    setSelectedDate(getLocalToday());
   };
 
-  const setLastMonth = () => {
+  const setYesterday = () => {
     const d = new Date();
-    d.setMonth(d.getMonth() - 1);
-    setSelectedMonth(d.toISOString().substring(0, 7));
+    d.setDate(d.getDate() - 1);
+    setSelectedDate(d.toISOString().split('T')[0]);
   };
 
   const handleSkuLookup = async (lookupSku: string) => {
@@ -149,7 +162,26 @@ const CycleCounting: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!sku || physicalQty === '' || itemName === 'ITEM NOT FOUND') return;
+    
+    if (!sku) {
+      alert("Please enter or scan a SKU.");
+      return;
+    }
+    
+    if (physicalQty === '') {
+      alert("Please enter the physical quantity counted.");
+      return;
+    }
+
+    if (itemName === 'ITEM NOT FOUND') {
+      alert("This SKU does not exist in the Item Master. You can only perform cycle counting for existing items.");
+      return;
+    }
+
+    if (isSearching) {
+      alert("Please wait for item lookup to complete.");
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -170,7 +202,10 @@ const CycleCounting: React.FC = () => {
         counting_date: new Date().toISOString()
       }]);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase Insert Error:", error);
+        throw error;
+      }
 
       setShowSuccess(true);
       setTimeout(() => {
@@ -181,7 +216,8 @@ const CycleCounting: React.FC = () => {
       }, 2000);
 
     } catch (err: any) {
-      alert("Error saving count: " + err.message);
+      console.error("Full Error Object:", err);
+      alert("Error saving count: " + (err.message || "Unknown error occurred. Check console."));
     } finally {
       setIsSubmitting(false);
     }
@@ -207,8 +243,8 @@ const CycleCounting: React.FC = () => {
 
   const filteredCounts = useMemo(() => {
     return counts.filter(c => {
-      const countMonth = c.counting_date ? c.counting_date.substring(0, 7) : '';
-      const matchesMonth = !selectedMonth || countMonth === selectedMonth;
+      const countDate = c.counting_date ? c.counting_date.split('T')[0] : '';
+      const matchesDate = !selectedDate || countDate === selectedDate;
       
       const matchesColumnFilters = Object.entries(columnFilters).every(([column, value]) => {
         if (!value) return true;
@@ -216,15 +252,15 @@ const CycleCounting: React.FC = () => {
         return itemValue.includes(value.toLowerCase());
       });
 
-      return matchesMonth && matchesColumnFilters;
+      return matchesDate && matchesColumnFilters;
     });
-  }, [counts, selectedMonth, columnFilters]);
+  }, [counts, selectedDate, columnFilters]);
 
   const handleExportExcel = () => {
     const worksheet = XLSX.utils.json_to_sheet(filteredCounts);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Cycle Counts");
-    XLSX.writeFile(workbook, `Cycle_Counts_${selectedMonth}.xlsx`);
+    XLSX.writeFile(workbook, `Cycle_Counts_${selectedDate}.xlsx`);
   };
 
   if (view === 'add') {
@@ -406,31 +442,31 @@ const CycleCounting: React.FC = () => {
         <div className="flex items-center space-x-3">
           <div className="hidden md:flex items-center gap-2 mr-2">
             <button 
-              onClick={setThisMonth}
-              className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase transition-all shadow-sm ${selectedMonth === new Date().toISOString().substring(0, 7) ? 'bg-[#2d808e] text-white border border-[#2d808e]' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+              onClick={setToday}
+              className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase transition-all shadow-sm ${selectedDate === getLocalToday() ? 'bg-[#2d808e] text-white border border-[#2d808e]' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}
             >
-              This Month
+              Today
             </button>
             <button 
-              onClick={setLastMonth}
-              className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase transition-all shadow-sm ${selectedMonth === new Date(new Date().getFullYear(), new Date().getMonth() - 1).toISOString().substring(0, 7) ? 'bg-[#2d808e] text-white border border-[#2d808e]' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+              onClick={setYesterday}
+              className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase transition-all shadow-sm ${selectedDate === new Date(Date.now() - 86400000).toISOString().split('T')[0] ? 'bg-[#2d808e] text-white border border-[#2d808e]' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}
             >
-              Last Month
+              Yesterday
             </button>
           </div>
           <div className="flex items-center bg-white border border-gray-200 rounded-xl px-3 py-1.5 shadow-sm focus-within:border-[#2d808e]/50 transition-all">
             <Calendar size={14} className="text-gray-400 mr-2" />
             <input 
-              type="month" 
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
+              type="date" 
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
               className="text-[11px] font-black text-gray-700 outline-none uppercase bg-transparent"
             />
-            {selectedMonth && (
+            {selectedDate && (
               <button 
-                onClick={() => setSelectedMonth('')}
+                onClick={() => setSelectedDate('')}
                 className="ml-2 p-0.5 hover:bg-gray-100 rounded-full text-gray-400 hover:text-red-500 transition-colors"
-                title="Clear Month Filter"
+                title="Clear Date Filter"
               >
                 <X size={12} />
               </button>
@@ -454,26 +490,26 @@ const CycleCounting: React.FC = () => {
         </div>
       </div>
 
-      {selectedMonth && filteredCounts.length > 0 && (
+      {selectedDate && filteredCounts.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
           <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Counts</p>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Daily Counts</p>
             <p className="text-xl font-black text-[#2d808e]">{filteredCounts.length}</p>
           </div>
           <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Shortage</p>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Daily Shortage</p>
             <p className="text-xl font-black text-red-600">
               {filteredCounts.reduce((acc, c) => acc + (c.short_over < 0 ? Math.abs(c.short_over) : 0), 0)}
             </p>
           </div>
           <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Overage</p>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Daily Overage</p>
             <p className="text-xl font-black text-emerald-600">
               {filteredCounts.reduce((acc, c) => acc + (c.short_over > 0 ? c.short_over : 0), 0)}
             </p>
           </div>
           <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Net Variance</p>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Daily Variance</p>
             <p className={`text-xl font-black ${filteredCounts.reduce((acc, c) => acc + c.short_over, 0) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
               {filteredCounts.reduce((acc, c) => acc + c.short_over, 0) > 0 ? '+' : ''}{filteredCounts.reduce((acc, c) => acc + c.short_over, 0)}
             </p>

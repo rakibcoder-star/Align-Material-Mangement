@@ -26,12 +26,16 @@ const AppRoutes: React.FC = () => {
   );
 };
 
+import { NotificationProvider } from './context/NotificationContext';
+
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <HashRouter>
-        <AppRoutes />
-      </HashRouter>
+      <NotificationProvider>
+        <HashRouter>
+          <AppRoutes />
+        </HashRouter>
+      </NotificationProvider>
     </AuthProvider>
   );
 };

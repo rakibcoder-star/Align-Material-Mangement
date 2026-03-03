@@ -27,6 +27,7 @@ import LabelManagement from './LabelManagement';
 import TnxDetailsModal from './TnxDetailsModal';
 import LocationTransferModal from './LocationTransferModal';
 import GRNPreviewModal from './GRNPreviewModal';
+import LowStockInventory from './LowStockInventory';
 import { supabase } from '../lib/supabase';
 import { 
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -69,6 +70,8 @@ import {
   Lock,
   Activity
 } from 'lucide-react';
+
+import { useNotifications, Notification } from '../context/NotificationContext';
 
 const SidebarItem: React.FC<{ 
   icon: React.ReactNode; 
@@ -854,12 +857,83 @@ const SearchResults: React.FC<{
   );
 };
 
+const NotificationDropdown: React.FC<{ 
+  notifications: Notification[]; 
+  onClose: () => void; 
+  onMarkRead: (id: string) => void;
+  onNavigate: (link: string, data: any) => void;
+}> = ({ notifications, onClose, onMarkRead, onNavigate }) => {
+  return (
+    <div className="absolute top-full right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+      <div className="p-4 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">
+        <h3 className="text-[11px] font-black text-[#2d808e] uppercase tracking-widest">Notifications</h3>
+        <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <X size={14} />
+        </button>
+      </div>
+      <div className="max-h-[400px] overflow-y-auto scrollbar-thin">
+        {notifications.length === 0 ? (
+          <div className="p-10 text-center">
+            <Bell size={32} className="mx-auto text-gray-200 mb-3" />
+            <p className="text-[10px] font-bold text-gray-400 uppercase">No new notifications</p>
+          </div>
+        ) : (
+          notifications.map((n) => (
+            <button
+              key={n.id}
+              onClick={() => {
+                onMarkRead(n.id);
+                onNavigate(n.link, n.data);
+                onClose();
+              }}
+              className={`w-full p-4 text-left border-b border-gray-50 hover:bg-gray-50 transition-colors flex gap-3 ${!n.read ? 'bg-[#f0f9fa]/30' : ''}`}
+            >
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                n.type === 'STOCK' ? 'bg-red-50 text-red-500' : 
+                n.type === 'PR' ? 'bg-blue-50 text-blue-500' : 
+                n.type === 'PO' ? 'bg-emerald-50 text-emerald-500' : 
+                'bg-amber-50 text-amber-500'
+              }`}>
+                {n.type === 'STOCK' ? <ShieldAlert size={16} /> : 
+                 n.type === 'PR' ? <FileText size={16} /> : 
+                 n.type === 'PO' ? <ShoppingBag size={16} /> : 
+                 <Activity size={16} />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] font-black text-gray-800 uppercase truncate">{n.title}</p>
+                <p className="text-[10px] font-medium text-gray-500 mt-0.5 line-clamp-2 leading-relaxed">{n.message}</p>
+                <p className="text-[9px] font-bold text-gray-300 uppercase mt-2">{new Date(n.timestamp).toLocaleString()}</p>
+              </div>
+              {!n.read && <div className="w-1.5 h-1.5 bg-[#2d808e] rounded-full mt-1.5 shrink-0"></div>}
+            </button>
+          ))
+        )}
+      </div>
+      <div className="p-3 bg-gray-50/50 border-t border-gray-50 text-center">
+        <button className="text-[9px] font-black text-[#2d808e] uppercase tracking-widest hover:underline">View All Notifications</button>
+      </div>
+    </div>
+  );
+};
+
 const Dashboard: React.FC = () => {
   const { user, logout, hasGranularPermission } = useAuth();
+  const { notifications, unreadCount, markAsRead } = useNotifications();
   const navigate = useNavigate();
   const location = useLocation();
   const activeTab = location.pathname.substring(1) || 'overview';
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(window.innerWidth < 768);
+
+  const handleNotificationNavigation = (link: string, data: any) => {
+    if (link === 'LOW_STOCK_MODAL') {
+      navigate('/low-stock');
+      return;
+    }
+    navigate(link);
+    if (link === '/requisition' && data) setPreviewPr(data);
+    if (link === '/purchase-order' && data) setPreviewPo(data);
+    if (link === '/overview' && data) setPreviewMo(data);
+  };
 
   const menuNavigate = (path: string) => {
     navigate(path);
@@ -938,6 +1012,7 @@ const Dashboard: React.FC = () => {
     purchase: location.pathname.includes('requisition') || location.pathname.includes('purchase-order') || location.pathname.includes('supplier') || location.pathname.includes('purchase-report'),
     warehouse: location.pathname.includes('inventory') || location.pathname.includes('receive') || location.pathname.includes('issue') || location.pathname.includes('tnx-report') || location.pathname.includes('mo-report'),
     itemMaster: location.pathname.includes('item-list') || location.pathname.includes('item-uom') || location.pathname.includes('item-group') || location.pathname.includes('item-type') || location.pathname.includes('cost-center'),
+    analysis: location.pathname.includes('low-stock'),
     admin: location.pathname.includes('users')
   });
 
@@ -1047,6 +1122,20 @@ const Dashboard: React.FC = () => {
           </SidebarItem>
         )}
 
+        <SidebarItem 
+          icon={<BarChart3 />} 
+          label="Analysis" 
+          hasSubmenu 
+          isOpen={openMenus.analysis} 
+          onClick={() => {
+            if (isSidebarCollapsed) setIsSidebarCollapsed(false);
+            setOpenMenus({...openMenus, analysis: !openMenus.analysis});
+          }} 
+          isCollapsed={isSidebarCollapsed}
+        >
+          <SubmenuItem icon={<ShieldAlert />} label="Low Stock Inventory" active={activeTab === 'low-stock'} onClick={() => menuNavigate('/low-stock')} />
+        </SidebarItem>
+
         {hasGranularPermission('user_management', 'view') && (
           <SidebarItem 
             icon={<ShieldAlert />} 
@@ -1095,10 +1184,27 @@ const Dashboard: React.FC = () => {
             {showSearchResults && <SearchResults results={searchResults} onNavigate={handleSearchResultNavigation} />}
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => setIsNotificationOpen(!isNotificationOpen)} className="relative p-2 hover:bg-gray-50 rounded-lg text-[#2d808e] transition-all group">
-              <Bell size={20} />
-              <span className="absolute top-1.5 right-2 w-1.5 h-1.5 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
-            </button>
+            <div className="relative">
+              <button 
+                onClick={() => setIsNotificationOpen(!isNotificationOpen)} 
+                className={`relative p-2 hover:bg-gray-50 rounded-lg transition-all group ${isNotificationOpen ? 'bg-gray-50 text-[#2d808e]' : 'text-[#8da2c0]'}`}
+              >
+                <Bell size={20} className={unreadCount > 0 ? 'animate-wiggle' : ''} />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1.5 right-1.5 min-w-[14px] h-[14px] px-1 bg-red-500 text-white text-[8px] font-black flex items-center justify-center rounded-full border-2 border-white">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+              {isNotificationOpen && (
+                <NotificationDropdown 
+                  notifications={notifications} 
+                  onClose={() => setIsNotificationOpen(false)} 
+                  onMarkRead={markAsRead}
+                  onNavigate={handleNotificationNavigation}
+                />
+              )}
+            </div>
             <div className="h-6 w-px bg-gray-100 mx-1"></div>
             <button onClick={() => setIsProfileOpen(true)} className="w-9 h-9 rounded-lg bg-[#f0f9fa] border border-gray-100 flex items-center justify-center text-[#2d808e] shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group">
               <UserIcon size={20} className="group-hover:scale-110 transition-transform" />
@@ -1109,7 +1215,7 @@ const Dashboard: React.FC = () => {
           <div className="max-w-[1600px] mx-auto w-full">
             <Routes>
               <Route path="/overview" element={<DashboardOverview onCheckStock={() => setIsStockStatusModalOpen(true)} onMoveOrder={() => setIsMoveOrderModalOpen(true)} onLocTransfer={() => setIsLocationTransferModalOpen(true)} onPreviewPr={setPreviewPr} onPreviewPo={setPreviewPo} onPreviewMo={setPreviewMo} onPreviewTnx={setPreviewTnx} onPreviewGrn={setPreviewGrn} />} />
-              <Route path="/users" element={<UserManagement />} /><Route path="/requisition" element={<PurchaseRequisition />} /><Route path="/purchase-order" element={<PurchaseOrder />} /><Route path="/supplier" element={<Supplier />} /><Route path="/purchase-report" element={<PurchaseReport />} /><Route path="/inventory" element={<Inventory />} /><Route path="/receive" element={<Receive />} /><Route path="/issue" element={<Issue />} /><Route path="/tnx-report" element={<TnxReport />} /><Route path="/mo-report" element={<MOReport />} /><Route path="/item-list" element={<ItemList />} /><Route path="/item-uom" element={<ItemUOM />} /><Route path="/item-group" element={<ItemGroup />} /><Route path="/item-type" element={<ItemType />} /><Route path="/cost-center" element={<CostCenter />} /><Route path="/label" element={<LabelManagement />} /><Route path="/cycle-counting" element={<CycleCounting />} /><Route path="/" element={<Navigate to="/overview" replace />} />
+              <Route path="/users" element={<UserManagement />} /><Route path="/requisition" element={<PurchaseRequisition />} /><Route path="/purchase-order" element={<PurchaseOrder />} /><Route path="/supplier" element={<Supplier />} /><Route path="/purchase-report" element={<PurchaseReport />} /><Route path="/inventory" element={<Inventory />} /><Route path="/receive" element={<Receive />} /><Route path="/issue" element={<Issue />} /><Route path="/tnx-report" element={<TnxReport />} /><Route path="/mo-report" element={<MOReport />} /><Route path="/item-list" element={<ItemList />} /><Route path="/item-uom" element={<ItemUOM />} /><Route path="/item-group" element={<ItemGroup />} /><Route path="/item-type" element={<ItemType />} /><Route path="/cost-center" element={<CostCenter />} /><Route path="/label" element={<LabelManagement />} /><Route path="/cycle-counting" element={<CycleCounting />} /><Route path="/low-stock" element={<LowStockInventory />} /><Route path="/" element={<Navigate to="/overview" replace />} />
             </Routes>
           </div>
         </main>
@@ -1135,21 +1241,6 @@ const Dashboard: React.FC = () => {
       {previewTnx && <TnxDetailsModal tnx={previewTnx} onClose={() => setPreviewTnx(null)} />}
       {previewGrn && <GRNPreviewModal grnId={previewGrn} onClose={() => setPreviewGrn(null)} />}
       <ProfileModal user={user} isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} logout={logout} />
-      {isNotificationOpen && (
-        <div className="absolute top-16 right-20 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-[1001] animate-in fade-in slide-in-from-top-2">
-           <div className="p-4 border-b border-gray-50 flex items-center justify-between">
-              <h4 className="text-xs font-black text-gray-800 uppercase tracking-widest">Notifications</h4>
-              <button onClick={() => setIsNotificationOpen(false)} className="text-gray-300 hover:text-gray-500"><X size={16} /></button>
-           </div>
-           <div className="max-h-[400px] overflow-y-auto p-2 space-y-1">
-              <div className="p-3 bg-[#2d808e]/5 rounded-xl border border-[#2d808e]/10">
-                 <p className="text-[11px] font-black text-gray-800 leading-tight">New PR Waiting Approval</p>
-                 <p className="text-[10px] text-gray-400 mt-1 font-bold">2000000001 requires your attention.</p>
-                 <span className="text-[8px] font-black text-[#2d808e] uppercase mt-2 block">10 mins ago</span>
-              </div>
-           </div>
-        </div>
-      )}
     </div>
   );
 };
