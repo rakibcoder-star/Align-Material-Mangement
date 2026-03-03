@@ -28,6 +28,7 @@ import TnxDetailsModal from './TnxDetailsModal';
 import LocationTransferModal from './LocationTransferModal';
 import GRNPreviewModal from './GRNPreviewModal';
 import LowStockInventory from './LowStockInventory';
+import ABCAnalysis from './ABCAnalysis';
 import { supabase } from '../lib/supabase';
 import { 
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -68,7 +69,8 @@ import {
   ClipboardList,
   Mail,
   Lock,
-  Activity
+  Activity,
+  TrendingUp
 } from 'lucide-react';
 
 import { useNotifications, Notification } from '../context/NotificationContext';
@@ -1012,7 +1014,7 @@ const Dashboard: React.FC = () => {
     purchase: location.pathname.includes('requisition') || location.pathname.includes('purchase-order') || location.pathname.includes('supplier') || location.pathname.includes('purchase-report'),
     warehouse: location.pathname.includes('inventory') || location.pathname.includes('receive') || location.pathname.includes('issue') || location.pathname.includes('tnx-report') || location.pathname.includes('mo-report'),
     itemMaster: location.pathname.includes('item-list') || location.pathname.includes('item-uom') || location.pathname.includes('item-group') || location.pathname.includes('item-type') || location.pathname.includes('cost-center'),
-    analysis: location.pathname.includes('low-stock'),
+    analysis: location.pathname.includes('low-stock') || location.pathname.includes('abc-analysis'),
     admin: location.pathname.includes('users')
   });
 
@@ -1134,6 +1136,7 @@ const Dashboard: React.FC = () => {
           isCollapsed={isSidebarCollapsed}
         >
           <SubmenuItem icon={<ShieldAlert />} label="Low Stock Inventory" active={activeTab === 'low-stock'} onClick={() => menuNavigate('/low-stock')} />
+          <SubmenuItem icon={<TrendingUp />} label="ABC Analysis" active={activeTab === 'abc-analysis'} onClick={() => menuNavigate('/abc-analysis')} />
         </SidebarItem>
 
         {hasGranularPermission('user_management', 'view') && (
@@ -1215,7 +1218,7 @@ const Dashboard: React.FC = () => {
           <div className="max-w-[1600px] mx-auto w-full">
             <Routes>
               <Route path="/overview" element={<DashboardOverview onCheckStock={() => setIsStockStatusModalOpen(true)} onMoveOrder={() => setIsMoveOrderModalOpen(true)} onLocTransfer={() => setIsLocationTransferModalOpen(true)} onPreviewPr={setPreviewPr} onPreviewPo={setPreviewPo} onPreviewMo={setPreviewMo} onPreviewTnx={setPreviewTnx} onPreviewGrn={setPreviewGrn} />} />
-              <Route path="/users" element={<UserManagement />} /><Route path="/requisition" element={<PurchaseRequisition />} /><Route path="/purchase-order" element={<PurchaseOrder />} /><Route path="/supplier" element={<Supplier />} /><Route path="/purchase-report" element={<PurchaseReport />} /><Route path="/inventory" element={<Inventory />} /><Route path="/receive" element={<Receive />} /><Route path="/issue" element={<Issue />} /><Route path="/tnx-report" element={<TnxReport />} /><Route path="/mo-report" element={<MOReport />} /><Route path="/item-list" element={<ItemList />} /><Route path="/item-uom" element={<ItemUOM />} /><Route path="/item-group" element={<ItemGroup />} /><Route path="/item-type" element={<ItemType />} /><Route path="/cost-center" element={<CostCenter />} /><Route path="/label" element={<LabelManagement />} /><Route path="/cycle-counting" element={<CycleCounting />} /><Route path="/low-stock" element={<LowStockInventory />} /><Route path="/" element={<Navigate to="/overview" replace />} />
+              <Route path="/users" element={<UserManagement />} /><Route path="/requisition" element={<PurchaseRequisition />} /><Route path="/purchase-order" element={<PurchaseOrder />} /><Route path="/supplier" element={<Supplier />} /><Route path="/purchase-report" element={<PurchaseReport />} /><Route path="/inventory" element={<Inventory />} /><Route path="/receive" element={<Receive />} /><Route path="/issue" element={<Issue />} /><Route path="/tnx-report" element={<TnxReport />} /><Route path="/mo-report" element={<MOReport />} /><Route path="/item-list" element={<ItemList />} /><Route path="/item-uom" element={<ItemUOM />} /><Route path="/item-group" element={<ItemGroup />} /><Route path="/item-type" element={<ItemType />} /><Route path="/cost-center" element={<CostCenter />} /><Route path="/label" element={<LabelManagement />} /><Route path="/cycle-counting" element={<CycleCounting />} /><Route path="/low-stock" element={<LowStockInventory />} /><Route path="/abc-analysis" element={<ABCAnalysis />} /><Route path="/" element={<Navigate to="/overview" replace />} />
             </Routes>
           </div>
         </main>
