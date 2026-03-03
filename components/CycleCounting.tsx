@@ -33,7 +33,7 @@ const CycleCounting: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().substring(0, 7)); // YYYY-MM
+  const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toISOString().substring(0, 7)); // YYYY-MM
 
   // Form State
   const [sku, setSku] = useState('');
@@ -47,13 +47,19 @@ const CycleCounting: React.FC = () => {
   const [remarks, setRemarks] = useState('');
   const [isSearching, setIsSearching] = useState(false);
 
-  const fetchCounts = async () => {
+  const fetchCounts = React.useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('cycle_counts')
         .select('*')
         .order('created_at', { ascending: false });
+
+      if (selectedMonth) {
+        query = query.ilike('counting_date', `${selectedMonth}%`);
+      }
+
+      const { data, error } = await query;
 
       if (data && !error) {
         setCounts(data);
@@ -63,11 +69,21 @@ const CycleCounting: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedMonth]);
 
   useEffect(() => {
     fetchCounts();
-  }, []);
+  }, [fetchCounts]);
+
+  const setThisMonth = () => {
+    setSelectedMonth(new Date().toISOString().substring(0, 7));
+  };
+
+  const setLastMonth = () => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    setSelectedMonth(d.toISOString().substring(0, 7));
+  };
 
   const handleSkuLookup = async (lookupSku: string) => {
     if (!lookupSku) return;
@@ -191,8 +207,8 @@ const CycleCounting: React.FC = () => {
 
   const filteredCounts = useMemo(() => {
     return counts.filter(c => {
-      const countMonth = c.counting_date.substring(0, 7);
-      const matchesMonth = countMonth === selectedMonth;
+      const countMonth = c.counting_date ? c.counting_date.substring(0, 7) : '';
+      const matchesMonth = !selectedMonth || countMonth === selectedMonth;
       
       const matchesColumnFilters = Object.entries(columnFilters).every(([column, value]) => {
         if (!value) return true;
@@ -388,31 +404,82 @@ const CycleCounting: React.FC = () => {
           <span className="border border-[#2d808e] px-2 py-0.5 rounded text-[#2d808e] font-black">Cycle Counting</span>
         </div>
         <div className="flex items-center space-x-3">
-          <div className="flex items-center bg-white border border-gray-200 rounded-xl px-3 py-1.5 shadow-sm">
+          <div className="hidden md:flex items-center gap-2 mr-2">
+            <button 
+              onClick={setThisMonth}
+              className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase transition-all shadow-sm ${selectedMonth === new Date().toISOString().substring(0, 7) ? 'bg-[#2d808e] text-white border border-[#2d808e]' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+            >
+              This Month
+            </button>
+            <button 
+              onClick={setLastMonth}
+              className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase transition-all shadow-sm ${selectedMonth === new Date(new Date().getFullYear(), new Date().getMonth() - 1).toISOString().substring(0, 7) ? 'bg-[#2d808e] text-white border border-[#2d808e]' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+            >
+              Last Month
+            </button>
+          </div>
+          <div className="flex items-center bg-white border border-gray-200 rounded-xl px-3 py-1.5 shadow-sm focus-within:border-[#2d808e]/50 transition-all">
             <Calendar size={14} className="text-gray-400 mr-2" />
             <input 
               type="month" 
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="text-[11px] font-black text-gray-700 outline-none uppercase"
+              className="text-[11px] font-black text-gray-700 outline-none uppercase bg-transparent"
             />
+            {selectedMonth && (
+              <button 
+                onClick={() => setSelectedMonth('')}
+                className="ml-2 p-0.5 hover:bg-gray-100 rounded-full text-gray-400 hover:text-red-500 transition-colors"
+                title="Clear Month Filter"
+              >
+                <X size={12} />
+              </button>
+            )}
           </div>
           <button 
             onClick={handleExportExcel}
             className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-200 text-gray-600 text-[11px] font-bold uppercase rounded-xl hover:bg-gray-50 transition-all shadow-sm"
           >
             <FileSpreadsheet size={16} />
-            <span>Export</span>
+            <span className="hidden sm:inline">Export</span>
           </button>
           <button 
             onClick={() => setView('add')}
             className="flex items-center space-x-2 px-5 py-2 bg-[#2d808e] text-white text-[11px] font-bold uppercase rounded-xl hover:bg-[#256b78] transition-all shadow-lg shadow-[#2d808e]/20"
           >
             <Plus size={16} />
-            <span>New Count</span>
+            <span className="hidden sm:inline">New Count</span>
+            <span className="sm:hidden">New</span>
           </button>
         </div>
       </div>
+
+      {selectedMonth && filteredCounts.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Counts</p>
+            <p className="text-xl font-black text-[#2d808e]">{filteredCounts.length}</p>
+          </div>
+          <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Shortage</p>
+            <p className="text-xl font-black text-red-600">
+              {filteredCounts.reduce((acc, c) => acc + (c.short_over < 0 ? Math.abs(c.short_over) : 0), 0)}
+            </p>
+          </div>
+          <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Overage</p>
+            <p className="text-xl font-black text-emerald-600">
+              {filteredCounts.reduce((acc, c) => acc + (c.short_over > 0 ? c.short_over : 0), 0)}
+            </p>
+          </div>
+          <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Net Variance</p>
+            <p className={`text-xl font-black ${filteredCounts.reduce((acc, c) => acc + c.short_over, 0) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+              {filteredCounts.reduce((acc, c) => acc + c.short_over, 0) > 0 ? '+' : ''}{filteredCounts.reduce((acc, c) => acc + c.short_over, 0)}
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/40 border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-200">
