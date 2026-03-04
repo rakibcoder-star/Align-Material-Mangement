@@ -25,7 +25,7 @@ interface CycleCount {
 }
 
 const CycleCounting: React.FC = () => {
-  const { user } = useAuth() || {};
+  const { user, hasGranularPermission } = useAuth() || {};
   const [view, setView] = useState<'list' | 'add'>('list');
   const [loading, setLoading] = useState(true);
   const [counts, setCounts] = useState<CycleCount[]>([]);
@@ -350,24 +350,32 @@ const CycleCounting: React.FC = () => {
 
               {/* Stats Grid */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-5 bg-gray-50 rounded-2xl border border-gray-100">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">System Qty</p>
-                  <p className="text-xl font-bold text-gray-800">{systemQty}</p>
-                </div>
-                <div className="p-5 bg-blue-50/50 rounded-2xl border border-blue-100">
-                  <p className="text-[10px] font-bold text-blue-400 uppercase mb-1">Pend. Receive</p>
-                  <p className="text-xl font-bold text-blue-600">{pendingReceive}</p>
-                </div>
-                <div className="p-5 bg-amber-50/50 rounded-2xl border border-amber-100">
-                  <p className="text-[10px] font-bold text-amber-400 uppercase mb-1">Pend. Issue</p>
-                  <p className="text-xl font-bold text-amber-600">{pendingIssue}</p>
-                </div>
-                <div className="p-5 bg-[#2d808e]/5 rounded-2xl border border-[#2d808e]/10">
-                  <p className="text-[10px] font-bold text-[#2d808e] uppercase mb-1">Short / Over</p>
-                  <p className={`text-xl font-bold ${physicalQty !== '' ? (Number(physicalQty) - systemQty >= 0 ? 'text-emerald-600' : 'text-red-600') : 'text-gray-400'}`}>
-                    {physicalQty !== '' ? (Number(physicalQty) - systemQty > 0 ? `+${Number(physicalQty) - systemQty}` : Number(physicalQty) - systemQty) : '0'}
-                  </p>
-                </div>
+                {hasGranularPermission('cc_form_system_qty', 'view') && (
+                  <div className="p-5 bg-gray-50 rounded-2xl border border-gray-100">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">System Qty</p>
+                    <p className="text-xl font-bold text-gray-800">{systemQty}</p>
+                  </div>
+                )}
+                {hasGranularPermission('cc_form_pend_receive', 'view') && (
+                  <div className="p-5 bg-blue-50/50 rounded-2xl border border-blue-100">
+                    <p className="text-[10px] font-bold text-blue-400 uppercase mb-1">Pend. Receive</p>
+                    <p className="text-xl font-bold text-blue-600">{pendingReceive}</p>
+                  </div>
+                )}
+                {hasGranularPermission('cc_form_pend_issue', 'view') && (
+                  <div className="p-5 bg-amber-50/50 rounded-2xl border border-amber-100">
+                    <p className="text-[10px] font-bold text-amber-400 uppercase mb-1">Pend. Issue</p>
+                    <p className="text-xl font-bold text-amber-600">{pendingIssue}</p>
+                  </div>
+                )}
+                {hasGranularPermission('cc_form_short_over', 'view') && (
+                  <div className="p-5 bg-[#2d808e]/5 rounded-2xl border border-[#2d808e]/10">
+                    <p className="text-[10px] font-bold text-[#2d808e] uppercase mb-1">Short / Over</p>
+                    <p className={`text-xl font-bold ${physicalQty !== '' ? (Number(physicalQty) - systemQty >= 0 ? 'text-emerald-600' : 'text-red-600') : 'text-gray-400'}`}>
+                      {physicalQty !== '' ? (Number(physicalQty) - systemQty > 0 ? `+${Number(physicalQty) - systemQty}` : Number(physicalQty) - systemQty) : '0'}
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -492,28 +500,36 @@ const CycleCounting: React.FC = () => {
 
       {selectedDate && filteredCounts.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
-          <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Daily Counts</p>
-            <p className="text-xl font-black text-[#2d808e]">{filteredCounts.length}</p>
-          </div>
-          <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Daily Shortage</p>
-            <p className="text-xl font-black text-red-600">
-              {filteredCounts.reduce((acc, c) => acc + (c.short_over < 0 ? Math.abs(c.short_over) : 0), 0)}
-            </p>
-          </div>
-          <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Daily Overage</p>
-            <p className="text-xl font-black text-emerald-600">
-              {filteredCounts.reduce((acc, c) => acc + (c.short_over > 0 ? c.short_over : 0), 0)}
-            </p>
-          </div>
-          <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Daily Variance</p>
-            <p className={`text-xl font-black ${filteredCounts.reduce((acc, c) => acc + c.short_over, 0) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-              {filteredCounts.reduce((acc, c) => acc + c.short_over, 0) > 0 ? '+' : ''}{filteredCounts.reduce((acc, c) => acc + c.short_over, 0)}
-            </p>
-          </div>
+          {hasGranularPermission('cc_daily_counts', 'view') && (
+            <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Daily Counts</p>
+              <p className="text-xl font-black text-[#2d808e]">{filteredCounts.length}</p>
+            </div>
+          )}
+          {hasGranularPermission('cc_daily_shortage', 'view') && (
+            <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Daily Shortage</p>
+              <p className="text-xl font-black text-red-600">
+                {filteredCounts.reduce((acc, c) => acc + (c.short_over < 0 ? Math.abs(c.short_over) : 0), 0)}
+              </p>
+            </div>
+          )}
+          {hasGranularPermission('cc_daily_overage', 'view') && (
+            <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Daily Overage</p>
+              <p className="text-xl font-black text-emerald-600">
+                {filteredCounts.reduce((acc, c) => acc + (c.short_over > 0 ? c.short_over : 0), 0)}
+              </p>
+            </div>
+          )}
+          {hasGranularPermission('cc_daily_variance', 'view') && (
+            <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Daily Variance</p>
+              <p className={`text-xl font-black ${filteredCounts.reduce((acc, c) => acc + c.short_over, 0) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                {filteredCounts.reduce((acc, c) => acc + c.short_over, 0) > 0 ? '+' : ''}{filteredCounts.reduce((acc, c) => acc + c.short_over, 0)}
+              </p>
+            </div>
+          )}
         </div>
       )}
 

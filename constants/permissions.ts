@@ -51,6 +51,16 @@ export const PERMISSION_MODULES: ModuleConfig[] = [
   { id: 'mo_report', label: 'MO-Report', category: 'Warehouse & Logistics' },
   { id: 'cycle_counting', label: 'Cycle Counting', category: 'Warehouse & Logistics' },
   
+  // Cycle Counting Details
+  { id: 'cc_daily_counts', label: 'Daily Counts', category: 'Cycle Counting Details' },
+  { id: 'cc_daily_shortage', label: 'Daily Shortage', category: 'Cycle Counting Details' },
+  { id: 'cc_daily_overage', label: 'Daily Overage', category: 'Cycle Counting Details' },
+  { id: 'cc_daily_variance', label: 'Daily Variance', category: 'Cycle Counting Details' },
+  { id: 'cc_form_system_qty', label: 'System Qty (Form)', category: 'Cycle Counting Details' },
+  { id: 'cc_form_pend_receive', label: 'Pend. Receive (Form)', category: 'Cycle Counting Details' },
+  { id: 'cc_form_pend_issue', label: 'Pend. Issue (Form)', category: 'Cycle Counting Details' },
+  { id: 'cc_form_short_over', label: 'Short / Over (Form)', category: 'Cycle Counting Details' },
+  
   // Item Master Data
   { id: 'item_list', label: 'Item List', category: 'Item Master Data' },
   { id: 'item_uom', label: 'Item UOM', category: 'Item Master Data' },
