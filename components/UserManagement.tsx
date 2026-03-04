@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Role, User, ModulePermissions } from '../types';
 import { X, User as UserIcon, Plus, Check, ChevronDown, Save, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { PERMISSION_MODULES } from '../constants/permissions';
 
 interface PermissionCardProps {
   label: string;
@@ -407,99 +408,22 @@ const UserManagement: React.FC = () => {
                 </div>
 
                 <div className="space-y-10">
-                  {/* Dashboard Approvals */}
-                  <div className="space-y-4">
-                    <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-2.5">Dashboard Approvals</h5>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <PermissionCard label="PR Approvals" moduleId="pr_approval" permissions={formData.granularPermissions?.pr_approval || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                      <PermissionCard label="PO Approvals" moduleId="po_approval" permissions={formData.granularPermissions?.po_approval || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                      <PermissionCard label="MO Approvals" moduleId="mo_approval" permissions={formData.granularPermissions?.mo_approval || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
+                  {Array.from(new Set(PERMISSION_MODULES.map(m => m.category))).map(category => (
+                    <div key={category} className="space-y-4">
+                      <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-2.5">{category}</h5>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        {PERMISSION_MODULES.filter(m => m.category === category).map(module => (
+                          <PermissionCard 
+                            key={module.id}
+                            label={module.label} 
+                            moduleId={module.id} 
+                            permissions={formData.granularPermissions?.[module.id] || {view: false, edit: false, dl: false}} 
+                            onChange={handlePermissionChange} 
+                          />
+                        ))}
+                      </div>
                     </div>
-                  </div>
-
-                  {/* Dashboard KPI Cards */}
-                  <div className="space-y-4">
-                    <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-2.5">Dashboard KPI Cards</h5>
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                      <PermissionCard label="Today Orders" moduleId="dash_kpi_today_orders" permissions={formData.granularPermissions?.dash_kpi_today_orders || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                      <PermissionCard label="Last Day Orders" moduleId="dash_kpi_last_day_orders" permissions={formData.granularPermissions?.dash_kpi_last_day_orders || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                      <PermissionCard label="Weekly Orders" moduleId="dash_kpi_weekly_orders" permissions={formData.granularPermissions?.dash_kpi_weekly_orders || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                      <PermissionCard label="Monthly Orders" moduleId="dash_kpi_monthly_orders" permissions={formData.granularPermissions?.dash_kpi_monthly_orders || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                      <PermissionCard label="Weekly PR" moduleId="dash_kpi_weekly_pr" permissions={formData.granularPermissions?.dash_kpi_weekly_pr || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                      <PermissionCard label="Monthly PR" moduleId="dash_kpi_monthly_pr" permissions={formData.granularPermissions?.dash_kpi_monthly_pr || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                    </div>
-                  </div>
-
-                  {/* Dashboard Action Buttons */}
-                  <div className="space-y-4">
-                    <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-2.5">Dashboard Action Buttons</h5>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <PermissionCard label="Print Labels" moduleId="dash_action_print_labels" permissions={formData.granularPermissions?.dash_action_print_labels || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                      <PermissionCard label="Check Stock" moduleId="dash_action_check_stock" permissions={formData.granularPermissions?.dash_action_check_stock || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                      <PermissionCard label="Move Order" moduleId="dash_action_move_order" permissions={formData.granularPermissions?.dash_action_move_order || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                      <PermissionCard label="Loc. Transfer" moduleId="dash_action_loc_transfer" permissions={formData.granularPermissions?.dash_action_loc_transfer || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                    </div>
-                  </div>
-
-                  {/* Dashboard Charts & Tables */}
-                  <div className="space-y-4">
-                    <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-2.5">Dashboard Charts & Tables</h5>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <PermissionCard label="Weekly Movement" moduleId="dash_chart_weekly_movement" permissions={formData.granularPermissions?.dash_chart_weekly_movement || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                      <PermissionCard label="Annual Valuation" moduleId="dash_chart_annual_valuation" permissions={formData.granularPermissions?.dash_chart_annual_valuation || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                      <PermissionCard label="Stock Segmentation" moduleId="dash_chart_stock_segmentation" permissions={formData.granularPermissions?.dash_chart_stock_segmentation || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                      <PermissionCard label="Diesel Gauge" moduleId="dash_gauge_diesel" permissions={formData.granularPermissions?.dash_gauge_diesel || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                      <PermissionCard label="Octane Gauge" moduleId="dash_gauge_octane" permissions={formData.granularPermissions?.dash_gauge_octane || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                      <PermissionCard label="Latest MO Table" moduleId="dash_table_latest_mo" permissions={formData.granularPermissions?.dash_table_latest_mo || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                      <PermissionCard label="Latest PR Table" moduleId="dash_table_latest_pr" permissions={formData.granularPermissions?.dash_table_latest_pr || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                      <PermissionCard label="Latest GRN Table" moduleId="dash_table_latest_grn" permissions={formData.granularPermissions?.dash_table_latest_grn || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                      <PermissionCard label="Latest PO Table" moduleId="dash_table_latest_po" permissions={formData.granularPermissions?.dash_table_latest_po || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                      <PermissionCard label="Weekly PO Chart" moduleId="dash_chart_weekly_po" permissions={formData.granularPermissions?.dash_chart_weekly_po || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                    </div>
-                  </div>
-
-                  {/* Purchase Management */}
-                  <div className="space-y-4">
-                    <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-2.5">Purchase Management</h5>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <PermissionCard label="Requisition" moduleId="requisition" permissions={formData.granularPermissions?.requisition || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                      <PermissionCard label="Purchase Order" moduleId="purchase_order" permissions={formData.granularPermissions?.purchase_order || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                      <PermissionCard label="Supplier" moduleId="supplier" permissions={formData.granularPermissions?.supplier || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                      <PermissionCard label="Report" moduleId="purchase_report" permissions={formData.granularPermissions?.purchase_report || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                    </div>
-                  </div>
-
-                  {/* Warehouse & Logistics */}
-                  <div className="space-y-4">
-                    <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-2.5">Warehouse & Logistics</h5>
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                      <PermissionCard label="Inventory" moduleId="inventory" permissions={formData.granularPermissions?.inventory || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                      <PermissionCard label="Receive (GRN)" moduleId="receive" permissions={formData.granularPermissions?.receive || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                      <PermissionCard label="Issue" moduleId="issue" permissions={formData.granularPermissions?.issue || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                      <PermissionCard label="Tnx-Report" moduleId="tnx_report" permissions={formData.granularPermissions?.tnx_report || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                      <PermissionCard label="MO-Report" moduleId="mo_report" permissions={formData.granularPermissions?.mo_report || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                    </div>
-                  </div>
-
-                  {/* Item Master Data */}
-                  <div className="space-y-4">
-                    <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-2.5">Item Master Data</h5>
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                      <PermissionCard label="Item List" moduleId="item_list" permissions={formData.granularPermissions?.item_list || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                      <PermissionCard label="Item UOM" moduleId="item_uom" permissions={formData.granularPermissions?.item_uom || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                      <PermissionCard label="Item Group" moduleId="item_group" permissions={formData.granularPermissions?.item_group || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                      <PermissionCard label="Item Type" moduleId="item_type" permissions={formData.granularPermissions?.item_type || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                      <PermissionCard label="Cost Center" moduleId="cost_center" permissions={formData.granularPermissions?.cost_center || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                    </div>
-                  </div>
-
-                  {/* System Administration */}
-                  <div className="space-y-4">
-                    <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-2.5">System Administration</h5>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <PermissionCard label="User Management" moduleId="user_management" permissions={formData.granularPermissions?.user_management || {view: false, edit: false, dl: false}} onChange={handlePermissionChange} />
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
             </div>

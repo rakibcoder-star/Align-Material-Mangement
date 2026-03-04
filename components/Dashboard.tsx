@@ -1124,20 +1124,23 @@ const Dashboard: React.FC = () => {
           </SidebarItem>
         )}
 
-        <SidebarItem 
-          icon={<BarChart3 />} 
-          label="Analysis" 
-          hasSubmenu 
-          isOpen={openMenus.analysis} 
-          onClick={() => {
-            if (isSidebarCollapsed) setIsSidebarCollapsed(false);
-            setOpenMenus({...openMenus, analysis: !openMenus.analysis});
-          }} 
-          isCollapsed={isSidebarCollapsed}
-        >
-          <SubmenuItem icon={<ShieldAlert />} label="Low Stock Inventory" active={activeTab === 'low-stock'} onClick={() => menuNavigate('/low-stock')} />
-          <SubmenuItem icon={<TrendingUp />} label="ABC Analysis" active={activeTab === 'abc-analysis'} onClick={() => menuNavigate('/abc-analysis')} />
-        </SidebarItem>
+        {(hasGranularPermission('low_stock_inventory', 'view') || 
+          hasGranularPermission('abc_analysis', 'view')) && (
+          <SidebarItem 
+            icon={<BarChart3 />} 
+            label="Analysis" 
+            hasSubmenu 
+            isOpen={openMenus.analysis} 
+            onClick={() => {
+              if (isSidebarCollapsed) setIsSidebarCollapsed(false);
+              setOpenMenus({...openMenus, analysis: !openMenus.analysis});
+            }} 
+            isCollapsed={isSidebarCollapsed}
+          >
+            {hasGranularPermission('low_stock_inventory', 'view') && <SubmenuItem icon={<ShieldAlert />} label="Low Stock Inventory" active={activeTab === 'low-stock'} onClick={() => menuNavigate('/low-stock')} />}
+            {hasGranularPermission('abc_analysis', 'view') && <SubmenuItem icon={<TrendingUp />} label="ABC Analysis" active={activeTab === 'abc-analysis'} onClick={() => menuNavigate('/abc-analysis')} />}
+          </SidebarItem>
+        )}
 
         {hasGranularPermission('user_management', 'view') && (
           <SidebarItem 
@@ -1218,7 +1221,10 @@ const Dashboard: React.FC = () => {
           <div className="max-w-[1600px] mx-auto w-full">
             <Routes>
               <Route path="/overview" element={<DashboardOverview onCheckStock={() => setIsStockStatusModalOpen(true)} onMoveOrder={() => setIsMoveOrderModalOpen(true)} onLocTransfer={() => setIsLocationTransferModalOpen(true)} onPreviewPr={setPreviewPr} onPreviewPo={setPreviewPo} onPreviewMo={setPreviewMo} onPreviewTnx={setPreviewTnx} onPreviewGrn={setPreviewGrn} />} />
-              <Route path="/users" element={<UserManagement />} /><Route path="/requisition" element={<PurchaseRequisition />} /><Route path="/purchase-order" element={<PurchaseOrder />} /><Route path="/supplier" element={<Supplier />} /><Route path="/purchase-report" element={<PurchaseReport />} /><Route path="/inventory" element={<Inventory />} /><Route path="/receive" element={<Receive />} /><Route path="/issue" element={<Issue />} /><Route path="/tnx-report" element={<TnxReport />} /><Route path="/mo-report" element={<MOReport />} /><Route path="/item-list" element={<ItemList />} /><Route path="/item-uom" element={<ItemUOM />} /><Route path="/item-group" element={<ItemGroup />} /><Route path="/item-type" element={<ItemType />} /><Route path="/cost-center" element={<CostCenter />} /><Route path="/label" element={<LabelManagement />} /><Route path="/cycle-counting" element={<CycleCounting />} /><Route path="/low-stock" element={<LowStockInventory />} /><Route path="/abc-analysis" element={<ABCAnalysis />} /><Route path="/" element={<Navigate to="/overview" replace />} />
+              <Route path="/users" element={<UserManagement />} /><Route path="/requisition" element={<PurchaseRequisition />} /><Route path="/purchase-order" element={<PurchaseOrder />} /><Route path="/supplier" element={<Supplier />} /><Route path="/purchase-report" element={<PurchaseReport />} /><Route path="/inventory" element={<Inventory />} /><Route path="/receive" element={<Receive />} /><Route path="/issue" element={<Issue />} /><Route path="/tnx-report" element={<TnxReport />} /><Route path="/mo-report" element={<MOReport />} /><Route path="/item-list" element={<ItemList />} /><Route path="/item-uom" element={<ItemUOM />} /><Route path="/item-group" element={<ItemGroup />} /><Route path="/item-type" element={<ItemType />} /><Route path="/cost-center" element={<CostCenter />} /><Route path="/label" element={<LabelManagement />} />              <Route path="/cycle-counting" element={<CycleCounting />} />
+              <Route path="/low-stock" element={hasGranularPermission('low_stock_inventory', 'view') ? <LowStockInventory /> : <Navigate to="/overview" replace />} />
+              <Route path="/abc-analysis" element={hasGranularPermission('abc_analysis', 'view') ? <ABCAnalysis /> : <Navigate to="/overview" replace />} />
+              <Route path="/" element={<Navigate to="/overview" replace />} />
             </Routes>
           </div>
         </main>
