@@ -30,32 +30,57 @@ const NewPurchaseOrder: React.FC<NewPurchaseOrderProps> = ({ onBack, onSubmit })
     const fetchApprovedPrItems = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase
+        // 1. Fetch all approved requisitions
+        const { data: prData, error: prError } = await supabase
           .from('requisitions')
           .select('*')
           .eq('status', 'Approved')
           .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (prError) throw prError;
 
-        if (data) {
+        // 2. Fetch all purchase orders to identify PRs that are already processed
+        // We fetch all POs to ensure we don't show PRs that already have a PO, 
+        // even if the PR status hasn't updated yet or if it was partially ordered.
+        const { data: poData, error: poError } = await supabase
+          .from('purchase_orders')
+          .select('items');
+
+        if (poError) throw poError;
+
+        // 3. Collect all PR item IDs that are already linked to a PO
+        const usedPrItemIds = new Set<string>();
+        if (poData) {
+          poData.forEach(po => {
+            const poItems = po.items || [];
+            poItems.forEach((item: any) => {
+              if (item.id) usedPrItemIds.add(item.id);
+            });
+          });
+        }
+
+        if (prData) {
           const flattened: PendingPRItem[] = [];
-          data.forEach(pr => {
+          prData.forEach(pr => {
             const prItems = pr.items || [];
             prItems.forEach((item: any, idx: number) => {
-              flattened.push({
-                id: `${pr.id}_${idx}`,
-                prNo: pr.pr_no,
-                sku: item.sku || 'N/A',
-                name: item.name || 'N/A',
-                specification: item.specification || '',
-                reqQty: Number(item.reqQty) || 0,
-                poQty: 0, // In selection screen, these are usually 0 or current PO status
-                receivedQty: 0,
-                reqBy: pr.req_by_name || 'N/A',
-                reqDept: pr.reqDpt || 'N/A',
-                unitPrice: Number(item.unitPrice) || 0
-              });
+              const itemId = `${pr.id}_${idx}`;
+              // ONLY include items that are NOT already in a PO
+              if (!usedPrItemIds.has(itemId)) {
+                flattened.push({
+                  id: itemId,
+                  prNo: pr.pr_no,
+                  sku: item.sku || 'N/A',
+                  name: item.name || 'N/A',
+                  specification: item.specification || '',
+                  reqQty: Number(item.reqQty) || 0,
+                  poQty: 0, 
+                  receivedQty: 0,
+                  reqBy: pr.req_by_name || 'N/A',
+                  reqDept: pr.reqDpt || 'N/A',
+                  unitPrice: Number(item.unitPrice) || 0
+                });
+              }
             });
           });
           setPendingItems(flattened);
