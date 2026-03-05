@@ -14,7 +14,7 @@ interface POPreviewModalProps {
 }
 
 const POPreviewModal: React.FC<POPreviewModalProps> = ({ po: initialPo, onClose }) => {
-  const { user } = useAuth();
+  const { user, hasGranularPermission } = useAuth();
   const [po, setPo] = useState<any>(initialPo);
   const [isSaving, setIsSaving] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
