@@ -118,7 +118,7 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
       total_value: totalValue,
       requested_by: user?.fullName || 'N/A',
       requested_contact: user?.email || 'N/A',
-      status: 'Pending', // Setting to 'Pending' as requested
+      status: 'Pending Approval', // Setting to 'Pending Approval' as requested
       items: items,
       terms: {
         deliveryTerms,

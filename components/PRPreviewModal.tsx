@@ -3,6 +3,7 @@ import { X, Printer, FileSpreadsheet, FileText, CheckCircle2, Edit2, Loader2, Sa
 import PRPrintTemplate from './PRPrintTemplate';
 import * as XLSX from 'xlsx';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
@@ -12,6 +13,7 @@ interface PRPreviewModalProps {
 }
 
 const PRPreviewModal: React.FC<PRPreviewModalProps> = ({ pr: initialPr, onClose }) => {
+  const { hasGranularPermission } = useAuth();
   const [pr, setPr] = useState<any>(initialPr);
   const [justificationData, setJustificationData] = useState<any[]>([]);
   const [images, setImages] = useState<string[]>([]);
@@ -95,13 +97,22 @@ const PRPreviewModal: React.FC<PRPreviewModalProps> = ({ pr: initialPr, onClose 
   const handleSaveToDB = async (statusOverride?: string) => {
     setIsSaving(true);
     try {
-      // Ensure the payload includes the ID to ensure an update instead of a new insert
+      // Clean payload to ensure only valid columns are sent
       const payload = {
-        ...pr,
-        id: initialPr.id, // Explicitly use DB ID
-        images: images,  // Use current local state for images
-        justification: justificationData, // Use current local state for justification
+        id: initialPr.id,
+        pr_no: pr.pr_no,
+        reference: pr.reference,
+        type: pr.type,
         status: statusOverride || pr.status || 'Pending',
+        req_by_name: pr.req_by_name,
+        contact: pr.contact,
+        email: pr.email,
+        reqDpt: pr.reqDpt,
+        note: pr.note,
+        total_value: pr.total_value,
+        items: pr.items,
+        images: images,
+        justification: justificationData,
         updated_at: new Date().toISOString()
       };
 
@@ -262,7 +273,7 @@ const PRPreviewModal: React.FC<PRPreviewModalProps> = ({ pr: initialPr, onClose 
                <span className="text-[10px] font-black uppercase">SAVE DB</span>
              </button>
              
-             {pr.status !== 'Approved' && (
+             {pr.status !== 'Approved' && hasGranularPermission('pr_approval', 'approved') && (
                <button 
                 onClick={handleApprove}
                 disabled={isSaving}
