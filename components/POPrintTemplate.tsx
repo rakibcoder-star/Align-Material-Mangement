@@ -77,8 +77,8 @@ const POPrintTemplate: React.FC<POPrintTemplateProps> = ({ po, onPoChange, isPri
             </span>
           </p>
           <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">Currency:</span> <span className="text-gray-700">{po.currency || 'BDT'}</span></p>
-          <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">Requested by:</span> <span className="text-gray-700">{po.requested_by || 'N/A'}</span></p>
-          <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">Contact No.:</span> <span className="text-gray-700">{po.requested_contact || 'N/A'}</span></p>
+          <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">Requested by:</span> <span className="text-gray-700">{po.requested_by || terms.requested_by || 'N/A'}</span></p>
+          <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">Contact No.:</span> <span className="text-gray-700">{po.requested_contact || terms.requested_contact || 'N/A'}</span></p>
           <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">PO Note:</span> <span className="text-gray-700">{po.note || 'N/A'}</span></p>
         </div>
       </div>

@@ -395,12 +395,13 @@ const DashboardOverview: React.FC<{
                 </div>
               ) : (
                 <table className="w-full text-left border-collapse">
-                  <thead className="bg-gray-50/50 sticky top-0"><tr className="text-[10px] font-medium text-gray-400 uppercase border-b border-gray-50"><th className="px-5 py-3">Date</th><th className="px-5 py-3">Reference</th><th className="px-5 py-3 text-right">Value</th></tr></thead>
+                  <thead className="bg-gray-50/50 sticky top-0"><tr className="text-[10px] font-medium text-gray-400 uppercase border-b border-gray-50"><th className="px-5 py-3">Date</th><th className="px-5 py-3">Reference</th><th className="px-5 py-3">By</th><th className="px-5 py-3 text-right">Value</th></tr></thead>
                   <tbody className="text-xs font-medium text-gray-600">
                     {pendingPrs.map((pr) => (
                       <tr key={pr.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
                         <td className="px-5 py-3">{new Date(pr.created_at).toLocaleDateString()}</td>
                         <td className="px-5 py-3"><button onClick={() => onPreviewPr(pr)} className="text-blue-500 font-bold hover:underline">{pr.pr_no}</button></td>
+                        <td className="px-5 py-3 truncate max-w-[80px]">{pr.req_by_name || 'N/A'}</td>
                         <td className="px-5 py-3 text-right font-medium text-gray-800">{(pr.total_value || 0).toLocaleString()}</td>
                       </tr>
                     ))}
@@ -421,12 +422,13 @@ const DashboardOverview: React.FC<{
                 </div>
               ) : (
                 <table className="w-full text-left border-collapse">
-                  <thead className="bg-gray-50/50 sticky top-0"><tr className="text-[10px] font-medium text-gray-400 uppercase border-b border-gray-50"><th className="px-5 py-3">Date</th><th className="px-5 py-3">Order No</th><th className="px-5 py-3 text-right">Value</th></tr></thead>
+                  <thead className="bg-gray-50/50 sticky top-0"><tr className="text-[10px] font-medium text-gray-400 uppercase border-b border-gray-50"><th className="px-5 py-3">Date</th><th className="px-5 py-3">Order No</th><th className="px-5 py-3">Supplier</th><th className="px-5 py-3 text-right">Value</th></tr></thead>
                   <tbody className="text-xs font-medium text-gray-600">
                     {pendingPos.map((po) => (
                       <tr key={po.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
                         <td className="px-5 py-3">{new Date(po.created_at).toLocaleDateString()}</td>
                         <td className="px-5 py-3"><button onClick={() => onPreviewPo(po)} className="text-blue-500 font-bold hover:underline">{po.po_no}</button></td>
+                        <td className="px-5 py-3 truncate max-w-[100px]">{po.supplier_name || 'N/A'}</td>
                         <td className="px-5 py-3 text-right font-medium text-gray-800">{(po.total_value || 0).toLocaleString()}</td>
                       </tr>
                     ))}
@@ -592,7 +594,7 @@ const DashboardOverview: React.FC<{
                     <th className="px-4 py-4 text-center border-r border-gray-50">DATE</th>
                     <th className="px-4 py-4 text-center border-r border-gray-50">PR NO</th>
                     <th className="px-4 py-4 border-r border-gray-50">REQUESTED BY</th>
-                    <th className="px-4 py-4 text-center border-r border-gray-50">QTY</th>
+                    <th className="px-4 py-4 text-center border-r border-gray-50">STATUS</th>
                     <th className="px-4 py-4 text-right">VALUE</th>
                   </tr>
                 </thead>
@@ -608,7 +610,16 @@ const DashboardOverview: React.FC<{
                           <button onClick={() => onPreviewPr(pr)} className="text-blue-500 font-bold hover:underline transition-all">{pr.pr_no}</button>
                         </td>
                         <td className="px-4 py-4 uppercase truncate max-w-[150px] font-bold text-gray-700 border-r border-gray-50">{pr.req_by_name || 'N/A'}</td>
-                        <td className="px-4 py-4 text-center font-black text-gray-800 border-r border-gray-50">{totalQty}</td>
+                        <td className="px-4 py-4 text-center border-r border-gray-50">
+                          {pr.status === 'Approved' ? (
+                            <div className="flex items-center justify-center text-emerald-500">
+                              <CheckCircle2 size={14} className="mr-1" />
+                              <span className="text-[10px] font-black uppercase">Approved</span>
+                            </div>
+                          ) : (
+                            <span className="text-[10px] font-black text-orange-500 uppercase">Pending</span>
+                          )}
+                        </td>
                         <td className="px-4 py-4 text-right font-black text-gray-800">{formatCurrency(pr.total_value)}</td>
                       </tr>
                     );
@@ -672,7 +683,7 @@ const DashboardOverview: React.FC<{
                     <th className="px-4 py-4 text-center border-r border-gray-50">DATE</th>
                     <th className="px-4 py-4 text-center border-r border-gray-50">PO NO</th>
                     <th className="px-4 py-4 border-r border-gray-50">SUPPLIER</th>
-                    <th className="px-4 py-4 text-center border-r border-gray-50">QTY</th>
+                    <th className="px-4 py-4 text-center border-r border-gray-50">STATUS</th>
                     <th className="px-4 py-4 text-right">VALUE</th>
                   </tr>
                 </thead>
@@ -690,7 +701,16 @@ const DashboardOverview: React.FC<{
                           </button>
                         </td>
                         <td className="px-4 py-4 uppercase truncate max-w-[150px] font-bold text-gray-700 border-r border-gray-50">{po.supplier_name || 'N/A'}</td>
-                        <td className="px-4 py-4 text-center font-black text-gray-800 border-r border-gray-50">{totalQty}</td>
+                        <td className="px-4 py-4 text-center border-r border-gray-50">
+                          {po.status === 'Approved' || po.status === 'Ordered' ? (
+                            <div className="flex items-center justify-center text-emerald-500">
+                              <CheckCircle2 size={14} className="mr-1" />
+                              <span className="text-[10px] font-black uppercase">Approved</span>
+                            </div>
+                          ) : (
+                            <span className="text-[10px] font-black text-orange-500 uppercase">{po.status || 'Pending'}</span>
+                          )}
+                        </td>
                         <td className="px-4 py-4 text-right font-black text-gray-800">{formatCurrency(po.total_value)}</td>
                       </tr>
                     );
