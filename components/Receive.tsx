@@ -18,7 +18,7 @@ const Receive: React.FC = () => {
       const { data, error } = await supabase
         .from('purchase_orders')
         .select('*')
-        .eq('status', 'Open')
+        .in('status', ['Open', 'Approved'])
         .order('created_at', { ascending: false });
 
       if (data) {

@@ -81,12 +81,29 @@ const ManualIssue: React.FC<ManualIssueProps> = ({ onBack, onSubmit }) => {
       // MASTER LOGIC: Reduce stock for each item in DB (negative change)
       for (const item of items) {
         const qty = parseInt(item.issueQty) || 0;
-        const { error } = await supabase.rpc('update_item_stock', {
+        const { error: rpcError } = await supabase.rpc('update_item_stock', {
           item_sku: item.sku,
           qty_change: -qty,
           is_receive: false
         });
-        if (error) throw error;
+        
+        // If RPC fails (e.g., doesn't exist), try direct update
+        if (rpcError) {
+          console.warn('RPC update_item_stock failed, trying direct update:', rpcError);
+          const { data: currentItem } = await supabase
+            .from('items')
+            .select('on_hand_stock')
+            .eq('sku', item.sku)
+            .single();
+          
+          if (currentItem) {
+            const newStock = (Number(currentItem.on_hand_stock) || 0) - qty;
+            await supabase
+              .from('items')
+              .update({ on_hand_stock: newStock })
+              .eq('sku', item.sku);
+          }
+        }
       }
 
       // Generate random Issue No from 500000+
