@@ -50,11 +50,11 @@ const POPrintTemplate: React.FC<POPrintTemplateProps> = ({ po, onPoChange, isPri
         <div className="space-y-1">
           <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">PO No.:</span> <span className="font-black text-gray-700">{po.po_no}</span></p>
           <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">Supplier Name:</span> <span className="uppercase text-gray-700">{po.supplier_name}</span></p>
-          <p className="flex items-baseline text-[10px]"><span className="font-bold w-24 shrink-0">Supplier Address:</span> <span className="text-gray-700">{po.supplier_address || 'N/A'}</span></p>
-          <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">VAT No.:</span> <span className="text-gray-700">{po.supplier_vat || 'N/A'}</span></p>
-          <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">TIN No.:</span> <span className="text-gray-700">{po.supplier_tin || 'N/A'}</span></p>
-          <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">Email:</span> <span className="text-gray-700 lowercase">{po.supplier_email || 'N/A'}</span></p>
-          <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">Contact:</span> <span className="text-gray-700">{po.supplier_contact || 'N/A'}</span></p>
+          <p className="flex items-baseline text-[10px]"><span className="font-bold w-24 shrink-0">Supplier Address:</span> <span className="text-gray-700">{po.supplier_address || terms.supplier_address || 'N/A'}</span></p>
+          <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">VAT No.:</span> <span className="text-gray-700">{po.supplier_vat || terms.supplier_vat || 'N/A'}</span></p>
+          <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">TIN No.:</span> <span className="text-gray-700">{po.supplier_tin || terms.supplier_tin || 'N/A'}</span></p>
+          <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">Email:</span> <span className="text-gray-700 lowercase">{po.supplier_email || terms.supplier_email || 'N/A'}</span></p>
+          <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">Contact:</span> <span className="text-gray-700">{po.supplier_contact || terms.supplier_contact || 'N/A'}</span></p>
         </div>
         
         {/* Middle Column: Buyer Details */}

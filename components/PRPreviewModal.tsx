@@ -102,17 +102,10 @@ const PRPreviewModal: React.FC<PRPreviewModalProps> = ({ pr: initialPr, onClose 
         id: initialPr.id,
         pr_no: pr.pr_no,
         reference: pr.reference,
-        type: pr.type,
         status: statusOverride || pr.status || 'Pending',
         req_by_name: pr.req_by_name,
-        contact: pr.contact,
-        email: pr.email,
         reqDpt: pr.reqDpt,
-        note: pr.note,
-        total_value: pr.total_value,
         items: pr.items,
-        images: images,
-        justification: justificationData,
         updated_at: new Date().toISOString()
       };
 
@@ -273,7 +266,7 @@ const PRPreviewModal: React.FC<PRPreviewModalProps> = ({ pr: initialPr, onClose 
                <span className="text-[10px] font-black uppercase">SAVE DB</span>
              </button>
              
-             {pr.status !== 'Approved' && hasGranularPermission('pr_approval', 'approved') && (
+             {pr.status !== 'Approved' && hasGranularPermission('requisition', 'approved') && (
                <button 
                 onClick={handleApprove}
                 disabled={isSaving}

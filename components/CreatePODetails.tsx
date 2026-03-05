@@ -108,17 +108,11 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
       type: poType,
       supplier_id: selectedSupplier.id,
       supplier_name: selectedSupplier.name,
-      // SNAPSHOT supplier details for dynamic printing
-      supplier_address: `${selectedSupplier.address_street || ''}, ${selectedSupplier.address_city || ''}, ${selectedSupplier.address_country || ''}`,
-      supplier_vat: selectedSupplier.tax_bin || 'N/A',
-      supplier_tin: selectedSupplier.tin || 'N/A',
-      supplier_email: selectedSupplier.email_office || 'N/A',
-      supplier_contact: selectedSupplier.phone_office || 'N/A',
       currency: currency,
       total_value: totalValue,
       requested_by: user?.fullName || 'N/A',
       requested_contact: user?.email || 'N/A',
-      status: 'Pending Approval', // Setting to 'Pending Approval' as requested
+      status: 'Pending Approval',
       items: items,
       terms: {
         deliveryTerms,
@@ -127,7 +121,13 @@ const CreatePODetails: React.FC<CreatePODetailsProps> = ({ items: initialItems, 
         documentsRequired,
         paymentTerms,
         paymentMethod,
-        deliveryTarget
+        deliveryTarget,
+        // Move these here to be safe
+        supplier_address: `${selectedSupplier.address_street || ''}, ${selectedSupplier.address_city || ''}, ${selectedSupplier.address_country || ''}`,
+        supplier_vat: selectedSupplier.tax_bin || 'N/A',
+        supplier_tin: selectedSupplier.tin || 'N/A',
+        supplier_email: selectedSupplier.email_office || 'N/A',
+        supplier_contact: selectedSupplier.phone_office || 'N/A',
       },
       note: poNote
     };

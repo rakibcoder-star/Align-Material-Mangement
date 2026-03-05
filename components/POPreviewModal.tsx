@@ -189,7 +189,7 @@ const POPreviewModal: React.FC<POPreviewModalProps> = ({ po: initialPo, onClose 
                {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                <span className="text-[10px] font-black uppercase tracking-widest hidden md:inline">Save Signatures</span>
              </button>
-             {(po.status === 'Pending Approval' || po.status === 'Pending') && hasGranularPermission('po_approval', 'approved') && (
+             {(po.status === 'Pending Approval' || po.status === 'Pending') && hasGranularPermission('purchase_order', 'approved') && (
                <button 
                 onClick={handleApprove}
                 disabled={isSaving}
