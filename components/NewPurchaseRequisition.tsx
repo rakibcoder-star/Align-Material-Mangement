@@ -39,10 +39,22 @@ const NewPurchaseRequisition: React.FC<NewPurchaseRequisitionProps> = ({ onBack,
   const [prNote, setPrNote] = useState(initialData?.note || '');
   
   // Requester Details
-  const [requesterName, setRequesterName] = useState(initialData?.req_by_name || 'Md Azizul Hakim');
-  const [contactNumber, setContactNumber] = useState(initialData?.contact || '+880 1777 702323');
-  const [emailAddress, setEmailAddress] = useState(initialData?.email || 'azizul.hakim@fairtechnology.com.bd');
+  const [requesterName, setRequesterName] = useState(initialData?.req_by_name || '');
+  const [contactNumber, setContactNumber] = useState(initialData?.contact || '');
+  const [emailAddress, setEmailAddress] = useState(initialData?.email || '');
   const [department, setDepartment] = useState(initialData?.reqDpt || 'Maintenance');
+
+  // Set requester details from user profile if not editing
+  useEffect(() => {
+    if (user && !initialData) {
+      setRequesterName(user.fullName || '');
+      setContactNumber(user.contactNumber || '');
+      setEmailAddress(user.email || '');
+      if (user.department) {
+        setDepartment(user.department);
+      }
+    }
+  }, [user, initialData]);
 
   const [items, setItems] = useState<RequisitionItem[]>(
     initialData?.items || [
