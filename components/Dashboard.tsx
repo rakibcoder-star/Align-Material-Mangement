@@ -54,6 +54,7 @@ import {
   LogOut as LogOutIcon,
   Loader2,
   X,
+  CheckCircle2,
   Truck,
   BarChart3,
   ArrowRight,
@@ -193,7 +194,8 @@ const DashboardOverview: React.FC<{
   onPreviewMo: (mo: any) => void; 
   onPreviewTnx: (tnx: any) => void;
   onPreviewGrn: (grnId: string) => void;
-}> = ({ onCheckStock, onMoveOrder, onPreviewPr, onPreviewPo, onPreviewMo, onPreviewTnx, onLocTransfer, onPreviewGrn }) => {
+  refreshKey?: number;
+}> = ({ onCheckStock, onMoveOrder, onPreviewPr, onPreviewPo, onPreviewMo, onPreviewTnx, onLocTransfer, onPreviewGrn, refreshKey }) => {
   const navigate = useNavigate();
   const { user, hasGranularPermission } = useAuth();
   const [dateTime, setDateTime] = useState(new Date());
@@ -219,9 +221,9 @@ const DashboardOverview: React.FC<{
     monthlyPrQty: '0', monthlyPrCount: '0'
   });
 
-  const canViewPrApprovals = hasGranularPermission('pr_approval', 'view');
-  const canViewPoApprovals = hasGranularPermission('po_approval', 'view');
-  const canViewMoApprovals = hasGranularPermission('mo_approval', 'view');
+  const canViewPrApprovals = hasGranularPermission('pr_approval', 'view') || hasGranularPermission('requisition', 'approved');
+  const canViewPoApprovals = hasGranularPermission('po_approval', 'view') || hasGranularPermission('purchase_order', 'approved');
+  const canViewMoApprovals = hasGranularPermission('mo_approval', 'view') || hasGranularPermission('move_order', 'approved');
 
   // KPI Visibility
   const canViewKpiToday = hasGranularPermission('dash_kpi_today_orders', 'view');
@@ -249,94 +251,95 @@ const DashboardOverview: React.FC<{
   const canActionMoveOrder = hasGranularPermission('dash_action_move_order', 'view');
   const canActionLocTransfer = hasGranularPermission('dash_action_loc_transfer', 'view');
 
-  useEffect(() => {
-    const timer = setInterval(() => setDateTime(new Date()), 1000);
-    const fetchDashboardData = async () => {
-      const { data: prApprovals } = await supabase.from('requisitions').select('*').eq('status', 'Pending').order('created_at', { ascending: false }).limit(5);
-      if (prApprovals) setPendingPrs(prApprovals);
-      const { data: poApprovals } = await supabase.from('purchase_orders').select('*').eq('status', 'Pending').order('created_at', { ascending: false }).limit(5);
-      if (poApprovals) setPendingPos(poApprovals);
-      const { data: moApprovals } = await supabase.from('move_orders').select('*').eq('status', 'Pending').order('created_at', { ascending: false }).limit(5);
-      if (moApprovals) setPendingMos(moApprovals);
-      const { data: prLogs } = await supabase.from('requisitions').select('*').order('created_at', { ascending: false }).limit(5);
-      if (prLogs) setLatestPRs(prLogs);
-      const { data: moLogs } = await supabase.from('move_orders').select('*').order('created_at', { ascending: false }).limit(5);
-      if (moLogs) setLatestMOs(moLogs);
-      const { data: grnLogs, error: grnError } = await supabase.from('grns').select('*').order('created_at', { ascending: false }).limit(5);
-      if (grnError) console.error('Error fetching GRNs:', grnError);
-      if (grnLogs) setLatestGRNs(grnLogs);
-      const { data: poLogs, error: poError } = await supabase.from('purchase_orders').select('*').order('created_at', { ascending: false }).limit(5);
-      if (poError) console.error('Error fetching POs:', poError);
-      if (poLogs) setLatestPOs(poLogs);
+  const fetchDashboardData = async () => {
+    const { data: prApprovals } = await supabase.from('requisitions').select('*').eq('status', 'Pending').order('created_at', { ascending: false }).limit(5);
+    if (prApprovals) setPendingPrs(prApprovals);
+    const { data: poApprovals } = await supabase.from('purchase_orders').select('*').in('status', ['Pending', 'Pending Approval']).order('created_at', { ascending: false }).limit(5);
+    if (poApprovals) setPendingPos(poApprovals);
+    const { data: moApprovals } = await supabase.from('move_orders').select('*').eq('status', 'Pending').order('created_at', { ascending: false }).limit(5);
+    if (moApprovals) setPendingMos(moApprovals);
+    const { data: prLogs } = await supabase.from('requisitions').select('*').order('created_at', { ascending: false }).limit(5);
+    if (prLogs) setLatestPRs(prLogs);
+    const { data: moLogs } = await supabase.from('move_orders').select('*').order('created_at', { ascending: false }).limit(5);
+    if (moLogs) setLatestMOs(moLogs);
+    const { data: grnLogs, error: grnError } = await supabase.from('grns').select('*').order('created_at', { ascending: false }).limit(5);
+    if (grnError) console.error('Error fetching GRNs:', grnError);
+    if (grnLogs) setLatestGRNs(grnLogs);
+    const { data: poLogs, error: poError } = await supabase.from('purchase_orders').select('*').order('created_at', { ascending: false }).limit(5);
+    if (poError) console.error('Error fetching POs:', poError);
+    if (poLogs) setLatestPOs(poLogs);
 
-      const { data: items } = await supabase.from('items').select('*');
-      if (items) {
-        const types: Record<string, number> = {};
-        items.forEach(item => { const type = item.type || 'Other'; types[type] = (types[type] || 0) + 1; });
-        setStockTypes(Object.entries(types).map(([name, value]) => ({ name, value })));
-        const dieselItem = items.find(i => i.sku === '4492' || i.sku === '4457');
-        const octaneItem = items.find(i => i.sku === '3121');
-        if (dieselItem) setDieselStock(Math.min(100, Math.round((dieselItem.on_hand_stock / 10000) * 100)));
-        if (octaneItem) setOctaneStock(Math.min(100, Math.round((octaneItem.on_hand_stock / 10000) * 100)));
+    const { data: items } = await supabase.from('items').select('*');
+    if (items) {
+      const types: Record<string, number> = {};
+      items.forEach(item => { const type = item.type || 'Other'; types[type] = (types[type] || 0) + 1; });
+      setStockTypes(Object.entries(types).map(([name, value]) => ({ name, value })));
+      const dieselItem = items.find(i => i.sku === '4492' || i.sku === '4457');
+      const octaneItem = items.find(i => i.sku === '3121');
+      if (dieselItem) setDieselStock(Math.min(100, Math.round((dieselItem.on_hand_stock / 10000) * 100)));
+      if (octaneItem) setOctaneStock(Math.min(100, Math.round((octaneItem.on_hand_stock / 10000) * 100)));
+    }
+
+    const { data: moveOrders } = await supabase.from('move_orders').select('*').order('created_at', { ascending: true });
+    if (moveOrders) {
+      const weeklyAgg: any[] = [];
+      const todayObj = new Date();
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(todayObj); d.setDate(d.getDate() - i);
+        const dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+        const dayOrders = moveOrders.filter(mo => new Date(mo.created_at).toDateString() === d.toDateString());
+        const qty = dayOrders.reduce((acc, mo) => acc + (mo.items?.reduce((iAcc: number, item: any) => iAcc + (Number(item.reqQty) || 0), 0) || 0), 0);
+        const value = dayOrders.reduce((acc, mo) => acc + (Number(mo.total_value) || 0), 0);
+        weeklyAgg.push({ name: dateStr, qty, value });
       }
+      setWeeklyData(weeklyAgg);
 
-      const { data: moveOrders } = await supabase.from('move_orders').select('*').order('created_at', { ascending: true });
-      if (moveOrders) {
-        const weeklyAgg: any[] = [];
-        const todayObj = new Date();
+      const { data: allPurchaseOrders } = await supabase.from('purchase_orders').select('*').order('created_at', { ascending: true });
+      if (allPurchaseOrders) {
+        const weeklyPoAgg: any[] = [];
         for (let i = 6; i >= 0; i--) {
           const d = new Date(todayObj); d.setDate(d.getDate() - i);
           const dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-          const dayOrders = moveOrders.filter(mo => new Date(mo.created_at).toDateString() === d.toDateString());
-          const qty = dayOrders.reduce((acc, mo) => acc + (mo.items?.reduce((iAcc: number, item: any) => iAcc + (Number(item.reqQty) || 0), 0) || 0), 0);
-          const value = dayOrders.reduce((acc, mo) => acc + (Number(mo.total_value) || 0), 0);
-          weeklyAgg.push({ name: dateStr, qty, value });
+          const dayOrders = allPurchaseOrders.filter(po => new Date(po.created_at).toDateString() === d.toDateString());
+          const qty = dayOrders.reduce((acc, po) => acc + (po.items?.reduce((iAcc: number, item: any) => iAcc + (Number(item.poQty) || 0), 0) || 0), 0);
+          const value = dayOrders.reduce((acc, po) => acc + (Number(po.total_value) || 0), 0);
+          weeklyPoAgg.push({ name: dateStr, qty, value });
         }
-        setWeeklyData(weeklyAgg);
-
-        const { data: allPurchaseOrders } = await supabase.from('purchase_orders').select('*').order('created_at', { ascending: true });
-        if (allPurchaseOrders) {
-          const weeklyPoAgg: any[] = [];
-          for (let i = 6; i >= 0; i--) {
-            const d = new Date(todayObj); d.setDate(d.getDate() - i);
-            const dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-            const dayOrders = allPurchaseOrders.filter(po => new Date(po.created_at).toDateString() === d.toDateString());
-            const qty = dayOrders.reduce((acc, po) => acc + (po.items?.reduce((iAcc: number, item: any) => iAcc + (Number(item.poQty) || 0), 0) || 0), 0);
-            const value = dayOrders.reduce((acc, po) => acc + (Number(po.total_value) || 0), 0);
-            weeklyPoAgg.push({ name: dateStr, qty, value });
-          }
-          setWeeklyPoData(weeklyPoAgg);
-        }
-
-        const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-        setMonthlyData(months.map((month, idx) => {
-          const value = moveOrders.filter(mo => new Date(mo.created_at).getMonth() === idx).reduce((acc, mo) => acc + (Number(mo.total_value) || 0), 0);
-          return { name: month, value };
-        }));
+        setWeeklyPoData(weeklyPoAgg);
       }
 
-      const today = new Date(); today.setHours(0,0,0,0);
-      const { data: allPo } = await supabase.from('purchase_orders').select('items, created_at');
-      const { data: allPr } = await supabase.from('requisitions').select('items, created_at');
-      const sumQty = (list: any[], dateLimit: Date) => {
-        let qty = 0; let count = 0;
-        list?.filter(entry => new Date(entry.created_at) >= dateLimit).forEach(entry => {
-          count++; (entry.items || []).forEach((item: any) => qty += Number(item.poQty || item.reqQty || 0));
-        });
-        return { qty: qty > 1000 ? (qty/1000).toFixed(1) + 'K' : qty.toString(), count: count.toString() };
-      };
-      setStats({
-        todayOrderQty: sumQty(allPo || [], today).qty, todayOrderCount: sumQty(allPo || [], today).count,
-        lastDayOrderQty: sumQty(allPo || [], new Date(today.getTime() - 86400000)).qty, lastDayOrderCount: sumQty(allPo || [], new Date(today.getTime() - 86400000)).count,
-        weeklyOrderQty: sumQty(allPo || [], new Date(today.getTime() - 7*86400000)).qty, weeklyOrderCount: sumQty(allPo || [], new Date(today.getTime() - 7*86400000)).count,
-        monthlyOrderQty: sumQty(allPo || [], new Date(today.getTime() - 30*86400000)).qty, monthlyOrderCount: sumQty(allPo || [], new Date(today.getTime() - 30*86400000)).count,
-        weeklyPrQty: sumQty(allPr || [], new Date(today.getTime() - 7*86400000)).qty, weeklyPrCount: sumQty(allPr || [], new Date(today.getTime() - 7*86400000)).count,
-        monthlyPrQty: sumQty(allPr || [], new Date(today.getTime() - 30*86400000)).qty, monthlyPrCount: sumQty(allPr || [], new Date(today.getTime() - 30*86400000)).count
+      const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+      setMonthlyData(months.map((month, idx) => {
+        const value = moveOrders.filter(mo => new Date(mo.created_at).getMonth() === idx).reduce((acc, mo) => acc + (Number(mo.total_value) || 0), 0);
+        return { name: month, value };
+      }));
+    }
+
+    const today = new Date(); today.setHours(0,0,0,0);
+    const { data: allPo } = await supabase.from('purchase_orders').select('items, created_at');
+    const { data: allPr } = await supabase.from('requisitions').select('items, created_at');
+    const sumQty = (list: any[], dateLimit: Date) => {
+      let qty = 0; let count = 0;
+      list?.filter(entry => new Date(entry.created_at) >= dateLimit).forEach(entry => {
+        count++; (entry.items || []).forEach((item: any) => qty += Number(item.poQty || item.reqQty || 0));
       });
+      return { qty: qty > 1000 ? (qty/1000).toFixed(1) + 'K' : qty.toString(), count: count.toString() };
     };
+    setStats({
+      todayOrderQty: sumQty(allPo || [], today).qty, todayOrderCount: sumQty(allPo || [], today).count,
+      lastDayOrderQty: sumQty(allPo || [], new Date(today.getTime() - 86400000)).qty, lastDayOrderCount: sumQty(allPo || [], new Date(today.getTime() - 86400000)).count,
+      weeklyOrderQty: sumQty(allPo || [], new Date(today.getTime() - 7*86400000)).qty, weeklyOrderCount: sumQty(allPo || [], new Date(today.getTime() - 7*86400000)).count,
+      monthlyOrderQty: sumQty(allPo || [], new Date(today.getTime() - 30*86400000)).qty, monthlyOrderCount: sumQty(allPo || [], new Date(today.getTime() - 30*86400000)).count,
+      weeklyPrQty: sumQty(allPr || [], new Date(today.getTime() - 7*86400000)).qty, weeklyPrCount: sumQty(allPr || [], new Date(today.getTime() - 7*86400000)).count,
+      monthlyPrQty: sumQty(allPr || [], new Date(today.getTime() - 30*86400000)).qty, monthlyPrCount: sumQty(allPr || [], new Date(today.getTime() - 30*86400000)).count
+    });
+  };
+
+  useEffect(() => {
+    const timer = setInterval(() => setDateTime(new Date()), 1000);
     fetchDashboardData();
     return () => clearInterval(timer);
-  }, []);
+  }, [refreshKey]);
 
   const COLORS = ['#2d808e', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#ff7300', '#3b82f6', '#1e293b'];
 
@@ -385,18 +388,25 @@ const DashboardOverview: React.FC<{
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col shadow-sm">
             <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between"><h3 className="text-xs font-bold text-gray-800 uppercase">PR Approvals</h3><span className="px-2 py-0.5 bg-orange-50 text-orange-600 text-[10px] font-bold rounded-full uppercase">{pendingPrs.length} Pending</span></div>
             <div className="overflow-y-auto max-h-[220px] scrollbar-thin">
-              <table className="w-full text-left border-collapse">
-                <thead className="bg-gray-50/50 sticky top-0"><tr className="text-[10px] font-medium text-gray-400 uppercase border-b border-gray-50"><th className="px-5 py-3">Date</th><th className="px-5 py-3">Reference</th><th className="px-5 py-3 text-right">Value</th></tr></thead>
-                <tbody className="text-xs font-medium text-gray-600">
-                  {pendingPrs.map((pr) => (
-                    <tr key={pr.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
-                      <td className="px-5 py-3">{new Date(pr.created_at).toLocaleDateString()}</td>
-                      <td className="px-5 py-3"><button onClick={() => onPreviewPr(pr)} className="text-blue-500 font-bold hover:underline">{pr.pr_no}</button></td>
-                      <td className="px-5 py-3 text-right font-medium text-gray-800">{(pr.total_value || 0).toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              {pendingPrs.length === 0 ? (
+                <div className="p-8 text-center">
+                  <CheckCircle2 size={32} className="mx-auto text-emerald-100 mb-2" />
+                  <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">No Pending Requisitions</p>
+                </div>
+              ) : (
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-gray-50/50 sticky top-0"><tr className="text-[10px] font-medium text-gray-400 uppercase border-b border-gray-50"><th className="px-5 py-3">Date</th><th className="px-5 py-3">Reference</th><th className="px-5 py-3 text-right">Value</th></tr></thead>
+                  <tbody className="text-xs font-medium text-gray-600">
+                    {pendingPrs.map((pr) => (
+                      <tr key={pr.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
+                        <td className="px-5 py-3">{new Date(pr.created_at).toLocaleDateString()}</td>
+                        <td className="px-5 py-3"><button onClick={() => onPreviewPr(pr)} className="text-blue-500 font-bold hover:underline">{pr.pr_no}</button></td>
+                        <td className="px-5 py-3 text-right font-medium text-gray-800">{(pr.total_value || 0).toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         )}
@@ -404,18 +414,25 @@ const DashboardOverview: React.FC<{
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col shadow-sm">
             <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between"><h3 className="text-xs font-bold text-gray-800 uppercase">PO Approvals</h3><span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-full uppercase">{pendingPos.length} Pending</span></div>
             <div className="overflow-y-auto max-h-[220px] scrollbar-thin">
-              <table className="w-full text-left border-collapse">
-                <thead className="bg-gray-50/50 sticky top-0"><tr className="text-[10px] font-medium text-gray-400 uppercase border-b border-gray-50"><th className="px-5 py-3">Date</th><th className="px-5 py-3">Order No</th><th className="px-5 py-3 text-right">Value</th></tr></thead>
-                <tbody className="text-xs font-medium text-gray-600">
-                  {pendingPos.map((po) => (
-                    <tr key={po.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
-                      <td className="px-5 py-3">{new Date(po.created_at).toLocaleDateString()}</td>
-                      <td className="px-5 py-3"><button onClick={() => onPreviewPo(po)} className="text-blue-500 font-bold hover:underline">{po.po_no}</button></td>
-                      <td className="px-5 py-3 text-right font-medium text-gray-800">{(po.total_value || 0).toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              {pendingPos.length === 0 ? (
+                <div className="p-8 text-center">
+                  <CheckCircle2 size={32} className="mx-auto text-blue-100 mb-2" />
+                  <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">No Pending Orders</p>
+                </div>
+              ) : (
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-gray-50/50 sticky top-0"><tr className="text-[10px] font-medium text-gray-400 uppercase border-b border-gray-50"><th className="px-5 py-3">Date</th><th className="px-5 py-3">Order No</th><th className="px-5 py-3 text-right">Value</th></tr></thead>
+                  <tbody className="text-xs font-medium text-gray-600">
+                    {pendingPos.map((po) => (
+                      <tr key={po.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
+                        <td className="px-5 py-3">{new Date(po.created_at).toLocaleDateString()}</td>
+                        <td className="px-5 py-3"><button onClick={() => onPreviewPo(po)} className="text-blue-500 font-bold hover:underline">{po.po_no}</button></td>
+                        <td className="px-5 py-3 text-right font-medium text-gray-800">{(po.total_value || 0).toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         )}
@@ -423,18 +440,25 @@ const DashboardOverview: React.FC<{
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col shadow-sm">
             <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between"><h3 className="text-xs font-bold text-gray-800 uppercase">MO Approvals</h3><span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded-full uppercase">{pendingMos.length} Pending</span></div>
             <div className="overflow-y-auto max-h-[220px] scrollbar-thin">
-              <table className="w-full text-left border-collapse">
-                <thead className="bg-gray-50/50 sticky top-0"><tr className="text-[10px] font-medium text-gray-400 uppercase border-b border-gray-50"><th className="px-5 py-3">Date</th><th className="px-5 py-3">Ref ID</th><th className="px-5 py-3 text-right">Value</th></tr></thead>
-                <tbody className="text-xs font-medium text-gray-600">
-                  {pendingMos.map((mo) => (
-                    <tr key={mo.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
-                      <td className="px-5 py-3 whitespace-nowrap">{new Date(mo.created_at).toLocaleDateString()}</td>
-                      <td className="px-5 py-3"><button onClick={() => onPreviewMo(mo)} className="text-blue-500 font-bold hover:underline">{mo.mo_no}</button></td>
-                      <td className="px-5 py-3 text-right font-medium text-gray-800">{(mo.total_value || 0).toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              {pendingMos.length === 0 ? (
+                <div className="p-8 text-center">
+                  <CheckCircle2 size={32} className="mx-auto text-emerald-100 mb-2" />
+                  <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">No Pending Move Orders</p>
+                </div>
+              ) : (
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-gray-50/50 sticky top-0"><tr className="text-[10px] font-medium text-gray-400 uppercase border-b border-gray-50"><th className="px-5 py-3">Date</th><th className="px-5 py-3">Ref ID</th><th className="px-5 py-3 text-right">Value</th></tr></thead>
+                  <tbody className="text-xs font-medium text-gray-600">
+                    {pendingMos.map((mo) => (
+                      <tr key={mo.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
+                        <td className="px-5 py-3 whitespace-nowrap">{new Date(mo.created_at).toLocaleDateString()}</td>
+                        <td className="px-5 py-3"><button onClick={() => onPreviewMo(mo)} className="text-blue-500 font-bold hover:underline">{mo.mo_no}</button></td>
+                        <td className="px-5 py-3 text-right font-medium text-gray-800">{(mo.total_value || 0).toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         )}
@@ -946,6 +970,7 @@ const Dashboard: React.FC = () => {
   const [isStockStatusModalOpen, setIsStockStatusModalOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [previewPr, setPreviewPr] = useState<any>(null);
   const [previewPo, setPreviewPo] = useState<any>(null);
   const [previewMo, setPreviewMo] = useState<any>(null);
@@ -1220,7 +1245,7 @@ const Dashboard: React.FC = () => {
         <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-[#f9fafb] scrollbar-thin">
           <div className="max-w-[1600px] mx-auto w-full">
             <Routes>
-              <Route path="/overview" element={<DashboardOverview onCheckStock={() => setIsStockStatusModalOpen(true)} onMoveOrder={() => setIsMoveOrderModalOpen(true)} onLocTransfer={() => setIsLocationTransferModalOpen(true)} onPreviewPr={setPreviewPr} onPreviewPo={setPreviewPo} onPreviewMo={setPreviewMo} onPreviewTnx={setPreviewTnx} onPreviewGrn={setPreviewGrn} />} />
+              <Route path="/overview" element={<DashboardOverview refreshKey={refreshKey} onCheckStock={() => setIsStockStatusModalOpen(true)} onMoveOrder={() => setIsMoveOrderModalOpen(true)} onLocTransfer={() => setIsLocationTransferModalOpen(true)} onPreviewPr={setPreviewPr} onPreviewPo={setPreviewPo} onPreviewMo={setPreviewMo} onPreviewTnx={setPreviewTnx} onPreviewGrn={setPreviewGrn} />} />
               <Route path="/users" element={<UserManagement />} /><Route path="/requisition" element={<PurchaseRequisition />} /><Route path="/purchase-order" element={<PurchaseOrder />} /><Route path="/supplier" element={<Supplier />} /><Route path="/purchase-report" element={<PurchaseReport />} /><Route path="/inventory" element={<Inventory />} /><Route path="/receive" element={<Receive />} /><Route path="/issue" element={<Issue />} /><Route path="/tnx-report" element={<TnxReport />} /><Route path="/mo-report" element={<MOReport />} /><Route path="/item-list" element={<ItemList />} /><Route path="/item-uom" element={<ItemUOM />} /><Route path="/item-group" element={<ItemGroup />} /><Route path="/item-type" element={<ItemType />} /><Route path="/cost-center" element={<CostCenter />} /><Route path="/label" element={<LabelManagement />} />              <Route path="/cycle-counting" element={<CycleCounting />} />
               <Route path="/low-stock" element={hasGranularPermission('low_stock_inventory', 'view') ? <LowStockInventory /> : <Navigate to="/overview" replace />} />
               <Route path="/abc-analysis" element={hasGranularPermission('abc_analysis', 'view') ? <ABCAnalysis /> : <Navigate to="/overview" replace />} />
@@ -1244,9 +1269,9 @@ const Dashboard: React.FC = () => {
       <MoveOrderModal isOpen={isMoveOrderModalOpen} onClose={() => setIsMoveOrderModalOpen(false)} />
       <LocationTransferModal isOpen={isLocationTransferModalOpen} onClose={() => setIsLocationTransferModalOpen(false)} />
       <StockStatusModal isOpen={isStockStatusModalOpen} onClose={() => setIsStockStatusModalOpen(false)} />
-      {previewPr && <PRPreviewModal pr={previewPr} onClose={() => setPreviewPr(null)} />}
-      {previewPo && <POPreviewModal po={previewPo} onClose={() => setPreviewPo(null)} />}
-      {previewMo && <MOApprovalModal mo={previewMo} isOpen={!!previewMo} onClose={() => setPreviewMo(null)} />}
+      {previewPr && <PRPreviewModal pr={previewPr} onClose={() => { setPreviewPr(null); setRefreshKey(prev => prev + 1); }} />}
+      {previewPo && <POPreviewModal po={previewPo} onClose={() => { setPreviewPo(null); setRefreshKey(prev => prev + 1); }} />}
+      {previewMo && <MOApprovalModal mo={previewMo} isOpen={!!previewMo} onClose={() => { setPreviewMo(null); setRefreshKey(prev => prev + 1); }} />}
       {previewTnx && <TnxDetailsModal tnx={previewTnx} onClose={() => setPreviewTnx(null)} />}
       {previewGrn && <GRNPreviewModal grnId={previewGrn} onClose={() => setPreviewGrn(null)} />}
       <ProfileModal user={user} isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} logout={logout} />

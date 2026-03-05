@@ -19,6 +19,7 @@ const PRPreviewModal: React.FC<PRPreviewModalProps> = ({ pr: initialPr, onClose 
   const [images, setImages] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     // Reset internal state when initialPr changes
@@ -97,15 +98,24 @@ const PRPreviewModal: React.FC<PRPreviewModalProps> = ({ pr: initialPr, onClose 
   const handleSaveToDB = async (statusOverride?: string) => {
     setIsSaving(true);
     try {
+      const totalValue = (pr.items || []).reduce((acc: number, item: any) => acc + (Number(item.reqQty || 0) * Number(item.unitPrice || 0)), 0);
+
       // Clean payload to ensure only valid columns are sent
       const payload = {
-        id: initialPr.id,
+        id: pr.id,
         pr_no: pr.pr_no,
         reference: pr.reference,
+        type: pr.type,
         status: statusOverride || pr.status || 'Pending',
         req_by_name: pr.req_by_name,
+        contact: pr.contact,
+        email: pr.email,
         reqDpt: pr.reqDpt,
+        note: pr.note,
+        total_value: totalValue,
         items: pr.items,
+        images: images,
+        justification: justificationData,
         updated_at: new Date().toISOString()
       };
 
@@ -115,9 +125,17 @@ const PRPreviewModal: React.FC<PRPreviewModalProps> = ({ pr: initialPr, onClose 
 
       if (error) throw error;
       
-      alert(statusOverride === 'Approved' ? "PR Approved successfully!" : "Changes saved to database successfully!");
-      onClose(); // Parent will refresh list
+      if (statusOverride === 'Approved') {
+        setShowSuccess(true);
+        setTimeout(() => {
+          onClose();
+        }, 2000);
+      } else {
+        alert("Changes saved to database successfully!");
+        onClose(); // Parent will refresh list
+      }
     } catch (err: any) {
+      console.error("PR Save Error:", err);
       alert("Error saving changes: " + err.message);
     } finally {
       setIsSaving(false);
@@ -244,7 +262,16 @@ const PRPreviewModal: React.FC<PRPreviewModalProps> = ({ pr: initialPr, onClose 
 
   return (
     <div className={`fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 overflow-y-auto ${isPrinting ? 'print-mode-active' : ''}`}>
-      <div className="bg-[#f8f9fa] w-full max-w-[1300px] rounded-2xl shadow-[0_32px_64px_-12px_rgba(0,0,0,0.5)] overflow-hidden animate-in fade-in zoom-in-95 duration-300 flex flex-col my-auto max-h-[96vh]">
+      {showSuccess ? (
+        <div className="bg-white p-12 rounded-3xl shadow-2xl flex flex-col items-center justify-center animate-in zoom-in duration-300">
+          <div className="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center mb-6 animate-bounce">
+            <CheckCircle2 size={64} className="text-emerald-500" />
+          </div>
+          <h2 className="text-2xl font-black text-gray-800 uppercase tracking-tight mb-2">PR Approved!</h2>
+          <p className="text-gray-400 font-bold text-sm uppercase tracking-widest">Requisition has been successfully authorized</p>
+        </div>
+      ) : (
+        <div className="bg-[#f8f9fa] w-full max-w-[1300px] rounded-2xl shadow-[0_32px_64px_-12px_rgba(0,0,0,0.5)] overflow-hidden animate-in fade-in zoom-in-95 duration-300 flex flex-col my-auto max-h-[96vh]">
         <div className="flex items-center justify-between px-8 py-5 border-b border-gray-100 bg-white sticky top-0 z-10 no-print">
           <div className="flex items-center space-x-4">
             <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 bg-gray-50 rounded-xl transition-colors">
@@ -314,6 +341,7 @@ const PRPreviewModal: React.FC<PRPreviewModalProps> = ({ pr: initialPr, onClose 
            </div>
         </div>
       </div>
+      )}
     </div>
   );
 };
