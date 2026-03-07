@@ -28,6 +28,29 @@ const NewItem: React.FC<NewItemProps> = ({ onBack, onSuccess, initialData }) => 
   });
 
   useEffect(() => {
+    const getNextCode = async () => {
+      if (initialData) return;
+      
+      const { data } = await supabase
+        .from('items')
+        .select('code')
+        .order('code', { ascending: false })
+        .limit(1);
+      
+      let nextCode = '1000000001';
+      if (data && data.length > 0) {
+        const lastCode = parseInt(data[0].code);
+        if (!isNaN(lastCode) && lastCode >= 1000000001) {
+          nextCode = (lastCode + 1).toString();
+        }
+      }
+      setFormData(prev => ({ ...prev, code: nextCode }));
+    };
+
+    getNextCode();
+  }, [initialData]);
+
+  useEffect(() => {
     if (initialData) {
       const timer = setTimeout(() => {
         setFormData({

@@ -157,6 +157,30 @@ const ItemList: React.FC = () => {
     XLSX.writeFile(workbook, "Item_Master_List.xlsx");
   };
 
+  const handleDeleteSelected = async () => {
+    const count = selectedIds.size;
+    if (window.confirm(`PERMANENTLY DELETE ${count} selected items from database?`)) {
+      setLoading(true);
+      try {
+        const { error } = await supabase
+          .from('items')
+          .delete()
+          .in('id', Array.from(selectedIds));
+        
+        if (error) {
+          alert("Bulk delete failed: " + error.message);
+        } else {
+          setSelectedIds(new Set());
+          fetchItems();
+        }
+      } catch (err) {
+        console.error("Bulk delete error:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -168,6 +192,21 @@ const ItemList: React.FC = () => {
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
       const data = XLSX.utils.sheet_to_json(worksheet);
+
+      // Get current max code to start from 1000000001
+      const { data: lastItems } = await supabase
+        .from('items')
+        .select('code')
+        .order('code', { ascending: false })
+        .limit(1);
+      
+      let nextCodeNum = 1000000001;
+      if (lastItems && lastItems.length > 0) {
+        const lastCode = parseInt(lastItems[0].code);
+        if (!isNaN(lastCode) && lastCode >= 1000000001) {
+          nextCodeNum = lastCode + 1;
+        }
+      }
 
       const mappedItems = data.map((row: any) => {
         const findValue = (possibleKeys: string[]) => {
@@ -186,7 +225,7 @@ const ItemList: React.FC = () => {
         
         // Generate code if missing
         if (!code && name) {
-          code = `ITM-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+          code = String(nextCodeNum++);
         }
 
         const safeParseDate = (val: any) => {
@@ -194,6 +233,12 @@ const ItemList: React.FC = () => {
           try {
             const d = new Date(val);
             if (isNaN(d.getTime())) return null;
+            
+            // Change 1/1/1970 to 1/1/26
+            if (d.getFullYear() === 1970 && d.getMonth() === 0 && d.getDate() === 1) {
+              return '2026-01-01T00:00:00.000Z';
+            }
+
             // Check if year is reasonable (between 1900 and 2100)
             const year = d.getFullYear();
             if (year < 1900 || year > 2100) return null;
@@ -343,9 +388,18 @@ const ItemList: React.FC = () => {
           </button>
           <div className="h-6 w-px bg-gray-100 mx-2"></div>
           {selectedIds.size > 0 && (
-            <span className="text-[10px] font-black text-[#2d808e] uppercase bg-[#e2eff1] px-3 py-1 rounded-full animate-in fade-in zoom-in duration-200">
-              {selectedIds.size} Selected
-            </span>
+            <div className="flex items-center space-x-2 animate-in fade-in zoom-in duration-200">
+              <span className="text-[10px] font-black text-[#2d808e] uppercase bg-[#e2eff1] px-3 py-1 rounded-full">
+                {selectedIds.size} Selected
+              </span>
+              <button 
+                onClick={handleDeleteSelected}
+                className="flex items-center space-x-1 px-3 py-1 bg-red-50 text-red-600 border border-red-100 rounded-full text-[10px] font-black uppercase hover:bg-red-100 transition-all"
+              >
+                <Trash2 size={12} />
+                <span>Delete Selected</span>
+              </button>
+            </div>
           )}
           <div className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-4">
             Total Items: <span className="text-[#2d808e] font-black">{totalCount.toLocaleString()}</span>
