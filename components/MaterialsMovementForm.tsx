@@ -150,7 +150,9 @@ const MaterialsMovementForm: React.FC<MaterialsMovementFormProps> = ({ selectedI
         const { error } = await supabase.rpc('update_item_stock', {
           item_sku: item.sku,
           qty_change: -qty,
-          is_receive: false
+          is_receive: false,
+          ref_no: moId,
+          dept: formData.department
         });
         if (error) throw error;
       }

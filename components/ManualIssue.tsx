@@ -84,7 +84,9 @@ const ManualIssue: React.FC<ManualIssueProps> = ({ onBack, onSubmit }) => {
         const { error: rpcError } = await supabase.rpc('update_item_stock', {
           item_sku: item.sku,
           qty_change: -qty,
-          is_receive: false
+          is_receive: false,
+          ref_no: issueId,
+          dept: formData.department
         });
         
         // If RPC fails (e.g., doesn't exist), try direct update

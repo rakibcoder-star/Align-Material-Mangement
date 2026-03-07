@@ -154,7 +154,8 @@ const MakeGRNForm: React.FC<MakeGRNFormProps> = ({ selectedItems, onClose, onSub
         const { error: rpcError } = await supabase.rpc('update_item_stock', {
           item_sku: item.sku,
           qty_change: Number(item.grnQty),
-          is_receive: true
+          is_receive: true,
+          ref_no: grnId
         });
         
         // If RPC fails (e.g., doesn't exist), try direct update

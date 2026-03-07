@@ -169,24 +169,47 @@ const ItemList: React.FC = () => {
       const worksheet = workbook.Sheets[sheetName];
       const data = XLSX.utils.sheet_to_json(worksheet);
 
-      const mappedItems = data.map((row: any) => ({
-        code: String(row['CODE'] || row['code'] || row['Code'] || '').trim(),
-        sku: String(row['SKU'] || row['sku'] || 'N/A').trim(),
-        name: String(row['NAME'] || row['name'] || row['Item Name'] || '').trim(),
-        uom: String(row['UOM'] || row['uom'] || '').trim(),
-        location: String(row['LOCATION'] || row['location'] || row['Location'] || 'N/A').trim(),
-        source: String(row['SOURCE'] || row['source'] || row['Source'] || 'N/A').trim(),
-        department: String(row['DEPARTMENT'] || row['department'] || row['Department'] || 'N/A').trim(),
-        type: String(row['TYPE'] || row['type'] || row['Types'] || '').trim(),
-        group_name: String(row['GROUP'] || row['group'] || '').trim(),
-        opening_stock: parseInt(row['OPENING STOCK'] || row['opening_stock'] || row['Opening stock']) || 0,
-        received_qty: parseInt(row['RECEIVED QTY'] || row['received_qty'] || row['Rcv_Qty.']) || 0,
-        issued_qty: parseInt(row['ISSUED QTY'] || row['issued_qty'] || row['Issue_Qty.']) || 0,
-        on_hand_stock: parseInt(row['ON-HAND STOCK'] || row['on_hand_stock'] || row['Closing_Stock']) || 0,
-        safety_stock: parseInt(row['SAFETY STOCK'] || row['safety_stock'] || row['Safety Stock Qty.']) || 0,
-        last_price: parseFloat(row['LAST PRICE'] || row['last_price']) || 0,
-        avg_price: parseFloat(row['AVG. PRICE'] || row['avg_price']) || 0
-      })).filter(item => item.name && item.code);
+      const mappedItems = data.map((row: any) => {
+        const findValue = (possibleKeys: string[]) => {
+          const rowKeys = Object.keys(row);
+          for (const pk of possibleKeys) {
+            const normalizedPk = pk.toLowerCase().trim();
+            const match = rowKeys.find(rk => rk.toLowerCase().trim() === normalizedPk);
+            if (match !== undefined) return row[match];
+          }
+          return undefined;
+        };
+
+        const name = String(findValue(['Item Name', 'ITEM NAME', 'name', 'NAME', 'Item']) || '').trim();
+        const sku = String(findValue(['SKU', 'sku', 'Part No', 'Part No.']) || 'N/A').trim();
+        let code = String(findValue(['Code', 'CODE', 'code', 'Part Code']) || '').trim();
+        
+        // Generate code if missing
+        if (!code && name) {
+          code = `ITM-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+        }
+
+        return {
+          code,
+          sku,
+          name,
+          uom: String(findValue(['UOM', 'uom', 'Unit']) || '').trim(),
+          location: String(findValue(['LOCATION', 'location', 'Location']) || 'N/A').trim(),
+          source: String(findValue(['Source', 'SOURCE', 'source']) || 'N/A').trim(),
+          department: String(findValue(['Department', 'DEPARTMENT', 'department']) || 'N/A').trim(),
+          type: String(findValue(['Types', 'TYPE', 'type', 'Item Type']) || '').trim(),
+          group_name: String(findValue(['Group', 'GROUP', 'group', 'Item Group']) || '').trim(),
+          opening_stock: parseInt(String(findValue(['Opening stock', 'OPENING STOCK', 'opening_stock']) || '0')) || 0,
+          received_qty: parseInt(String(findValue(['Rcv_Qty.', 'RECEIVED QTY', 'received_qty', 'Received']) || '0')) || 0,
+          issued_qty: parseInt(String(findValue(['Issue_Qty.', 'ISSUED QTY', 'issued_qty', 'Issued']) || '0')) || 0,
+          on_hand_stock: parseInt(String(findValue(['Closing_Stock', 'ON-HAND STOCK', 'on_hand_stock', 'Stock']) || '0')) || 0,
+          safety_stock: parseInt(String(findValue(['Safety Stock Qty.', 'SAFETY STOCK', 'safety_stock', 'Safety']) || '0')) || 0,
+          last_price: parseFloat(String(findValue(['Last Price', 'LAST PRICE', 'last_price']) || '0')) || 0,
+          avg_price: parseFloat(String(findValue(['Avg. Price', 'AVG. PRICE', 'avg_price']) || '0')) || 0,
+          last_issued: findValue(['Last Issued']) ? new Date(String(findValue(['Last Issued']))).toISOString() : null,
+          last_received: findValue(['Last Received']) ? new Date(String(findValue(['Last Received']))).toISOString() : null
+        };
+      }).filter(item => item.name && item.code);
 
       if (mappedItems.length > 0) {
         setLoading(true);

@@ -47,24 +47,35 @@ ALTER TABLE items ADD COLUMN IF NOT EXISTS last_received TIMESTAMP WITH TIME ZON
 ALTER TABLE grns ADD COLUMN IF NOT EXISTS bl_container TEXT;
 
 -- 3. Standardize the update_item_stock function
-CREATE OR REPLACE FUNCTION public.update_item_stock(item_sku text, qty_change integer, is_receive boolean)
+CREATE OR REPLACE FUNCTION public.update_item_stock(item_sku text, qty_change integer, is_receive boolean, ref_no text DEFAULT NULL, dept text DEFAULT NULL)
  RETURNS void
  LANGUAGE plpgsql
  SECURITY DEFINER
 AS $function$
+DECLARE
+    v_item_code TEXT;
 BEGIN
+    -- Get item code for reference
+    SELECT code INTO v_item_code FROM items WHERE sku = item_sku LIMIT 1;
+
     IF is_receive THEN
         UPDATE items 
         SET on_hand_stock = on_hand_stock + qty_change,
             received_qty = COALESCE(received_qty, 0) + qty_change,
             last_received = NOW()
         WHERE sku = item_sku;
+
+        INSERT INTO transactions (item_sku, item_code, type, quantity, reference_no, department)
+        VALUES (item_sku, v_item_code, 'Receive', qty_change, ref_no, dept);
     ELSE
         UPDATE items 
         SET on_hand_stock = on_hand_stock + qty_change,
             issued_qty = COALESCE(issued_qty, 0) + ABS(qty_change),
             last_issued = NOW()
         WHERE sku = item_sku;
+
+        INSERT INTO transactions (item_sku, item_code, type, quantity, reference_no, department)
+        VALUES (item_sku, v_item_code, 'Issue', ABS(qty_change), ref_no, dept);
     END IF;
 END;
 $function$;
@@ -222,6 +233,22 @@ END $$;
 
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow all" ON profiles FOR ALL USING (true) WITH CHECK (true);
+
+-- 10. Transactions Table for detailed history
+CREATE TABLE IF NOT EXISTS transactions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    item_sku TEXT NOT NULL,
+    item_code TEXT,
+    type TEXT NOT NULL, -- 'Receive' or 'Issue'
+    quantity INTEGER NOT NULL,
+    reference_no TEXT,
+    department TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow all" ON transactions;
+CREATE POLICY "Allow all" ON transactions FOR ALL USING (true) WITH CHECK (true);
 
 -- FORCE CACHE RELOAD
 NOTIFY pgrst, 'reload schema';
