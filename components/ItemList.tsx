@@ -92,8 +92,11 @@ const ItemList: React.FC = () => {
         if (from > 20000) hasMore = false;
       }
       
-      setTotalCount(allData.length);
-      setItems(allData.map((item, index) => ({
+      // Deduplicate by ID to prevent React key warnings
+      const uniqueData = Array.from(new Map(allData.map(item => [item.id, item])).values());
+      
+      setTotalCount(uniqueData.length);
+      setItems(uniqueData.map((item, index) => ({
         ...item,
         sl: index + 1
       })));
@@ -336,10 +339,12 @@ const ItemList: React.FC = () => {
   };
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === items.length && items.length > 0) {
+    if (selectedIds.size >= 500 || (selectedIds.size === items.length && items.length > 0)) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(items.map(item => item.id!)));
+      // Select only the first 500 items if there are more
+      const first500 = items.slice(0, 500).map(item => item.id!);
+      setSelectedIds(new Set(first500));
     }
   };
 
@@ -564,9 +569,9 @@ const ItemList: React.FC = () => {
                   </div>
                 </td>
               </tr>
-            ) : items.map((item) => (
+            ) : items.map((item, index) => (
               <tr 
-                key={item.id} 
+                key={`${item.id || 'no-id'}-${index}`} 
                 className={`hover:bg-cyan-50/20 transition-colors border-b border-gray-50 last:border-0 group ${selectedIds.has(item.id!) ? 'bg-cyan-50/40' : ''}`}
                 onClick={() => toggleSelect(item.id!)}
               >
