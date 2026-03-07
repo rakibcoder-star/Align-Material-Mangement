@@ -162,19 +162,36 @@ const ItemList: React.FC = () => {
     if (window.confirm(`PERMANENTLY DELETE ${count} selected items from database?`)) {
       setLoading(true);
       try {
-        const { error } = await supabase
-          .from('items')
-          .delete()
-          .in('id', Array.from(selectedIds));
+        const idsArray = Array.from(selectedIds);
+        const chunkSize = 500;
+        let successCount = 0;
+
+        for (let i = 0; i < idsArray.length; i += chunkSize) {
+          const chunk = idsArray.slice(i, i + chunkSize);
+          const { error } = await supabase
+            .from('items')
+            .delete()
+            .in('id', chunk);
+          
+          if (error) {
+            alert(`Bulk delete failed at chunk ${Math.floor(i / chunkSize) + 1}: ` + error.message);
+            break;
+          }
+          successCount += chunk.length;
+        }
         
-        if (error) {
-          alert("Bulk delete failed: " + error.message);
-        } else {
+        if (successCount === idsArray.length) {
           setSelectedIds(new Set());
           fetchItems();
+          alert(`Successfully deleted ${successCount} items.`);
+        } else if (successCount > 0) {
+          setSelectedIds(new Set(idsArray.slice(successCount)));
+          fetchItems();
+          alert(`Partially deleted ${successCount} items. Some items could not be deleted.`);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Bulk delete error:", err);
+        alert("Bulk delete failed: " + (err.message || "Network Error"));
       } finally {
         setLoading(false);
       }
