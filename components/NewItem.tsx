@@ -10,6 +10,14 @@ interface NewItemProps {
 
 const NewItem: React.FC<NewItemProps> = ({ onBack, onSuccess, initialData }) => {
   const [loading, setLoading] = useState(false);
+  const [masterData, setMasterData] = useState({
+    uoms: [] as string[],
+    groups: [] as string[],
+    types: [] as string[],
+    locations: [] as string[],
+    sources: [] as string[],
+    departments: [] as string[]
+  });
   const [formData, setFormData] = useState({
     code: '',
     name: '',
@@ -49,6 +57,51 @@ const NewItem: React.FC<NewItemProps> = ({ onBack, onSuccess, initialData }) => 
 
     getNextCode();
   }, [initialData]);
+
+  useEffect(() => {
+    const fetchMasterData = async () => {
+      // Default values as fallback/initial
+      const defaultUoms = ['PCS', 'SET', 'BOX', 'ROLL', 'LTR', 'MTR', 'KG', 'PACK', 'BAG', 'PAIR', 'FEET', 'REAM', 'CYL', 'CAN', 'BOTTLE', 'LOT'];
+      const defaultGroups = ['Maintenance Item', 'Paint Item', 'Civil Item', 'Admin Item', 'Assembly Item', 'Assets & Machinery', 'IT Item', 'Safety Item'];
+      const defaultTypes = ['Consumables', 'Spare Parts', 'Raw Materials', 'Finished Goods', 'Tools', 'Equipment'];
+      const defaultSources = ['Local', 'Import', 'Internal'];
+
+      try {
+        const { data: items } = await supabase
+          .from('items')
+          .select('uom, group_name, type, location, source, department');
+        
+        const { data: costCenters } = await supabase.from('cost_centers').select('name');
+        
+        if (items) {
+          const uoms = Array.from(new Set([...defaultUoms, ...items.map(i => i.uom).filter(Boolean)])).sort();
+          const groups = Array.from(new Set([...defaultGroups, ...items.map(i => i.group_name).filter(Boolean)])).sort();
+          const types = Array.from(new Set([...defaultTypes, ...items.map(i => i.type).filter(Boolean)])).sort();
+          const locations = Array.from(new Set(items.map(i => i.location).filter(Boolean))).sort();
+          const sources = Array.from(new Set([...defaultSources, ...items.map(i => i.source).filter(Boolean)])).sort();
+          
+          const deptsFromItems = items.map(i => i.department).filter(Boolean);
+          const deptsFromCC = costCenters?.map(cc => cc.name) || [];
+          const departments = Array.from(new Set([...deptsFromItems, ...deptsFromCC])).sort();
+
+          setMasterData({ uoms, groups, types, locations, sources, departments });
+        } else {
+          setMasterData({
+            uoms: defaultUoms.sort(),
+            groups: defaultGroups.sort(),
+            types: defaultTypes.sort(),
+            locations: [],
+            sources: defaultSources.sort(),
+            departments: costCenters?.map(cc => cc.name).sort() || []
+          });
+        }
+      } catch (err) {
+        console.error("Error fetching master data:", err);
+      }
+    };
+
+    fetchMasterData();
+  }, []);
 
   useEffect(() => {
     if (initialData) {
@@ -194,67 +247,85 @@ const NewItem: React.FC<NewItemProps> = ({ onBack, onSuccess, initialData }) => 
                 <label className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">
                   <span className="text-red-500 mr-1">*</span>UOM
                 </label>
-                <input
-                  type="text"
-                  placeholder="e.g. PIECE"
+                <select
                   value={formData.uom}
-                  onChange={(e) => handleInputChange('uom', e.target.value.toUpperCase())}
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-[12px] font-bold outline-none focus:border-[#2d808e] transition-all"
-                />
+                  onChange={(e) => handleInputChange('uom', e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-[12px] font-bold outline-none focus:border-[#2d808e] transition-all appearance-none cursor-pointer"
+                >
+                  <option value="">SELECT UOM</option>
+                  {masterData.uoms.map(uom => (
+                    <option key={uom} value={uom}>{uom}</option>
+                  ))}
+                </select>
               </div>
               <div className="space-y-1.5">
                 <label className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">
                   <span className="text-red-500 mr-1">*</span>Item Group
                 </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Maintenance Item"
+                <select
                   value={formData.group_name}
                   onChange={(e) => handleInputChange('group_name', e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-[12px] font-bold outline-none focus:border-[#2d808e] transition-all"
-                />
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-[12px] font-bold outline-none focus:border-[#2d808e] transition-all appearance-none cursor-pointer"
+                >
+                  <option value="">SELECT GROUP</option>
+                  {masterData.groups.map(group => (
+                    <option key={group} value={group}>{group}</option>
+                  ))}
+                </select>
               </div>
               <div className="space-y-1.5">
                 <label className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">
                   <span className="text-red-500 mr-1">*</span>Item Type
                 </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Consumables"
+                <select
                   value={formData.type}
                   onChange={(e) => handleInputChange('type', e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-[12px] font-bold outline-none focus:border-[#2d808e] transition-all"
-                />
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-[12px] font-bold outline-none focus:border-[#2d808e] transition-all appearance-none cursor-pointer"
+                >
+                  <option value="">SELECT TYPE</option>
+                  {masterData.types.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
               </div>
               <div className="space-y-1.5">
                 <label className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">Stock Location</label>
-                <input
-                  type="text"
-                  placeholder="e.g. WH-01-A2"
+                <select
                   value={formData.location}
                   onChange={(e) => handleInputChange('location', e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded focus:border-[#2d808e] outline-none text-[12px] font-medium transition-all"
-                />
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-[12px] font-bold outline-none focus:border-[#2d808e] transition-all appearance-none cursor-pointer"
+                >
+                  <option value="">SELECT LOCATION</option>
+                  {masterData.locations.map(loc => (
+                    <option key={loc} value={loc}>{loc}</option>
+                  ))}
+                </select>
               </div>
               <div className="space-y-1.5">
                 <label className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">Source</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Local"
+                <select
                   value={formData.source}
                   onChange={(e) => handleInputChange('source', e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded focus:border-[#2d808e] outline-none text-[12px] font-medium transition-all"
-                />
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-[12px] font-bold outline-none focus:border-[#2d808e] transition-all appearance-none cursor-pointer"
+                >
+                  <option value="">SELECT SOURCE</option>
+                  {masterData.sources.map(src => (
+                    <option key={src} value={src}>{src}</option>
+                  ))}
+                </select>
               </div>
               <div className="space-y-1.5">
                 <label className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">Department</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Maintenance"
+                <select
                   value={formData.department}
                   onChange={(e) => handleInputChange('department', e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded focus:border-[#2d808e] outline-none text-[12px] font-medium transition-all"
-                />
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-[12px] font-bold outline-none focus:border-[#2d808e] transition-all appearance-none cursor-pointer"
+                >
+                  <option value="">SELECT DEPARTMENT</option>
+                  {masterData.departments.map(dept => (
+                    <option key={dept} value={dept}>{dept}</option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
