@@ -189,6 +189,20 @@ const ItemList: React.FC = () => {
           code = `ITM-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
         }
 
+        const safeParseDate = (val: any) => {
+          if (!val) return null;
+          try {
+            const d = new Date(val);
+            if (isNaN(d.getTime())) return null;
+            // Check if year is reasonable (between 1900 and 2100)
+            const year = d.getFullYear();
+            if (year < 1900 || year > 2100) return null;
+            return d.toISOString();
+          } catch {
+            return null;
+          }
+        };
+
         return {
           code,
           sku,
@@ -206,8 +220,8 @@ const ItemList: React.FC = () => {
           safety_stock: parseInt(String(findValue(['Safety Stock Qty.', 'SAFETY STOCK', 'safety_stock', 'Safety']) || '0')) || 0,
           last_price: parseFloat(String(findValue(['Last Price', 'LAST PRICE', 'last_price']) || '0')) || 0,
           avg_price: parseFloat(String(findValue(['Avg. Price', 'AVG. PRICE', 'avg_price']) || '0')) || 0,
-          last_issued: findValue(['Last Issued']) ? new Date(String(findValue(['Last Issued']))).toISOString() : null,
-          last_received: findValue(['Last Received']) ? new Date(String(findValue(['Last Received']))).toISOString() : null
+          last_issued: safeParseDate(findValue(['Last Issued'])),
+          last_received: safeParseDate(findValue(['Last Received']))
         };
       }).filter(item => item.name && item.code);
 
