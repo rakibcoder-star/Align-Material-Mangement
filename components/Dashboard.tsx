@@ -29,6 +29,7 @@ import LocationTransferModal from './LocationTransferModal';
 import GRNPreviewModal from './GRNPreviewModal';
 import LowStockInventory from './LowStockInventory';
 import ABCAnalysis from './ABCAnalysis';
+import IssueReport from './IssueReport';
 import { supabase } from '../lib/supabase';
 import { 
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -611,7 +612,7 @@ const DashboardOverview: React.FC<{
                         </td>
                         <td className="px-4 py-4 uppercase truncate max-w-[150px] font-bold text-gray-700 border-r border-gray-50">{pr.req_by_name || 'N/A'}</td>
                         <td className="px-4 py-4 text-center border-r border-gray-50">
-                          {['Approved', 'Ordered', 'Closed'].includes(pr.status) ? (
+                          {['Approved', 'Ordered', 'Closed', 'APPROVED', 'ORDERED', 'CLOSED'].includes(pr.status) ? (
                             <div className="flex items-center justify-center text-emerald-500">
                               <CheckCircle2 size={14} className="mr-1" />
                               <span className="text-[10px] font-black uppercase">{pr.status}</span>
@@ -702,10 +703,10 @@ const DashboardOverview: React.FC<{
                         </td>
                         <td className="px-4 py-4 uppercase truncate max-w-[150px] font-bold text-gray-700 border-r border-gray-50">{po.supplier_name || 'N/A'}</td>
                         <td className="px-4 py-4 text-center border-r border-gray-50">
-                          {['Approved', 'Ordered', 'Open', 'Closed'].includes(po.status) ? (
+                          {['Approved', 'Ordered', 'Open', 'Closed', 'APPROVED', 'ORDERED', 'OPEN', 'CLOSED'].includes(po.status) ? (
                             <div className="flex items-center justify-center text-emerald-500">
                               <CheckCircle2 size={14} className="mr-1" />
-                              <span className="text-[10px] font-black uppercase">{po.status === 'Ordered' ? 'Approved' : po.status}</span>
+                              <span className="text-[10px] font-black uppercase">{['Ordered', 'ORDERED'].includes(po.status) ? 'Approved' : po.status}</span>
                             </div>
                           ) : (
                             <span className="text-[10px] font-black text-orange-500 uppercase">{po.status || 'Pending'}</span>
@@ -1184,6 +1185,7 @@ const Dashboard: React.FC = () => {
           >
             {hasGranularPermission('low_stock_inventory', 'view') && <SubmenuItem icon={<ShieldAlert />} label="Low Stock Inventory" active={activeTab === 'low-stock'} onClick={() => menuNavigate('/low-stock')} />}
             {hasGranularPermission('abc_analysis', 'view') && <SubmenuItem icon={<TrendingUp />} label="ABC Analysis" active={activeTab === 'abc-analysis'} onClick={() => menuNavigate('/abc-analysis')} />}
+            <SubmenuItem icon={<FileText />} label="Issue Report" active={activeTab === 'issue-report'} onClick={() => menuNavigate('/issue-report')} />
           </SidebarItem>
         )}
 
@@ -1269,6 +1271,7 @@ const Dashboard: React.FC = () => {
               <Route path="/users" element={<UserManagement />} /><Route path="/requisition" element={<PurchaseRequisition />} /><Route path="/purchase-order" element={<PurchaseOrder />} /><Route path="/supplier" element={<Supplier />} /><Route path="/purchase-report" element={<PurchaseReport />} /><Route path="/inventory" element={<Inventory />} /><Route path="/receive" element={<Receive />} /><Route path="/issue" element={<Issue />} /><Route path="/tnx-report" element={<TnxReport />} /><Route path="/mo-report" element={<MOReport />} /><Route path="/item-list" element={<ItemList />} /><Route path="/item-uom" element={<ItemUOM />} /><Route path="/item-group" element={<ItemGroup />} /><Route path="/item-type" element={<ItemType />} /><Route path="/cost-center" element={<CostCenter />} /><Route path="/label" element={<LabelManagement />} />              <Route path="/cycle-counting" element={<CycleCounting />} />
               <Route path="/low-stock" element={hasGranularPermission('low_stock_inventory', 'view') ? <LowStockInventory /> : <Navigate to="/overview" replace />} />
               <Route path="/abc-analysis" element={hasGranularPermission('abc_analysis', 'view') ? <ABCAnalysis /> : <Navigate to="/overview" replace />} />
+              <Route path="/issue-report" element={<IssueReport />} />
               <Route path="/" element={<Navigate to="/overview" replace />} />
             </Routes>
           </div>
