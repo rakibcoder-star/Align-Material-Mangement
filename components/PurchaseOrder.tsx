@@ -58,7 +58,7 @@ const PurchaseOrder: React.FC = () => {
         'GRN Qty': item.receivedQty || 0,
         'Req. By': item.reqBy,
         'Supplier': po.supplier_name,
-        'Status': (po.status === 'Approved' || po.status === 'Open') ? 'Approved' : 'Pending'
+        'Status': po.status
       }))
     );
     const worksheet = XLSX.utils.json_to_sheet(flattenedForExport);
@@ -229,8 +229,8 @@ const PurchaseOrder: React.FC = () => {
               ) : flattenedItems.length > 0 ? (
                 flattenedItems.map((item, index) => {
                   const poValue = Number(item.poQty || 0) * Number(item.poPrice || 0);
-                  const displayStatus = (item.po_status === 'Approved' || item.po_status === 'Open') ? 'Approved' : 'Pending';
-                  const isApproved = displayStatus === 'Approved';
+                  const displayStatus = item.po_status;
+                  const isApproved = item.po_status === 'Approved' || item.po_status === 'Open' || item.po_status === 'Closed';
                   
                   return (
                     <tr key={index} className="hover:bg-gray-50 transition-colors border-b border-gray-50">

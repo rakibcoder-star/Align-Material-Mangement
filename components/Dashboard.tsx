@@ -611,13 +611,13 @@ const DashboardOverview: React.FC<{
                         </td>
                         <td className="px-4 py-4 uppercase truncate max-w-[150px] font-bold text-gray-700 border-r border-gray-50">{pr.req_by_name || 'N/A'}</td>
                         <td className="px-4 py-4 text-center border-r border-gray-50">
-                          {pr.status === 'Approved' ? (
+                          {['Approved', 'Ordered', 'Closed'].includes(pr.status) ? (
                             <div className="flex items-center justify-center text-emerald-500">
                               <CheckCircle2 size={14} className="mr-1" />
-                              <span className="text-[10px] font-black uppercase">Approved</span>
+                              <span className="text-[10px] font-black uppercase">{pr.status}</span>
                             </div>
                           ) : (
-                            <span className="text-[10px] font-black text-orange-500 uppercase">Pending</span>
+                            <span className="text-[10px] font-black text-orange-500 uppercase">{pr.status || 'Pending'}</span>
                           )}
                         </td>
                         <td className="px-4 py-4 text-right font-black text-gray-800">{formatCurrency(pr.total_value)}</td>
@@ -702,10 +702,10 @@ const DashboardOverview: React.FC<{
                         </td>
                         <td className="px-4 py-4 uppercase truncate max-w-[150px] font-bold text-gray-700 border-r border-gray-50">{po.supplier_name || 'N/A'}</td>
                         <td className="px-4 py-4 text-center border-r border-gray-50">
-                          {po.status === 'Approved' || po.status === 'Ordered' ? (
+                          {['Approved', 'Ordered', 'Open', 'Closed'].includes(po.status) ? (
                             <div className="flex items-center justify-center text-emerald-500">
                               <CheckCircle2 size={14} className="mr-1" />
-                              <span className="text-[10px] font-black uppercase">Approved</span>
+                              <span className="text-[10px] font-black uppercase">{po.status === 'Ordered' ? 'Approved' : po.status}</span>
                             </div>
                           ) : (
                             <span className="text-[10px] font-black text-orange-500 uppercase">{po.status || 'Pending'}</span>

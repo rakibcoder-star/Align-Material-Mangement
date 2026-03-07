@@ -126,9 +126,13 @@ const MakeGRNForm: React.FC<MakeGRNFormProps> = ({ selectedItems, onClose, onSub
     setItems(items.map(item => item.id === id ? { ...item, [field]: value } : item));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (items.length === 0) return;
+    if (!grnId) {
+      alert("GRN ID is not generated yet. Please wait or try again.");
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -145,9 +149,10 @@ const MakeGRNForm: React.FC<MakeGRNFormProps> = ({ selectedItems, onClose, onSub
         items: items
       }]);
       
-      // If table doesn't exist, we'll just proceed with stock updates for now
-      // as it might be a new requirement and the table hasn't been created yet.
-      // In a real scenario, we'd handle this more strictly.
+      if (grnError) {
+        console.error('GRN Insert Error:', grnError);
+        throw grnError;
+      }
 
       // 2. Update Item Stock
       for (const item of items) {
