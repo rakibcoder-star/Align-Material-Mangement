@@ -35,6 +35,7 @@ const MaterialsMovementForm: React.FC<MaterialsMovementFormProps> = ({ selectedI
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [allLocations, setAllLocations] = useState<string[]>([]);
   const [showNotification, setShowNotification] = useState<NotificationData | null>(null);
+  const [departments, setDepartments] = useState<string[]>([]);
   const [items, setItems] = useState<MovementItem[]>(
     selectedItems.map(item => {
       const moId = item.fullMo?.id;
@@ -104,6 +105,27 @@ const MaterialsMovementForm: React.FC<MaterialsMovementFormProps> = ({ selectedI
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('cost_centers')
+          .select('name')
+          .order('name', { ascending: true });
+        
+        if (data && !error) {
+          setDepartments(data.map(cc => cc.name));
+        } else {
+          // Fallback if table is empty or error
+          setDepartments(['Maintenance', 'Security', 'Safety', 'QC', 'PDI', 'Paint Shop', 'Outbound Logistic', 'MMT', 'Medical', 'IT', 'HR', 'Finance', 'Civil', 'Audit', 'Assembly', 'Admin']);
+        }
+      } catch (err) {
+        console.error("Error fetching departments:", err);
+      }
+    };
+    fetchDepartments();
+  }, []);
+
   const updateItem = (id: string, field: keyof MovementItem, value: any) => {
     setItems(items.map(item => item.id === id ? { ...item, [field]: value } : item));
   };
@@ -136,8 +158,12 @@ const MaterialsMovementForm: React.FC<MaterialsMovementFormProps> = ({ selectedI
       // 2. Complete the issue task by updating Move Order status and item locations
       const uniqueMoIds = Array.from(new Set(items.map(i => i.moId).filter(Boolean)));
       for (const moId of uniqueMoIds) {
+        // Get the department from the first item of this MO (assuming all items in an MO should have the same dept)
+        const moItemsForThisId = items.filter(i => i.moId === moId);
+        const updatedDept = moItemsForThisId[0]?.usedDept || '';
+
         // Construct the new items array for the Move Order, preserving critical fields
-        const moItems = items.filter(i => i.moId === moId).map(i => ({
+        const moItems = moItemsForThisId.map(i => ({
           sku: i.sku,
           name: i.name,
           uom: i.uom,
@@ -153,6 +179,7 @@ const MaterialsMovementForm: React.FC<MaterialsMovementFormProps> = ({ selectedI
           .update({ 
             status: 'Completed',
             items: moItems, 
+            department: updatedDept, // Save the corrected department
             updated_at: new Date().toISOString()
           })
           .eq('id', moId);
@@ -285,9 +312,17 @@ const MaterialsMovementForm: React.FC<MaterialsMovementFormProps> = ({ selectedI
                     </div>
                   </td>
                   <td className="px-4 py-5 text-center border-r border-gray-50">
-                    <div className="flex items-center justify-between px-3 py-1.5 bg-[#fcfcfc] border border-gray-100 rounded text-gray-700">
-                      <span className="truncate">{item.usedDept}</span>
-                      <ChevronDown size={14} className="text-gray-300 ml-1 shrink-0" />
+                    <div className="relative group">
+                      <select 
+                        value={item.usedDept}
+                        onChange={(e) => updateItem(item.id, 'usedDept', e.target.value)}
+                        className="w-full px-3 py-1.5 bg-[#fcfcfc] border border-gray-100 rounded text-gray-700 font-bold focus:border-[#2d808e] outline-none appearance-none transition-all cursor-pointer"
+                      >
+                        {departments.map(dept => (
+                          <option key={dept} value={dept}>{dept}</option>
+                        ))}
+                      </select>
+                      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
                     </div>
                   </td>
                   <td className="px-4 py-5 border-r border-gray-50">

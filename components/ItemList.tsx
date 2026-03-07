@@ -13,14 +13,21 @@ export interface ItemEntry {
   code: string;
   sku: string;
   name: string;
-  uom: string;
   location: string;
+  uom: string;
+  source: string;
+  department: string;
   type: string;
-  group_name: string;
-  last_price: string | number;
-  avg_price: string | number;
-  safety_stock: string | number;
-  on_hand_stock: string | number;
+  opening_stock: number;
+  received_qty: number;
+  issued_qty: number;
+  on_hand_stock: number;
+  safety_stock: number;
+  last_issued: string;
+  last_received: string;
+  group_name?: string;
+  last_price?: string | number;
+  avg_price?: string | number;
 }
 
 const ItemList: React.FC = () => {
@@ -56,9 +63,9 @@ const ItemList: React.FC = () => {
         // Apply column filters
         Object.entries(columnFilters).forEach(([column, value]) => {
           if (value) {
-            if (['code', 'sku', 'name', 'uom', 'location', 'type', 'group_name'].includes(column)) {
+            if (['code', 'sku', 'name', 'uom', 'location', 'type', 'group_name', 'source', 'department'].includes(column)) {
               dataQuery = dataQuery.ilike(column, `%${value}%`);
-            } else if (['last_price', 'avg_price', 'safety_stock', 'on_hand_stock'].includes(column)) {
+            } else if (['last_price', 'avg_price', 'safety_stock', 'on_hand_stock', 'opening_stock', 'received_qty', 'issued_qty'].includes(column)) {
               dataQuery = dataQuery.eq(column, parseFloat(value) || 0);
             }
           }
@@ -107,7 +114,7 @@ const ItemList: React.FC = () => {
 
   const columnSuggestions = React.useMemo(() => {
     const suggestions: Record<string, string[]> = {};
-    const columns = ['code', 'sku', 'name', 'uom', 'location', 'type', 'group_name'];
+    const columns = ['code', 'sku', 'name', 'uom', 'location', 'type', 'group_name', 'source', 'department'];
     
     columns.forEach(col => {
       const uniqueValues = Array.from(new Set(items.map(item => String((item as any)[col] || ''))))
@@ -123,6 +130,33 @@ const ItemList: React.FC = () => {
     fetchItems();
   };
 
+  const handleDownloadExcel = () => {
+    const exportData = items.map(item => ({
+      'SL': item.sl,
+      'Code': item.code,
+      'SKU': item.sku,
+      'Item Name': item.name,
+      'LOCATION': item.location,
+      'UOM': item.uom,
+      'Source': item.source || 'N/A',
+      'Department': item.department || 'N/A',
+      'Types': item.type,
+      'Opening stock': item.opening_stock || 0,
+      'Rcv_Qty.': item.received_qty || 0,
+      'Total_Stock Qty.': (Number(item.opening_stock) || 0) + (Number(item.received_qty) || 0),
+      'Issue_Qty.': item.issued_qty || 0,
+      'Closing_Stock': item.on_hand_stock || 0,
+      'Safety Stock Qty.': item.safety_stock || 0,
+      'Last Issued': item.last_issued ? new Date(item.last_issued).toLocaleString() : 'N/A',
+      'Last Received': item.last_received ? new Date(item.last_received).toLocaleString() : 'N/A'
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Items");
+    XLSX.writeFile(workbook, "Item_Master_List.xlsx");
+  };
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -136,17 +170,22 @@ const ItemList: React.FC = () => {
       const data = XLSX.utils.sheet_to_json(worksheet);
 
       const mappedItems = data.map((row: any) => ({
-        code: String(row['CODE'] || row['code'] || '').trim(),
+        code: String(row['CODE'] || row['code'] || row['Code'] || '').trim(),
         sku: String(row['SKU'] || row['sku'] || 'N/A').trim(),
-        name: String(row['NAME'] || row['name'] || '').trim(),
+        name: String(row['NAME'] || row['name'] || row['Item Name'] || '').trim(),
         uom: String(row['UOM'] || row['uom'] || '').trim(),
-        location: String(row['LOCATION'] || row['location'] || 'N/A').trim(),
-        type: String(row['TYPE'] || row['type'] || '').trim(),
+        location: String(row['LOCATION'] || row['location'] || row['Location'] || 'N/A').trim(),
+        source: String(row['SOURCE'] || row['source'] || row['Source'] || 'N/A').trim(),
+        department: String(row['DEPARTMENT'] || row['department'] || row['Department'] || 'N/A').trim(),
+        type: String(row['TYPE'] || row['type'] || row['Types'] || '').trim(),
         group_name: String(row['GROUP'] || row['group'] || '').trim(),
+        opening_stock: parseInt(row['OPENING STOCK'] || row['opening_stock'] || row['Opening stock']) || 0,
+        received_qty: parseInt(row['RECEIVED QTY'] || row['received_qty'] || row['Rcv_Qty.']) || 0,
+        issued_qty: parseInt(row['ISSUED QTY'] || row['issued_qty'] || row['Issue_Qty.']) || 0,
+        on_hand_stock: parseInt(row['ON-HAND STOCK'] || row['on_hand_stock'] || row['Closing_Stock']) || 0,
+        safety_stock: parseInt(row['SAFETY STOCK'] || row['safety_stock'] || row['Safety Stock Qty.']) || 0,
         last_price: parseFloat(row['LAST PRICE'] || row['last_price']) || 0,
-        avg_price: parseFloat(row['AVG. PRICE'] || row['avg_price']) || 0,
-        safety_stock: parseInt(row['SAFETY STOCK'] || row['safety_stock']) || 0,
-        on_hand_stock: parseInt(row['ON-HAND STOCK'] || row['on_hand_stock']) || 0
+        avg_price: parseFloat(row['AVG. PRICE'] || row['avg_price']) || 0
       })).filter(item => item.name && item.code);
 
       if (mappedItems.length > 0) {
@@ -237,6 +276,13 @@ const ItemList: React.FC = () => {
             className="hidden" 
           />
           <button 
+            onClick={handleDownloadExcel}
+            className="bg-white text-emerald-600 border border-emerald-600 px-5 py-2 rounded text-[13px] font-black shadow-sm hover:bg-emerald-50 transition-all flex items-center space-x-2 uppercase tracking-tight"
+          >
+            <FileUp size={16} strokeWidth={3} className="rotate-180" />
+            <span>Download Excel</span>
+          </button>
+          <button 
             onClick={() => fileInputRef.current?.click()}
             className="bg-white text-[#2d808e] border border-[#2d808e] px-5 py-2 rounded text-[13px] font-black shadow-sm hover:bg-cyan-50 transition-all flex items-center space-x-2 uppercase tracking-tight"
           >
@@ -290,7 +336,7 @@ const ItemList: React.FC = () => {
 
       {/* Main Table */}
       <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-100 overflow-auto scrollbar-thin relative">
-        <table className="w-full text-left border-collapse min-w-[1600px]">
+        <table className="w-full text-left border-collapse min-w-[2200px]">
           <thead className="bg-[#fcfcfc] sticky top-0 z-10 shadow-[0_1px_0_rgba(0,0,0,0.05)]">
             <tr className="text-[10px] font-black text-gray-500 border-b border-gray-100 uppercase tracking-widest">
               <th className="px-4 py-5 text-center w-12 border-r border-gray-50">
@@ -324,50 +370,77 @@ const ItemList: React.FC = () => {
               </th>
               <th className="px-4 py-5 border-r border-gray-50 text-center">
                 <div className="flex items-center justify-center">
+                  <span>LOCATION</span>
+                  <ColumnFilter columnName="Location" currentValue={columnFilters.location || ''} onFilter={(val) => handleColumnFilter('location', val)} suggestions={columnSuggestions.location} />
+                </div>
+              </th>
+              <th className="px-4 py-5 border-r border-gray-50 text-center">
+                <div className="flex items-center justify-center">
                   <span>UOM</span>
                   <ColumnFilter columnName="UOM" currentValue={columnFilters.uom || ''} onFilter={(val) => handleColumnFilter('uom', val)} suggestions={columnSuggestions.uom} />
                 </div>
               </th>
               <th className="px-4 py-5 border-r border-gray-50 text-center">
                 <div className="flex items-center justify-center">
-                  <span>Location</span>
-                  <ColumnFilter columnName="Location" currentValue={columnFilters.location || ''} onFilter={(val) => handleColumnFilter('location', val)} suggestions={columnSuggestions.location} />
+                  <span>Source</span>
+                  <ColumnFilter columnName="Source" currentValue={columnFilters.source || ''} onFilter={(val) => handleColumnFilter('source', val)} suggestions={columnSuggestions.source} />
                 </div>
               </th>
               <th className="px-4 py-5 border-r border-gray-50 text-center">
                 <div className="flex items-center justify-center">
-                  <span>Type</span>
+                  <span>Department</span>
+                  <ColumnFilter columnName="Department" currentValue={columnFilters.department || ''} onFilter={(val) => handleColumnFilter('department', val)} suggestions={columnSuggestions.department} />
+                </div>
+              </th>
+              <th className="px-4 py-5 border-r border-gray-50 text-center">
+                <div className="flex items-center justify-center">
+                  <span>Types</span>
                   <ColumnFilter columnName="Type" currentValue={columnFilters.type || ''} onFilter={(val) => handleColumnFilter('type', val)} suggestions={columnSuggestions.type} />
                 </div>
               </th>
               <th className="px-4 py-5 border-r border-gray-50 text-center">
                 <div className="flex items-center justify-center">
-                  <span>Group</span>
-                  <ColumnFilter columnName="Group" currentValue={columnFilters.group_name || ''} onFilter={(val) => handleColumnFilter('group_name', val)} suggestions={columnSuggestions.group_name} />
-                </div>
-              </th>
-              <th className="px-4 py-5 border-r border-gray-50 text-right">
-                <div className="flex items-center justify-end">
-                  <span>Last Price</span>
-                  <ColumnFilter columnName="Price" currentValue={columnFilters.last_price || ''} onFilter={(val) => handleColumnFilter('last_price', val)} />
-                </div>
-              </th>
-              <th className="px-4 py-5 border-r border-gray-50 text-right">
-                <div className="flex items-center justify-end">
-                  <span>Avg. Price</span>
-                  <ColumnFilter columnName="Avg Price" currentValue={columnFilters.avg_price || ''} onFilter={(val) => handleColumnFilter('avg_price', val)} />
+                  <span>Opening stock</span>
+                  <ColumnFilter columnName="Opening" currentValue={columnFilters.opening_stock || ''} onFilter={(val) => handleColumnFilter('opening_stock', val)} />
                 </div>
               </th>
               <th className="px-4 py-5 border-r border-gray-50 text-center">
                 <div className="flex items-center justify-center">
-                  <span>Safety</span>
+                  <span>Rcv_Qty.</span>
+                  <ColumnFilter columnName="Received" currentValue={columnFilters.received_qty || ''} onFilter={(val) => handleColumnFilter('received_qty', val)} />
+                </div>
+              </th>
+              <th className="px-4 py-5 border-r border-gray-50 text-center">
+                <div className="flex items-center justify-center">
+                  <span>Total_Stock Qty.</span>
+                </div>
+              </th>
+              <th className="px-4 py-5 border-r border-gray-50 text-center">
+                <div className="flex items-center justify-center">
+                  <span>Issue_Qty.</span>
+                  <ColumnFilter columnName="Issued" currentValue={columnFilters.issued_qty || ''} onFilter={(val) => handleColumnFilter('issued_qty', val)} />
+                </div>
+              </th>
+              <th className="px-4 py-5 border-r border-gray-50 text-center">
+                <div className="flex items-center justify-center">
+                  <span>Closing_Stock</span>
+                  <ColumnFilter columnName="Stock" currentValue={columnFilters.on_hand_stock || ''} onFilter={(val) => handleColumnFilter('on_hand_stock', val)} />
+                </div>
+              </th>
+              <th className="px-4 py-5 border-r border-gray-50 text-center">
+                <div className="flex items-center justify-center">
+                  <span>Safety Stock Qty.</span>
                   <ColumnFilter columnName="Safety" currentValue={columnFilters.safety_stock || ''} onFilter={(val) => handleColumnFilter('safety_stock', val)} />
                 </div>
               </th>
               <th className="px-4 py-5 border-r border-gray-50 text-center">
                 <div className="flex items-center justify-center">
-                  <span>On-Hand</span>
-                  <ColumnFilter columnName="Stock" currentValue={columnFilters.on_hand_stock || ''} onFilter={(val) => handleColumnFilter('on_hand_stock', val)} />
+                  <span>Last Issued</span>
+                </div>
+              </th>
+              <th className="px-4 py-5 border-r border-gray-50 text-center">
+                <div className="flex items-center justify-center">
+                  <span>Last Received</span>
                 </div>
               </th>
               <th className="px-4 py-5 text-center">Actions</th>
@@ -376,7 +449,7 @@ const ItemList: React.FC = () => {
           <tbody className="text-[11px] text-gray-600 font-medium">
             {loading ? (
               <tr>
-                <td colSpan={14} className="py-32 text-center text-gray-400">
+                <td colSpan={19} className="py-32 text-center text-gray-400">
                   <div className="flex flex-col items-center justify-center space-y-4">
                     <Loader2 className="animate-spin text-[#2d808e]" size={32} />
                     <span className="font-black uppercase tracking-widest text-[10px]">Querying Database...</span>
@@ -403,14 +476,19 @@ const ItemList: React.FC = () => {
                 <td className="px-4 py-4 text-center border-r border-gray-50 font-black text-gray-800">{item.code}</td>
                 <td className="px-4 py-4 text-center border-r border-gray-50 text-gray-400">{item.sku}</td>
                 <td className="px-4 py-4 font-black uppercase text-[11px] leading-tight border-r border-gray-50 text-[#2d808e]">{item.name}</td>
-                <td className="px-4 py-4 text-center border-r border-gray-50"><span className="px-2 py-1 bg-gray-100 rounded text-[9px] font-black">{item.uom}</span></td>
                 <td className="px-4 py-4 text-center border-r border-gray-50 text-gray-400">{item.location}</td>
+                <td className="px-4 py-4 text-center border-r border-gray-50"><span className="px-2 py-1 bg-gray-100 rounded text-[9px] font-black">{item.uom}</span></td>
+                <td className="px-4 py-4 text-center border-r border-gray-50 text-gray-400">{item.source || 'N/A'}</td>
+                <td className="px-4 py-4 text-center border-r border-gray-50 text-gray-400">{item.department || 'N/A'}</td>
                 <td className="px-4 py-4 text-center border-r border-gray-50">{item.type}</td>
-                <td className="px-4 py-4 text-center border-r border-gray-50">{item.group_name}</td>
-                <td className="px-4 py-4 text-right border-r border-gray-50 font-bold text-gray-700">{Number(item.last_price).toFixed(2)}</td>
-                <td className="px-4 py-4 text-right border-r border-gray-50 font-bold text-gray-700">{Number(item.avg_price).toFixed(2)}</td>
-                <td className="px-4 py-4 text-center border-r border-gray-50 font-black text-orange-600">{item.safety_stock}</td>
+                <td className="px-4 py-4 text-center border-r border-gray-50 font-bold text-gray-700">{item.opening_stock || 0}</td>
+                <td className="px-4 py-4 text-center border-r border-gray-50 font-bold text-gray-700">{item.received_qty || 0}</td>
+                <td className="px-4 py-4 text-center border-r border-gray-50 font-black text-blue-600">{(Number(item.opening_stock) || 0) + (Number(item.received_qty) || 0)}</td>
+                <td className="px-4 py-4 text-center border-r border-gray-50 font-bold text-gray-700">{item.issued_qty || 0}</td>
                 <td className="px-4 py-4 text-center border-r border-gray-50 font-black text-[#2d808e] text-[13px]">{item.on_hand_stock}</td>
+                <td className="px-4 py-4 text-center border-r border-gray-50 font-black text-orange-600">{item.safety_stock}</td>
+                <td className="px-4 py-4 text-center border-r border-gray-50 text-gray-400">{item.last_issued ? new Date(item.last_issued).toLocaleString() : 'N/A'}</td>
+                <td className="px-4 py-4 text-center border-r border-gray-50 text-gray-400">{item.last_received ? new Date(item.last_received).toLocaleString() : 'N/A'}</td>
                 <td className="px-4 py-4 text-center" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-center space-x-2">
                     <button 
@@ -440,7 +518,7 @@ const ItemList: React.FC = () => {
             ))}
             {!loading && items.length === 0 && (
               <tr>
-                <td colSpan={14} className="py-32 text-center text-gray-300 uppercase font-black tracking-widest">No matching items found</td>
+                <td colSpan={19} className="py-32 text-center text-gray-300 uppercase font-black tracking-widest">No matching items found</td>
               </tr>
             )}
           </tbody>

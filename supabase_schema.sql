@@ -20,18 +20,28 @@ CREATE TABLE IF NOT EXISTS items (
     location TEXT,
     type TEXT,
     group_name TEXT,
+    source TEXT,
+    department TEXT,
+    opening_stock INTEGER DEFAULT 0,
     last_price DECIMAL DEFAULT 0,
     avg_price DECIMAL DEFAULT 0,
     safety_stock INTEGER DEFAULT 0,
     on_hand_stock INTEGER DEFAULT 0,
     issued_qty INTEGER DEFAULT 0,
     received_qty INTEGER DEFAULT 0,
+    last_issued TIMESTAMP WITH TIME ZONE,
+    last_received TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 ALTER TABLE items ADD COLUMN IF NOT EXISTS issued_qty INTEGER DEFAULT 0;
 ALTER TABLE items ADD COLUMN IF NOT EXISTS received_qty INTEGER DEFAULT 0;
 ALTER TABLE items ADD COLUMN IF NOT EXISTS location TEXT;
+ALTER TABLE items ADD COLUMN IF NOT EXISTS source TEXT;
+ALTER TABLE items ADD COLUMN IF NOT EXISTS department TEXT;
+ALTER TABLE items ADD COLUMN IF NOT EXISTS opening_stock INTEGER DEFAULT 0;
+ALTER TABLE items ADD COLUMN IF NOT EXISTS last_issued TIMESTAMP WITH TIME ZONE;
+ALTER TABLE items ADD COLUMN IF NOT EXISTS last_received TIMESTAMP WITH TIME ZONE;
 
 -- Ensure grns table has bl_container column if it already exists
 ALTER TABLE grns ADD COLUMN IF NOT EXISTS bl_container TEXT;
@@ -46,12 +56,14 @@ BEGIN
     IF is_receive THEN
         UPDATE items 
         SET on_hand_stock = on_hand_stock + qty_change,
-            received_qty = COALESCE(received_qty, 0) + qty_change
+            received_qty = COALESCE(received_qty, 0) + qty_change,
+            last_received = NOW()
         WHERE sku = item_sku;
     ELSE
         UPDATE items 
         SET on_hand_stock = on_hand_stock + qty_change,
-            issued_qty = COALESCE(issued_qty, 0) + ABS(qty_change)
+            issued_qty = COALESCE(issued_qty, 0) + ABS(qty_change),
+            last_issued = NOW()
         WHERE sku = item_sku;
     END IF;
 END;

@@ -18,6 +18,9 @@ const NewItem: React.FC<NewItemProps> = ({ onBack, onSuccess, initialData }) => 
     location: '',
     group_name: '',
     type: '',
+    source: '',
+    department: '',
+    opening_stock: '0',
     last_price: '0.00',
     avg_price: '0.00',
     safety_stock: '0',
@@ -35,6 +38,9 @@ const NewItem: React.FC<NewItemProps> = ({ onBack, onSuccess, initialData }) => 
           location: initialData.location || '',
           group_name: initialData.group_name || '',
           type: initialData.type || '',
+          source: initialData.source || '',
+          department: initialData.department || '',
+          opening_stock: String(initialData.opening_stock || '0'),
           last_price: String(initialData.last_price || '0.00'),
           avg_price: String(initialData.avg_price || '0.00'),
           safety_stock: String(initialData.safety_stock || '0'),
@@ -59,6 +65,7 @@ const NewItem: React.FC<NewItemProps> = ({ onBack, onSuccess, initialData }) => 
     setLoading(true);
     const payload = {
       ...formData,
+      opening_stock: parseInt(formData.opening_stock) || 0,
       last_price: parseFloat(formData.last_price) || 0,
       avg_price: parseFloat(formData.avg_price) || 0,
       safety_stock: parseInt(formData.safety_stock) || 0,
@@ -206,12 +213,41 @@ const NewItem: React.FC<NewItemProps> = ({ onBack, onSuccess, initialData }) => 
                   className="w-full px-3 py-2 bg-white border border-gray-200 rounded focus:border-[#2d808e] outline-none text-[12px] font-medium transition-all"
                 />
               </div>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">Source</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Local"
+                  value={formData.source}
+                  onChange={(e) => handleInputChange('source', e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded focus:border-[#2d808e] outline-none text-[12px] font-medium transition-all"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">Department</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Maintenance"
+                  value={formData.department}
+                  onChange={(e) => handleInputChange('department', e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded focus:border-[#2d808e] outline-none text-[12px] font-medium transition-all"
+                />
+              </div>
             </div>
           </div>
 
           <div className="space-y-6">
             <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-2">Inventory & Valuation</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">Opening Stock</label>
+                <input
+                  type="number"
+                  value={formData.opening_stock}
+                  onChange={(e) => handleInputChange('opening_stock', e.target.value)}
+                  className="w-full px-3 py-2 bg-[#fcfcfc] border border-gray-200 rounded focus:border-[#2d808e] outline-none text-[12px] font-black text-center"
+                />
+              </div>
               <div className="space-y-1.5">
                 <label className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">On-Hand Stock</label>
                 <input
