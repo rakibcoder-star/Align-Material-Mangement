@@ -26,7 +26,7 @@ const IssueReport: React.FC = () => {
   const [typeWiseData, setTypeWiseData] = useState<Record<string, Record<string, number>>>({
     '1st Week': {}, '2nd Week': {}, '3rd Week': {}, '4th Week': {}
   });
-  const [deptSummaryData, setDeptSummaryData] = useState<Record<string, { items: number, qty: number, amt: number }>>({});
+  const [deptSummaryData, setDeptSummaryData] = useState<Record<string, { items: number, reqQty: number, qty: number, amt: number }>>({});
 
   const months = [
     "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
@@ -185,7 +185,7 @@ const IssueReport: React.FC = () => {
     }));
   };
 
-  const handleSummaryValueChange = (dept: string, field: 'items' | 'qty' | 'amt', value: string) => {
+  const handleSummaryValueChange = (dept: string, field: 'items' | 'reqQty' | 'qty' | 'amt', value: string) => {
     const num = parseFloat(value) || 0;
     setDeptSummaryData(prev => ({
       ...prev,
@@ -208,7 +208,7 @@ const IssueReport: React.FC = () => {
 
     // Table 1: Dept Wise
     slide1.addText('DEPARTMENT WISE ITEM ISSUED HISTORY', { 
-      x: 0.5, y: 0.8, w: 12.3, h: 0.4, fontSize: 12, bold: true, align: 'center', fill: 'B9CFED', color: '000000' 
+      x: 0.5, y: 0.8, w: 12.3, h: 0.4, fontSize: 12, bold: true, align: 'center', fill: { color: 'B9CFED' }, color: '000000' 
     });
 
     const deptHeader = ['DEPARTMENT', ...allDepartments, 'TOTAL'];
@@ -235,14 +235,14 @@ const IssueReport: React.FC = () => {
     deptTotalRow.push(grandTotal.toString());
     deptRows.push(deptTotalRow);
 
-    slide1.addTable([deptHeader.map(h => ({ text: h, options: { bold: true, align: 'center', border: { pt: 1, color: '000000' } } })), 
-      ...deptRows.map(r => r.map(c => ({ text: c, options: { align: 'center', border: { pt: 1, color: '000000' } } })))], 
+    slide1.addTable([deptHeader.map(h => ({ text: h, options: { bold: true, align: 'center' as const, border: { pt: 1, color: '000000' } } })), 
+      ...deptRows.map(r => r.map(c => ({ text: c, options: { align: 'center' as const, border: { pt: 1, color: '000000' } } })))], 
       { x: 0.5, y: 1.2, w: 12.3, fontSize: 10, border: { pt: 1, color: '000000' } }
     );
 
     // Table 2: Type Wise
     slide1.addText('ITEM TYPE WISE ISSUED HISTORY', { 
-      x: 0.5, y: 4.5, w: 12.3, h: 0.4, fontSize: 12, bold: true, align: 'center', fill: 'B9CFED', color: '000000' 
+      x: 0.5, y: 4.5, w: 12.3, h: 0.4, fontSize: 12, bold: true, align: 'center', fill: { color: 'B9CFED' }, color: '000000' 
     });
 
     const typeHeader = ['ITEM TYPE', ...allItemTypes, 'SUB-TOTAL'];
@@ -269,8 +269,8 @@ const IssueReport: React.FC = () => {
     typeTotalRow.push(typeGrandTotal.toString());
     typeRows.push(typeTotalRow);
 
-    slide1.addTable([typeHeader.map(h => ({ text: h, options: { bold: true, align: 'center', border: { pt: 1, color: '000000' } } })), 
-      ...typeRows.map(r => r.map(c => ({ text: c, options: { align: 'center', border: { pt: 1, color: '000000' } } })))], 
+    slide1.addTable([typeHeader.map(h => ({ text: h, options: { bold: true, align: 'center' as const, border: { pt: 1, color: '000000' } } })), 
+      ...typeRows.map(r => r.map(c => ({ text: c, options: { align: 'center' as const, border: { pt: 1, color: '000000' } } })))], 
       { x: 0.5, y: 4.9, w: 12.3, fontSize: 10, border: { pt: 1, color: '000000' } }
     );
 
@@ -300,8 +300,8 @@ const IssueReport: React.FC = () => {
     ];
     summaryRows.push(summaryTotal);
 
-    slide2.addTable([summaryHeader.map(h => ({ text: h, options: { fill: '4472C4', color: 'FFFFFF', bold: true, align: 'center' } })), 
-      ...summaryRows.map((r, i) => r.map(c => ({ text: c, options: { align: i === summaryRows.length - 1 ? 'center' : 'left', fill: i === summaryRows.length - 1 ? '4472C4' : undefined, color: i === summaryRows.length - 1 ? 'FFFFFF' : undefined } })))], 
+    slide2.addTable([summaryHeader.map(h => ({ text: h, options: { fill: { color: '4472C4' }, color: 'FFFFFF', bold: true, align: 'center' as const } })), 
+      ...summaryRows.map((r, i) => r.map(c => ({ text: c, options: { align: (i === summaryRows.length - 1 ? 'center' : 'left') as any, fill: i === summaryRows.length - 1 ? { color: '4472C4' } : undefined, color: i === summaryRows.length - 1 ? 'FFFFFF' : undefined } })))], 
       { x: 8.5, y: 0.8, w: 4.5, fontSize: 9 }
     );
 
