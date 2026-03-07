@@ -151,8 +151,8 @@ const MaterialsMovementForm: React.FC<MaterialsMovementFormProps> = ({ selectedI
           item_sku: item.sku,
           qty_change: -qty,
           is_receive: false,
-          ref_no: moId,
-          dept: formData.department
+          ref_no: item.moNo || 'N/A',
+          dept: item.usedDept || 'N/A'
         });
         if (error) throw error;
       }

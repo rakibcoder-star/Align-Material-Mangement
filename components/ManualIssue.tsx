@@ -78,6 +78,8 @@ const ManualIssue: React.FC<ManualIssueProps> = ({ onBack, onSubmit }) => {
 
     setIsSubmitting(true);
     try {
+      const issueId = `ISS-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      
       // MASTER LOGIC: Reduce stock for each item in DB (negative change)
       for (const item of items) {
         const qty = parseInt(item.issueQty) || 0;
@@ -86,7 +88,7 @@ const ManualIssue: React.FC<ManualIssueProps> = ({ onBack, onSubmit }) => {
           qty_change: -qty,
           is_receive: false,
           ref_no: issueId,
-          dept: formData.department
+          dept: formData.costCenter
         });
         
         // If RPC fails (e.g., doesn't exist), try direct update
