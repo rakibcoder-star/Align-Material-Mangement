@@ -358,7 +358,6 @@ const ReceiveReport: React.FC = () => {
         legendPos: 'r',
         showValue: true,
         showPercent: true,
-        showCatName: false,
         dataLabelPosition: 'outEnd',
         dataLabelFontSize: 9,
         dataLabelFormatCode: '#,##0'
