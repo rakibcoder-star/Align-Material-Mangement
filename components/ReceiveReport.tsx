@@ -312,16 +312,18 @@ const ReceiveReport: React.FC = () => {
     // Bar Chart
     slide2.addChart(pres.ChartType.bar, [
       {
-        name: 'PR Qty',
-        labels: allDepartments,
-        values: allDepartments.map(d => deptSummaryData[d]?.prQty || 0)
-      },
-      {
         name: 'Received Qty',
         labels: allDepartments,
         values: allDepartments.map(d => deptSummaryData[d]?.qty || 0)
       }
-    ], { x: 0.5, y: 1.0, w: 7.5, h: 3.0, showLegend: true, legendPos: 't', title: 'PR vs Received Quantity by Department' });
+    ], { 
+      x: 0.5, y: 1.0, w: 7.5, h: 3.0, 
+      showLegend: true, legendPos: 't', 
+      title: 'Received Quantity by Department',
+      showValue: true,
+      catGridLine: { style: 'none' },
+      valGridLine: { style: 'none' }
+    });
 
     // Line Chart
     slide2.addChart(pres.ChartType.line, [
@@ -330,7 +332,14 @@ const ReceiveReport: React.FC = () => {
         labels: allDepartments,
         values: allDepartments.map(d => deptSummaryData[d]?.amt || 0)
       }
-    ], { x: 0.5, y: 4.0, w: 7.5, h: 2.5, showLegend: true, legendPos: 't', title: 'Received Amount by Department' });
+    ], { 
+      x: 0.5, y: 4.0, w: 7.5, h: 2.5, 
+      showLegend: true, legendPos: 't', 
+      title: 'Received Amount by Department',
+      showValue: true,
+      catGridLine: { style: 'none' },
+      valGridLine: { style: 'none' }
+    });
 
     // Pie Chart
     const pieDataForPpt = allDepartments
@@ -343,7 +352,17 @@ const ReceiveReport: React.FC = () => {
           labels: pieDataForPpt,
           values: pieDataForPpt.map(d => deptSummaryData[d]?.qty || 0)
         }
-      ], { x: 8.5, y: 4.5, w: 4.5, h: 2.5, showLegend: true, legendPos: 'r' });
+      ], { 
+        x: 8.5, y: 4.5, w: 4.5, h: 2.5, 
+        showLegend: true, 
+        legendPos: 'r',
+        showValue: true,
+        showPercent: true,
+        showCatName: false,
+        dataLabelPosition: 'outEnd',
+        dataLabelFontSize: 9,
+        dataLabelFormatCode: '#,##0'
+      });
     }
 
     pres.writeFile({ fileName: `Receive_Report_${monthName}_${yearStr}.pptx` });

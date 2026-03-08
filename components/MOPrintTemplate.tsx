@@ -50,13 +50,13 @@ const MOPrintTemplate: React.FC<MOPrintTemplateProps> = ({ mo }) => {
         </div>
         <div className="space-y-1">
           <p className="flex"><span className="w-20 shrink-0">Req. Date:</span> <span className="font-medium text-gray-700">{formatDate(mo.created_at)}</span></p>
-          <p className="flex"><span className="w-20 shrink-0">Req. By:</span> <span className="font-medium text-gray-700">{mo.requested_by || 'System User'}</span></p>
+          <p className="flex"><span className="w-20 shrink-0">Req. By:</span> <span className="font-medium text-gray-700">{mo.requested_by || 'System'}</span></p>
           <p className="flex"><span className="w-20 shrink-0">Dept.:</span> <span className="font-medium text-gray-700 uppercase">{mo.department || 'N/A'}</span></p>
         </div>
         <div className="space-y-1">
           <p className="flex"><span className="w-24 shrink-0">Updated At:</span> <span className="font-medium text-gray-700">{formatDate(mo.updated_at || mo.created_at)}</span></p>
           <p className="flex"><span className="w-24 shrink-0">Status:</span> <span className="font-medium text-emerald-600">{mo.status || 'Pending'}</span></p>
-          <p className="flex"><span className="w-24 shrink-0">Updated By:</span> <span className="font-medium text-gray-700">{mo.updated_by || 'System Administrator'}</span></p>
+          <p className="flex"><span className="w-24 shrink-0">Updated By:</span> <span className="font-medium text-gray-700">{mo.updated_by || 'System'}</span></p>
         </div>
       </div>
 
@@ -115,10 +115,10 @@ const MOPrintTemplate: React.FC<MOPrintTemplateProps> = ({ mo }) => {
       {/* Signature Section */}
       <div className="grid grid-cols-4 gap-12 mt-20 px-4">
         {[
-          { label: 'Prepared By', name: mo.requested_by || 'Rakibul Hassan' },
-          { label: 'Checked By', name: mo.updated_by || 'Md Azizul Hakim' },
-          { label: 'Confirmed By', name: mo.updated_by || 'Md Azizul Hakim' },
-          { label: 'Approved By', name: mo.updated_by || 'Md Azizul Hakim' },
+          { label: 'Prepared By', name: mo.requested_by || 'System' },
+          { label: 'Checked By', name: mo.updated_by || 'System' },
+          { label: 'Confirmed By', name: mo.updated_by || 'System' },
+          { label: 'Approved By', name: mo.updated_by || 'System' },
         ].map((sig, i) => (
           <div key={i} className="text-center flex flex-col items-center">
             <div className="border-t border-black w-full pt-1.5 mb-1">

@@ -63,6 +63,7 @@ const MOReport: React.FC = () => {
               issueValue: (Number(item.issuedQty || 0)) * (Number(item.unitPrice) || 0),
               status: mo.status,
               createdBy: mo.requested_by || 'System',
+              updatedBy: mo.updated_by || 'System',
               fullMo: mo // Keep reference to original object for details view
             });
           });
@@ -287,7 +288,7 @@ const MOReport: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-3 py-3 border-r border-gray-50 text-center whitespace-nowrap text-gray-400 font-bold uppercase">{row.createdBy}</td>
-                    <td className="px-3 py-3 text-center whitespace-nowrap text-gray-400 font-bold uppercase">System</td>
+                    <td className="px-3 py-3 text-center whitespace-nowrap text-gray-400 font-bold uppercase">{row.updatedBy}</td>
                   </tr>
                 ))
               ) : (

@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 
 interface MOApprovalModalProps {
   mo: any;
@@ -10,6 +11,7 @@ interface MOApprovalModalProps {
 }
 
 const MOApprovalModal: React.FC<MOApprovalModalProps> = ({ mo, isOpen, onClose }) => {
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen || !mo) return null;
@@ -23,7 +25,11 @@ const MOApprovalModal: React.FC<MOApprovalModalProps> = ({ mo, isOpen, onClose }
     try {
       const { error } = await supabase
         .from('move_orders')
-        .update({ status: 'Approved' })
+        .update({ 
+          status: 'Approved',
+          updated_at: new Date().toISOString(),
+          updated_by: user?.fullName || 'System'
+        })
         .eq('id', mo.id);
 
       if (error) throw error;
@@ -40,7 +46,11 @@ const MOApprovalModal: React.FC<MOApprovalModalProps> = ({ mo, isOpen, onClose }
     try {
       const { error } = await supabase
         .from('move_orders')
-        .update({ status: 'On Hold' })
+        .update({ 
+          status: 'On Hold',
+          updated_at: new Date().toISOString(),
+          updated_by: user?.fullName || 'System'
+        })
         .eq('id', mo.id);
 
       if (error) throw error;

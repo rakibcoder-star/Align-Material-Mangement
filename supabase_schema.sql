@@ -98,9 +98,14 @@ CREATE TABLE IF NOT EXISTS move_orders (
     status TEXT DEFAULT 'Pending',
     total_value DECIMAL DEFAULT 0,
     items JSONB DEFAULT '[]'::jsonb,
+    requested_by TEXT,
+    updated_by TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+ALTER TABLE move_orders ADD COLUMN IF NOT EXISTS requested_by TEXT;
+ALTER TABLE move_orders ADD COLUMN IF NOT EXISTS updated_by TEXT;
 
 -- 5. Cost Centers Table
 CREATE TABLE IF NOT EXISTS cost_centers (

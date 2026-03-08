@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Trash2, Plus, ScanLine, Loader2, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 import ScannerModal from './ScannerModal';
 
 interface MoveOrderItem {
@@ -21,6 +22,7 @@ interface MoveOrderModalProps {
 }
 
 const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
+  const { user } = useAuth();
   const [items, setItems] = useState<MoveOrderItem[]>([
     { id: '1', name: '', sku: '', uom: '', onHand: '', reqQty: '', unitPrice: 0, remarks: '' }
   ]);
@@ -141,7 +143,8 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
         department: department,
         total_value: totalValue,
         items: items,
-        status: 'Pending'
+        status: 'Pending',
+        requested_by: user?.fullName || 'System'
       }]);
 
       if (error) throw error;

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Trash2, Search, ChevronDown, Inbox, ChevronLeft, ChevronRight, Loader2, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 
 interface MovementItem {
   id: string;
@@ -32,6 +33,7 @@ interface MaterialsMovementFormProps {
 }
 
 const MaterialsMovementForm: React.FC<MaterialsMovementFormProps> = ({ selectedItems, onCancel, onSubmit }) => {
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [allLocations, setAllLocations] = useState<string[]>([]);
   const [showNotification, setShowNotification] = useState<NotificationData | null>(null);
@@ -182,7 +184,8 @@ const MaterialsMovementForm: React.FC<MaterialsMovementFormProps> = ({ selectedI
             status: 'Completed',
             items: moItems, 
             department: updatedDept, // Save the corrected department
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
+            updated_by: user?.fullName || 'System'
           })
           .eq('id', moId);
         
