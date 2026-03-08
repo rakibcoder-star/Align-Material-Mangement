@@ -66,8 +66,8 @@ BEGIN
             last_price = COALESCE(unit_price, last_price)
         WHERE sku = item_sku;
 
-        INSERT INTO transactions (item_sku, item_code, type, quantity, reference_no, department)
-        VALUES (item_sku, v_item_code, 'Receive', qty_change, ref_no, dept);
+        INSERT INTO transactions (item_sku, item_code, type, quantity, reference_no, department, unit_price)
+        VALUES (item_sku, v_item_code, 'Receive', qty_change, ref_no, dept, COALESCE(unit_price, 0));
     ELSE
         UPDATE items 
         SET on_hand_stock = on_hand_stock + qty_change,
@@ -75,8 +75,9 @@ BEGIN
             last_issued = NOW()
         WHERE sku = item_sku;
 
-        INSERT INTO transactions (item_sku, item_code, type, quantity, reference_no, department)
-        VALUES (item_sku, v_item_code, 'Issue', ABS(qty_change), ref_no, dept);
+        INSERT INTO transactions (item_sku, item_code, type, quantity, reference_no, department, unit_price)
+        SELECT item_sku, v_item_code, 'Issue', ABS(qty_change), ref_no, dept, avg_price
+        FROM items WHERE sku = item_sku;
     END IF;
 END;
 $function$;
@@ -242,10 +243,13 @@ CREATE TABLE IF NOT EXISTS transactions (
     item_code TEXT,
     type TEXT NOT NULL, -- 'Receive' or 'Issue'
     quantity INTEGER NOT NULL,
+    unit_price DECIMAL DEFAULT 0,
     reference_no TEXT,
     department TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS unit_price DECIMAL DEFAULT 0;
 
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow all" ON transactions;

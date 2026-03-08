@@ -132,7 +132,7 @@ const IssueReport: React.FC = () => {
         const item = itemMap[tnx.item_sku] || {};
         const type = item.type || 'OTHERS';
         const qty = Number(tnx.quantity) || 0;
-        const price = Number(item.avg_price) || 0;
+        const price = Number(tnx.unit_price) || Number(item.avg_price) || 0;
         const amt = qty * price;
 
         newDeptWise[week][dept] = (newDeptWise[week][dept] || 0) + qty;
