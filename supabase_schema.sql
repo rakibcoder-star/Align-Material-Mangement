@@ -9,6 +9,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- 1. CLEANUP: Drop existing versions of update_item_stock to avoid signature conflicts
 DROP FUNCTION IF EXISTS public.update_item_stock(text, integer);
 DROP FUNCTION IF EXISTS public.update_item_stock(text, integer, boolean);
+DROP FUNCTION IF EXISTS public.update_item_stock(text, integer, boolean, text, text);
 
 -- 2. Ensure the items table has all required columns for inventory tracking
 CREATE TABLE IF NOT EXISTS items (
@@ -60,7 +61,12 @@ BEGIN
 
     IF is_receive THEN
         UPDATE items 
-        SET on_hand_stock = on_hand_stock + qty_change,
+        SET avg_price = CASE 
+                WHEN (on_hand_stock + qty_change) > 0 
+                THEN ((COALESCE(on_hand_stock, 0) * COALESCE(avg_price, last_price, 0)) + (qty_change * COALESCE(unit_price, 0))) / (COALESCE(on_hand_stock, 0) + qty_change)
+                ELSE COALESCE(unit_price, avg_price, last_price, 0)
+            END,
+            on_hand_stock = on_hand_stock + qty_change,
             received_qty = COALESCE(received_qty, 0) + qty_change,
             last_received = NOW(),
             last_price = COALESCE(unit_price, last_price)
@@ -76,7 +82,7 @@ BEGIN
         WHERE sku = item_sku;
 
         INSERT INTO transactions (item_sku, item_code, type, quantity, reference_no, department, unit_price)
-        SELECT item_sku, v_item_code, 'Issue', ABS(qty_change), ref_no, dept, avg_price
+        SELECT item_sku, v_item_code, 'Issue', ABS(qty_change), ref_no, dept, COALESCE(avg_price, last_price, 0)
         FROM items WHERE sku = item_sku;
     END IF;
 END;

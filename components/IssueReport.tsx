@@ -85,7 +85,7 @@ const IssueReport: React.FC = () => {
       if (skus.length > 0) {
         const { data: itemData } = await supabase
           .from('items')
-          .select('sku, name, type, avg_price')
+          .select('sku, name, type, avg_price, last_price')
           .in('sku', skus);
         
         itemMap = (itemData || []).reduce((acc: any, item: any) => {
@@ -132,7 +132,7 @@ const IssueReport: React.FC = () => {
         const item = itemMap[tnx.item_sku] || {};
         const type = item.type || 'OTHERS';
         const qty = Number(tnx.quantity) || 0;
-        const price = Number(tnx.unit_price) || Number(item.avg_price) || 0;
+        const price = Number(item.last_price) || 0; // Source from ITEM-MASTER Last Price
         const amt = qty * price;
 
         newDeptWise[week][dept] = (newDeptWise[week][dept] || 0) + qty;
