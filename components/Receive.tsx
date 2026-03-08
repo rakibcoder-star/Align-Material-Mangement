@@ -43,6 +43,7 @@ const Receive: React.FC = () => {
                 unitPrice: item.unitPrice || 0,
                 grnQty: 0, 
                 reqBy: item.reqBy || 'N/A',
+                reqDept: item.reqDept || 'N/A',
                 supplier: po.supplier_name
               });
             }

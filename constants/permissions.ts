@@ -71,6 +71,8 @@ export const PERMISSION_MODULES: ModuleConfig[] = [
   // Analysis
   { id: 'low_stock_inventory', label: 'Low Stock Inventory', category: 'Analysis' },
   { id: 'abc_analysis', label: 'ABC Analysis', category: 'Analysis' },
+  { id: 'issue_report', label: 'Issue Report', category: 'Analysis' },
+  { id: 'receive_report', label: 'Receive Report', category: 'Analysis' },
   
   // System Administration
   { id: 'user_management', label: 'User Management', category: 'System Administration' },

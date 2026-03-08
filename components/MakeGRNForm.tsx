@@ -16,6 +16,7 @@ interface GRNItem {
   grnPrice: number;
   grnQty: number;
   location: string;
+  reqDept?: string;
   masterLocation?: string;
   masterStock?: number;
   remarks: string;
@@ -107,6 +108,7 @@ const MakeGRNForm: React.FC<MakeGRNFormProps> = ({ selectedItems, onClose, onSub
           grnPrice: item.unitPrice || 0,
           grnQty: item.poQty - (item.alreadyReceived || 0),
           location: locationDisplay,
+          reqDept: item.reqDept || 'N/A',
           masterLocation: master.location,
           masterStock: master.stock,
           remarks: ''
@@ -160,7 +162,8 @@ const MakeGRNForm: React.FC<MakeGRNFormProps> = ({ selectedItems, onClose, onSub
           item_sku: item.sku,
           qty_change: Number(item.grnQty),
           is_receive: true,
-          ref_no: grnId
+          ref_no: grnId,
+          dept: item.reqDept
         });
         
         // If RPC fails (e.g., doesn't exist), try direct update

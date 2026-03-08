@@ -20,7 +20,7 @@ const POPrintTemplate: React.FC<POPrintTemplateProps> = ({ po, onPoChange, isPri
   const formatCurrency = (num: number) => num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   // Strictly map status for visualization: only Approved or Pending
-  const displayStatus = (po.status === 'Approved' || po.status === 'Open') ? 'Approved' : 'Pending';
+  const displayStatus = (['Approved', 'Open', 'Closed', 'APPROVED', 'OPEN', 'CLOSED'].includes(po.status)) ? 'Approved' : 'Pending';
 
   return (
     <div className="p-10 bg-white text-black font-roboto min-h-screen text-[12px] leading-relaxed">
@@ -70,7 +70,7 @@ const POPrintTemplate: React.FC<POPrintTemplateProps> = ({ po, onPoChange, isPri
         <div className="space-y-1">
           <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">Issue Date:</span> <span className="text-gray-700">{new Date(po.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span></p>
           <p className="flex items-baseline"><span className="font-bold w-24 shrink-0">Delivery Date:</span> <span className="text-gray-700">{terms.deliveryTarget || 'N/A'}</span></p>
-          <p className={`flex items-baseline ${po.status === 'Approved' ? 'hidden' : ''}`}>
+          <p className={`flex items-baseline ${['Approved', 'Ordered', 'Closed', 'APPROVED', 'ORDERED', 'CLOSED'].includes(po.status) ? 'hidden' : ''}`}>
             <span className="font-bold w-24 shrink-0">PO Status:</span> 
             <span className={`font-black uppercase ${displayStatus === 'Approved' ? 'text-green-600' : 'text-orange-600'}`}>
               {displayStatus}

@@ -26,6 +26,7 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingSku, setLoadingSku] = useState<string | null>(null);
   const [allLocations, setAllLocations] = useState<{name: string, count: number}[]>([]);
+  const [allDepartments, setAllDepartments] = useState<string[]>([]);
   const [showSuccess, setShowSuccess] = useState(false);
   const [grnId, setGrnId] = useState('');
 
@@ -64,12 +65,19 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
       }
     };
     fetchLocations();
+
+    const fetchDepts = async () => {
+      const { data } = await supabase.from('cost_centers').select('name').order('name');
+      if (data) setAllDepartments(data.map(d => d.name));
+    };
+    fetchDepts();
   }, []);
   
   const [formData, setFormData] = useState({
     documentDate: new Date().toISOString().split('T')[0],
     receiveDate: new Date().toISOString().split('T')[0],
     transactionType: '',
+    department: '',
     sourceType: '',
     sourceRef: '',
     headerText: '',
@@ -149,7 +157,8 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
           item_sku: item.sku,
           qty_change: qty,
           is_receive: true,
-          ref_no: grnId
+          ref_no: grnId,
+          dept: formData.department
         });
         
         // If RPC fails (e.g., doesn't exist), try direct update
@@ -281,6 +290,19 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
               />
               <span className="absolute right-2 top-2.5 text-[8px] font-bold text-gray-300">{formData.headerText.length} / 50</span>
             </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-black text-[#2d808e] uppercase">Department</label>
+            <select 
+              value={formData.department}
+              onChange={(e) => setFormData({...formData, department: e.target.value})}
+              className="w-full px-3 py-2 border border-cyan-700/30 rounded text-[11px] outline-none bg-white"
+            >
+              <option value="">Select Department</option>
+              {allDepartments.map(dept => (
+                <option key={dept} value={dept}>{dept}</option>
+              ))}
+            </select>
           </div>
           <div className="space-y-1.5">
             <label className="text-[11px] font-black text-[#2d808e] uppercase">Invoice No</label>

@@ -30,6 +30,7 @@ import GRNPreviewModal from './GRNPreviewModal';
 import LowStockInventory from './LowStockInventory';
 import ABCAnalysis from './ABCAnalysis';
 import IssueReport from './IssueReport';
+import ReceiveReport from './ReceiveReport';
 import { supabase } from '../lib/supabase';
 import { 
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -1185,7 +1186,8 @@ const Dashboard: React.FC = () => {
           >
             {hasGranularPermission('low_stock_inventory', 'view') && <SubmenuItem icon={<ShieldAlert />} label="Low Stock Inventory" active={activeTab === 'low-stock'} onClick={() => menuNavigate('/low-stock')} />}
             {hasGranularPermission('abc_analysis', 'view') && <SubmenuItem icon={<TrendingUp />} label="ABC Analysis" active={activeTab === 'abc-analysis'} onClick={() => menuNavigate('/abc-analysis')} />}
-            <SubmenuItem icon={<FileText />} label="Issue Report" active={activeTab === 'issue-report'} onClick={() => menuNavigate('/issue-report')} />
+            {hasGranularPermission('issue_report', 'view') && <SubmenuItem icon={<FileText />} label="Issue Report" active={activeTab === 'issue-report'} onClick={() => menuNavigate('/issue-report')} />}
+            {hasGranularPermission('receive_report', 'view') && <SubmenuItem icon={<FileText />} label="Receive Report" active={activeTab === 'receive-report'} onClick={() => menuNavigate('/receive-report')} />}
           </SidebarItem>
         )}
 
@@ -1271,7 +1273,8 @@ const Dashboard: React.FC = () => {
               <Route path="/users" element={<UserManagement />} /><Route path="/requisition" element={<PurchaseRequisition />} /><Route path="/purchase-order" element={<PurchaseOrder />} /><Route path="/supplier" element={<Supplier />} /><Route path="/purchase-report" element={<PurchaseReport />} /><Route path="/inventory" element={<Inventory />} /><Route path="/receive" element={<Receive />} /><Route path="/issue" element={<Issue />} /><Route path="/tnx-report" element={<TnxReport />} /><Route path="/mo-report" element={<MOReport />} /><Route path="/item-list" element={<ItemList />} /><Route path="/item-uom" element={<ItemUOM />} /><Route path="/item-group" element={<ItemGroup />} /><Route path="/item-type" element={<ItemType />} /><Route path="/cost-center" element={<CostCenter />} /><Route path="/label" element={<LabelManagement />} />              <Route path="/cycle-counting" element={<CycleCounting />} />
               <Route path="/low-stock" element={hasGranularPermission('low_stock_inventory', 'view') ? <LowStockInventory /> : <Navigate to="/overview" replace />} />
               <Route path="/abc-analysis" element={hasGranularPermission('abc_analysis', 'view') ? <ABCAnalysis /> : <Navigate to="/overview" replace />} />
-              <Route path="/issue-report" element={<IssueReport />} />
+              <Route path="/issue-report" element={hasGranularPermission('issue_report', 'view') ? <IssueReport /> : <Navigate to="/overview" replace />} />
+              <Route path="/receive-report" element={hasGranularPermission('receive_report', 'view') ? <ReceiveReport /> : <Navigate to="/overview" replace />} />
               <Route path="/" element={<Navigate to="/overview" replace />} />
             </Routes>
           </div>
