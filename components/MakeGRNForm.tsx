@@ -163,7 +163,8 @@ const MakeGRNForm: React.FC<MakeGRNFormProps> = ({ selectedItems, onClose, onSub
           qty_change: Number(item.grnQty),
           is_receive: true,
           ref_no: grnId,
-          dept: item.reqDept
+          dept: item.reqDept,
+          unit_price: Number(item.grnPrice)
         });
         
         // If RPC fails (e.g., doesn't exist), try direct update

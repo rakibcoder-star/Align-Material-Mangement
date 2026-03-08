@@ -144,6 +144,7 @@ const ItemList: React.FC = () => {
       'Source': item.source || 'N/A',
       'Department': item.department || 'N/A',
       'Types': item.type,
+      'Last Price': item.last_price || 0,
       'Opening stock': item.opening_stock || 0,
       'Rcv_Qty.': item.received_qty || 0,
       'Total_Stock Qty.': (Number(item.opening_stock) || 0) + (Number(item.received_qty) || 0),
@@ -513,6 +514,12 @@ const ItemList: React.FC = () => {
               </th>
               <th className="px-4 py-5 border-r border-gray-50 text-center">
                 <div className="flex items-center justify-center">
+                  <span>Last Price</span>
+                  <ColumnFilter columnName="Last Price" currentValue={columnFilters.last_price || ''} onFilter={(val) => handleColumnFilter('last_price', val)} />
+                </div>
+              </th>
+              <th className="px-4 py-5 border-r border-gray-50 text-center">
+                <div className="flex items-center justify-center">
                   <span>Opening stock</span>
                   <ColumnFilter columnName="Opening" currentValue={columnFilters.opening_stock || ''} onFilter={(val) => handleColumnFilter('opening_stock', val)} />
                 </div>
@@ -562,7 +569,7 @@ const ItemList: React.FC = () => {
           <tbody className="text-[11px] text-gray-600 font-medium">
             {loading ? (
               <tr>
-                <td colSpan={19} className="py-32 text-center text-gray-400">
+                <td colSpan={20} className="py-32 text-center text-gray-400">
                   <div className="flex flex-col items-center justify-center space-y-4">
                     <Loader2 className="animate-spin text-[#2d808e]" size={32} />
                     <span className="font-black uppercase tracking-widest text-[10px]">Querying Database...</span>
@@ -594,6 +601,7 @@ const ItemList: React.FC = () => {
                 <td className="px-4 py-4 text-center border-r border-gray-50 text-gray-400">{item.source || 'N/A'}</td>
                 <td className="px-4 py-4 text-center border-r border-gray-50 text-gray-400">{item.department || 'N/A'}</td>
                 <td className="px-4 py-4 text-center border-r border-gray-50">{item.type}</td>
+                <td className="px-4 py-4 text-center border-r border-gray-50 font-bold text-emerald-600">{Number(item.last_price || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                 <td className="px-4 py-4 text-center border-r border-gray-50 font-bold text-gray-700">{item.opening_stock || 0}</td>
                 <td className="px-4 py-4 text-center border-r border-gray-50 font-bold text-gray-700">{item.received_qty || 0}</td>
                 <td className="px-4 py-4 text-center border-r border-gray-50 font-black text-blue-600">{(Number(item.opening_stock) || 0) + (Number(item.received_qty) || 0)}</td>
@@ -631,7 +639,7 @@ const ItemList: React.FC = () => {
             ))}
             {!loading && items.length === 0 && (
               <tr>
-                <td colSpan={19} className="py-32 text-center text-gray-300 uppercase font-black tracking-widest">No matching items found</td>
+                <td colSpan={20} className="py-32 text-center text-gray-300 uppercase font-black tracking-widest">No matching items found</td>
               </tr>
             )}
           </tbody>

@@ -158,7 +158,8 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
           qty_change: qty,
           is_receive: true,
           ref_no: grnId,
-          dept: formData.department
+          dept: formData.department,
+          unit_price: parseFloat(item.unitPrice) || 0
         });
         
         // If RPC fails (e.g., doesn't exist), try direct update

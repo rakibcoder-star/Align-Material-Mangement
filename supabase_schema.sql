@@ -47,7 +47,7 @@ ALTER TABLE items ADD COLUMN IF NOT EXISTS last_received TIMESTAMP WITH TIME ZON
 ALTER TABLE grns ADD COLUMN IF NOT EXISTS bl_container TEXT;
 
 -- 3. Standardize the update_item_stock function
-CREATE OR REPLACE FUNCTION public.update_item_stock(item_sku text, qty_change integer, is_receive boolean, ref_no text DEFAULT NULL, dept text DEFAULT NULL)
+CREATE OR REPLACE FUNCTION public.update_item_stock(item_sku text, qty_change integer, is_receive boolean, ref_no text DEFAULT NULL, dept text DEFAULT NULL, unit_price decimal DEFAULT NULL)
  RETURNS void
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -62,7 +62,8 @@ BEGIN
         UPDATE items 
         SET on_hand_stock = on_hand_stock + qty_change,
             received_qty = COALESCE(received_qty, 0) + qty_change,
-            last_received = NOW()
+            last_received = NOW(),
+            last_price = COALESCE(unit_price, last_price)
         WHERE sku = item_sku;
 
         INSERT INTO transactions (item_sku, item_code, type, quantity, reference_no, department)
