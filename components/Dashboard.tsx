@@ -139,7 +139,7 @@ const SubmenuItem: React.FC<{
 
 const KPICard: React.FC<{ label: string; value: string; subValue?: string }> = ({ label, value, subValue }) => (
   <div className="bg-white p-4 rounded-xl border border-gray-100 flex flex-col justify-between shadow-sm hover:shadow-md transition-all group border-b-4 border-b-[#2d808e]/10 hover:border-b-[#2d808e]">
-    <h3 className="text-xs text-gray-400 font-medium uppercase mb-2">{label}</h3>
+    <h3 className="text-xs text-[#2d808e] font-bold uppercase mb-2">{label}</h3>
     <div className="flex items-baseline space-x-2">
       <p className="text-2xl font-bold text-gray-800 group-hover:text-[#2d808e] transition-colors">{value}</p>
       {subValue && <p className="text-sm font-medium text-gray-300">({subValue})</p>}
@@ -256,20 +256,20 @@ const DashboardOverview: React.FC<{
   const canActionLocTransfer = hasGranularPermission('dash_action_loc_transfer', 'view');
 
   const fetchDashboardData = async () => {
-    const { data: prApprovals } = await supabase.from('requisitions').select('*').eq('status', 'Pending').order('created_at', { ascending: false }).limit(5);
+    const { data: prApprovals } = await supabase.from('requisitions').select('*').eq('status', 'Pending').order('created_at', { ascending: false });
     if (prApprovals) setPendingPrs(prApprovals);
-    const { data: poApprovals } = await supabase.from('purchase_orders').select('*').in('status', ['Pending', 'Pending Approval']).order('created_at', { ascending: false }).limit(5);
+    const { data: poApprovals } = await supabase.from('purchase_orders').select('*').in('status', ['Pending', 'Pending Approval']).order('created_at', { ascending: false });
     if (poApprovals) setPendingPos(poApprovals);
-    const { data: moApprovals } = await supabase.from('move_orders').select('*').eq('status', 'Pending').order('created_at', { ascending: false }).limit(5);
+    const { data: moApprovals } = await supabase.from('move_orders').select('*').eq('status', 'Pending').order('created_at', { ascending: false });
     if (moApprovals) setPendingMos(moApprovals);
-    const { data: prLogs } = await supabase.from('requisitions').select('*').order('created_at', { ascending: false }).limit(5);
+    const { data: prLogs } = await supabase.from('requisitions').select('*').order('created_at', { ascending: false });
     if (prLogs) setLatestPRs(prLogs);
-    const { data: moLogs } = await supabase.from('move_orders').select('*').order('created_at', { ascending: false }).limit(5);
+    const { data: moLogs } = await supabase.from('move_orders').select('*').order('created_at', { ascending: false });
     if (moLogs) setLatestMOs(moLogs);
-    const { data: grnLogs, error: grnError } = await supabase.from('grns').select('*').order('created_at', { ascending: false }).limit(5);
+    const { data: grnLogs, error: grnError } = await supabase.from('grns').select('*').order('created_at', { ascending: false });
     if (grnError) console.error('Error fetching GRNs:', grnError);
     if (grnLogs) setLatestGRNs(grnLogs);
-    const { data: poLogs, error: poError } = await supabase.from('purchase_orders').select('*').order('created_at', { ascending: false }).limit(5);
+    const { data: poLogs, error: poError } = await supabase.from('purchase_orders').select('*').order('created_at', { ascending: false });
     if (poError) console.error('Error fetching POs:', poError);
     if (poLogs) setLatestPOs(poLogs);
 
@@ -410,7 +410,7 @@ const DashboardOverview: React.FC<{
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {canViewPrApprovals && (
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col shadow-sm">
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between"><h3 className="text-xs font-bold text-gray-800 uppercase">PR Approvals</h3><span className="px-2 py-0.5 bg-orange-50 text-orange-600 text-[10px] font-bold rounded-full uppercase">{pendingPrs.length} Pending</span></div>
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between"><h3 className="text-xs font-bold text-[#2d808e] uppercase">PR Approvals</h3><span className="px-2 py-0.5 bg-orange-50 text-orange-600 text-[10px] font-bold rounded-full uppercase">{pendingPrs.length} Pending</span></div>
             <div className="overflow-y-auto max-h-[220px] scrollbar-thin">
               {pendingPrs.length === 0 ? (
                 <div className="p-8 text-center">
@@ -437,7 +437,7 @@ const DashboardOverview: React.FC<{
         )}
         {canViewPoApprovals && (
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col shadow-sm">
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between"><h3 className="text-xs font-bold text-gray-800 uppercase">PO Approvals</h3><span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-full uppercase">{pendingPos.length} Pending</span></div>
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between"><h3 className="text-xs font-bold text-[#2d808e] uppercase">PO Approvals</h3><span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-full uppercase">{pendingPos.length} Pending</span></div>
             <div className="overflow-y-auto max-h-[220px] scrollbar-thin">
               {pendingPos.length === 0 ? (
                 <div className="p-8 text-center">
@@ -464,7 +464,7 @@ const DashboardOverview: React.FC<{
         )}
         {canViewMoApprovals && (
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col shadow-sm">
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between"><h3 className="text-xs font-bold text-gray-800 uppercase">MO Approvals</h3><span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded-full uppercase">{pendingMos.length} Pending</span></div>
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between"><h3 className="text-xs font-bold text-[#2d808e] uppercase">MO Approvals</h3><span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded-full uppercase">{pendingMos.length} Pending</span></div>
             <div className="overflow-y-auto max-h-[220px] scrollbar-thin">
               {pendingMos.length === 0 ? (
                 <div className="p-8 text-center">
@@ -493,7 +493,7 @@ const DashboardOverview: React.FC<{
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {canViewChartWeekly && (
           <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-            <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest mb-6">Daily Movement Analytics</h3>
+            <h3 className="text-xs font-black text-[#2d808e] uppercase tracking-widest mb-6">Daily Movement Analytics</h3>
             <div className="h-52">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={weeklyData}>
@@ -515,7 +515,7 @@ const DashboardOverview: React.FC<{
         )}
         {canViewChartAnnual && (
           <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-            <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest mb-6">Annual Valuation Trend</h3>
+            <h3 className="text-xs font-black text-[#2d808e] uppercase tracking-widest mb-6">Annual Valuation Trend</h3>
             <div className="h-52">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={monthlyData}>
@@ -533,7 +533,7 @@ const DashboardOverview: React.FC<{
         )}
         {canViewChartPo && (
           <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-            <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest mb-6">Daily Movement by Cost Center</h3>
+            <h3 className="text-xs font-black text-[#2d808e] uppercase tracking-widest mb-6">Daily Movement by Cost Center</h3>
             <div className="h-52">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={costCenterData}>
@@ -558,7 +558,7 @@ const DashboardOverview: React.FC<{
         )}
         {canViewChartGrn && (
           <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-            <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest mb-6">Daily GRN Analytics</h3>
+            <h3 className="text-xs font-black text-[#2d808e] uppercase tracking-widest mb-6">Daily GRN Analytics</h3>
             <div className="h-52">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={weeklyGrnData}>
@@ -585,7 +585,7 @@ const DashboardOverview: React.FC<{
         {canViewGaugeOctane && <LiquidGauge label="OCTANE" value={octaneStock} subLabel="3121" color="#2589ff" colorLight="#8ebfff" />}
         {canViewChartSegmentation && (
           <div className="bg-white p-6 rounded-2xl border border-gray-100 flex flex-col shadow-sm">
-            <h3 className="text-xs font-bold text-gray-800 uppercase mb-6 text-center">Stock Segmentation</h3>
+            <h3 className="text-xs font-bold text-[#2d808e] uppercase mb-6 text-center">Stock Segmentation</h3>
             <div className="flex flex-1 items-center justify-around gap-4">
               <div className="h-40 w-1/2">
                 <ResponsiveContainer width="100%" height="100%">
@@ -621,7 +621,7 @@ const DashboardOverview: React.FC<{
         {canViewTableMo && (
           <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm flex flex-col min-h-[400px]">
             <h2 className="text-xl font-bold text-[#2d808e] mb-6">Latest Move orders</h2>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="text-[10px] font-medium text-gray-400 border-b border-gray-50 uppercase">
@@ -663,7 +663,7 @@ const DashboardOverview: React.FC<{
         {canViewTablePr && (
           <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm flex flex-col min-h-[400px]">
             <h2 className="text-xl font-black text-[#2d808e] mb-6 tracking-tight">Latest PR</h2>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="text-[10px] font-black text-gray-400 border-b border-gray-50 uppercase tracking-wider">
@@ -712,7 +712,7 @@ const DashboardOverview: React.FC<{
         {canViewTableGrn && (
           <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm flex flex-col min-h-[400px]">
             <h2 className="text-xl font-black text-[#2d808e] mb-6 tracking-tight">Latest GRN</h2>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="text-[10px] font-black text-gray-400 border-b border-gray-50 uppercase tracking-wider">
@@ -752,7 +752,7 @@ const DashboardOverview: React.FC<{
         {canViewTablePo && (
           <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm flex flex-col min-h-[400px]">
             <h2 className="text-xl font-black text-[#2d808e] mb-6 tracking-tight">Latest PO</h2>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="text-[10px] font-black text-gray-400 border-b border-gray-50 uppercase tracking-wider">
@@ -1157,7 +1157,7 @@ const Dashboard: React.FC = () => {
         </div>
         {!isSidebarCollapsed && (
           <>
-            <h3 className="text-[13px] font-black text-gray-800 uppercase tracking-tight">{user?.fullName || 'SYSTEM ADMIN'}</h3>
+            <h3 className="text-[13px] font-black text-[#2d808e] uppercase tracking-tight">{user?.fullName || 'SYSTEM ADMIN'}</h3>
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">{user?.roleTemplate || user?.role || 'ADMINISTRATOR'}</p>
           </>
         )}
@@ -1291,7 +1291,7 @@ const Dashboard: React.FC = () => {
         <header className="h-12 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-30 shrink-0">
           <div className="flex items-center gap-2 md:gap-6">
             <button onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} className="p-1.5 hover:bg-gray-50 rounded-lg text-[#2d808e] transition-all"><Menu size={20} /></button>
-            <div onClick={() => navigate('/overview')} className="text-lg md:text-xl font-black text-gray-800 tracking-tighter cursor-pointer select-none">ALIGN</div>
+            <div onClick={() => navigate('/overview')} className="text-lg md:text-xl font-black text-[#2d808e] tracking-tighter cursor-pointer select-none">ALIGN</div>
           </div>
           <div ref={searchContainerRef} className="hidden md:block flex-1 max-w-[600px] mx-4 lg:mx-10 relative">
             <div className="bg-[#f8f9fa] rounded-xl flex items-center px-4 py-1 border border-transparent focus-within:border-[#2d808e]/30 focus-within:bg-white focus-within:shadow-lg transition-all">
