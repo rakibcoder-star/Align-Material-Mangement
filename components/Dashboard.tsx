@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import CycleCounting from './CycleCounting';
@@ -215,6 +215,12 @@ const DashboardOverview: React.FC<{
   const [costCenterData, setCostCenterData] = useState<any[]>([]);
   const [weeklyGrnData, setWeeklyGrnData] = useState<any[]>([]);
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
+  
+  const [dailyStartDate, setDailyStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 7)).toISOString().split('T')[0]);
+  const [dailyEndDate, setDailyEndDate] = useState(new Date().toISOString().split('T')[0]);
+  const [valuationYear, setValuationYear] = useState(new Date().getFullYear().toString());
+  const [valuationMonth, setValuationMonth] = useState('ALL');
+
   const [stats, setStats] = useState({
     todayOrderQty: '0', todayOrderCount: '0',
     lastDayOrderQty: '0', lastDayOrderCount: '0',
@@ -255,7 +261,7 @@ const DashboardOverview: React.FC<{
   const canActionMoveOrder = hasGranularPermission('dash_action_move_order', 'view');
   const canActionLocTransfer = hasGranularPermission('dash_action_loc_transfer', 'view');
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     const { data: prApprovals } = await supabase.from('requisitions').select('*').eq('status', 'Pending').order('created_at', { ascending: false });
     if (prApprovals) setPendingPrs(prApprovals);
     const { data: poApprovals } = await supabase.from('purchase_orders').select('*').in('status', ['Pending', 'Pending Approval']).order('created_at', { ascending: false });
@@ -286,13 +292,19 @@ const DashboardOverview: React.FC<{
 
     const { data: moveOrders } = await supabase.from('move_orders').select('*').order('created_at', { ascending: true });
     if (moveOrders) {
-      // Calculate Cost Center Movement (Last 7 Days)
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      const recentMoveOrders = moveOrders.filter(mo => new Date(mo.created_at) >= sevenDaysAgo);
+      // Daily Charts Filter
+      const dStart = new Date(dailyStartDate);
+      const dEnd = new Date(dailyEndDate);
+      dEnd.setHours(23, 59, 59, 999);
       
+      const filteredMOs = moveOrders.filter(mo => {
+        const d = new Date(mo.created_at);
+        return d >= dStart && d <= dEnd;
+      });
+
+      // Cost Center Data
       const costCenterAgg: Record<string, { qty: number, value: number }> = {};
-      recentMoveOrders.forEach(mo => {
+      filteredMOs.forEach(mo => {
         const dept = mo.department || 'Unknown';
         const qty = mo.items?.reduce((acc: number, item: any) => acc + (Number(item.reqQty) || 0), 0) || 0;
         const val = Number(mo.total_value) || 0;
@@ -303,40 +315,62 @@ const DashboardOverview: React.FC<{
       setCostCenterData(Object.entries(costCenterAgg)
         .map(([name, data]) => ({ name, qty: data.qty, value: data.value }))
         .sort((a, b) => b.qty - a.qty)
-        .slice(0, 8) // Limit to top 8 for better visualization
+        .slice(0, 8)
       );
 
-      const weeklyAgg: any[] = [];
-      const todayObj = new Date();
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date(todayObj); d.setDate(d.getDate() - i);
+      // Daily Movement Analytics
+      const dailyAgg: any[] = [];
+      const diffTime = Math.abs(dEnd.getTime() - dStart.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      
+      for (let i = 0; i < diffDays; i++) {
+        const d = new Date(dStart);
+        d.setDate(d.getDate() + i);
         const dateStr = d.toLocaleDateString('en-GB', { day: '2-digit' }) + '-' + d.toLocaleDateString('en-GB', { weekday: 'short' });
         const dayOrders = moveOrders.filter(mo => new Date(mo.created_at).toDateString() === d.toDateString());
         const qty = dayOrders.reduce((acc, mo) => acc + (mo.items?.reduce((iAcc: number, item: any) => iAcc + (Number(item.reqQty) || 0), 0) || 0), 0);
         const value = dayOrders.reduce((acc, mo) => acc + (Number(mo.total_value) || 0), 0);
-        weeklyAgg.push({ name: dateStr, qty, value });
+        dailyAgg.push({ name: dateStr, qty, value });
       }
-      setWeeklyData(weeklyAgg);
+      setWeeklyData(dailyAgg);
 
       const { data: allGrns } = await supabase.from('grns').select('*').order('created_at', { ascending: true });
       if (allGrns) {
-        const weeklyGrnAgg: any[] = [];
-        for (let i = 6; i >= 0; i--) {
-          const d = new Date(todayObj); d.setDate(d.getDate() - i);
+        const dailyGrnAgg: any[] = [];
+        for (let i = 0; i < diffDays; i++) {
+          const d = new Date(dStart);
+          d.setDate(d.getDate() + i);
           const dateStr = d.toLocaleDateString('en-GB', { day: '2-digit' }) + '-' + d.toLocaleDateString('en-GB', { weekday: 'short' });
           const dayGrns = allGrns.filter(g => new Date(g.created_at).toDateString() === d.toDateString());
           const qty = dayGrns.reduce((acc, g) => acc + (g.items?.reduce((iAcc: number, item: any) => iAcc + (Number(item.grnQty) || 0), 0) || 0), 0);
           const value = dayGrns.reduce((acc, g) => acc + (g.items?.reduce((iAcc: number, item: any) => iAcc + ((Number(item.grnQty) || 0) * (Number(item.grnPrice) || 0)), 0) || 0), 0);
-          weeklyGrnAgg.push({ name: dateStr, qty, value });
+          dailyGrnAgg.push({ name: dateStr, qty, value });
         }
-        setWeeklyGrnData(weeklyGrnAgg);
+        setWeeklyGrnData(dailyGrnAgg);
       }
 
       const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-      setMonthlyData(months.map((month, idx) => {
-        const value = moveOrders.filter(mo => new Date(mo.created_at).getMonth() === idx).reduce((acc, mo) => acc + (Number(mo.total_value) || 0), 0);
-        return { name: month, value };
-      }));
+      if (valuationMonth === 'ALL') {
+        setMonthlyData(months.map((month, idx) => {
+          const value = moveOrders.filter(mo => {
+            const d = new Date(mo.created_at);
+            return d.getFullYear().toString() === valuationYear && d.getMonth() === idx;
+          }).reduce((acc, mo) => acc + (Number(mo.total_value) || 0), 0);
+          return { name: month, value };
+        }));
+      } else {
+        const monthIdx = months.indexOf(valuationMonth);
+        const daysInMonth = new Date(Number(valuationYear), monthIdx + 1, 0).getDate();
+        const dailyMonthAgg: any[] = [];
+        for (let i = 1; i <= daysInMonth; i++) {
+          const d = new Date(Number(valuationYear), monthIdx, i);
+          const dateStr = i.toString();
+          const dayValue = moveOrders.filter(mo => new Date(mo.created_at).toDateString() === d.toDateString())
+            .reduce((acc, mo) => acc + (Number(mo.total_value) || 0), 0);
+          dailyMonthAgg.push({ name: dateStr, value: dayValue });
+        }
+        setMonthlyData(dailyMonthAgg);
+      }
     }
 
     const today = new Date(); today.setHours(0,0,0,0);
@@ -357,13 +391,13 @@ const DashboardOverview: React.FC<{
       weeklyPrQty: sumQty(allPr || [], new Date(today.getTime() - 7*86400000)).qty, weeklyPrCount: sumQty(allPr || [], new Date(today.getTime() - 7*86400000)).count,
       monthlyPrQty: sumQty(allPr || [], new Date(today.getTime() - 30*86400000)).qty, monthlyPrCount: sumQty(allPr || [], new Date(today.getTime() - 30*86400000)).count
     });
-  };
+  }, [dailyStartDate, dailyEndDate, valuationYear, valuationMonth]);
 
   useEffect(() => {
     const timer = setInterval(() => setDateTime(new Date()), 1000);
     fetchDashboardData();
     return () => clearInterval(timer);
-  }, [refreshKey]);
+  }, [refreshKey, fetchDashboardData]);
 
   const COLORS = ['#2d808e', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#ff7300', '#3b82f6', '#1e293b'];
 
@@ -493,7 +527,14 @@ const DashboardOverview: React.FC<{
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {canViewChartWeekly && (
           <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-            <h3 className="text-xs font-black text-[#2d808e] uppercase tracking-widest mb-6">Daily Movement Analytics</h3>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xs font-black text-[#2d808e] uppercase tracking-widest">Daily Movement Analytics</h3>
+              <div className="flex items-center gap-2">
+                <input type="date" value={dailyStartDate} onChange={(e) => setDailyStartDate(e.target.value)} className="text-[10px] border border-gray-200 rounded-lg px-2 py-1 focus:ring-1 focus:ring-[#2d808e] outline-none" />
+                <span className="text-[10px] text-gray-400 font-bold">TO</span>
+                <input type="date" value={dailyEndDate} onChange={(e) => setDailyEndDate(e.target.value)} className="text-[10px] border border-gray-200 rounded-lg px-2 py-1 focus:ring-1 focus:ring-[#2d808e] outline-none" />
+              </div>
+            </div>
             <div className="h-52">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={weeklyData}>
@@ -515,7 +556,18 @@ const DashboardOverview: React.FC<{
         )}
         {canViewChartAnnual && (
           <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-            <h3 className="text-xs font-black text-[#2d808e] uppercase tracking-widest mb-6">Annual Valuation Trend</h3>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xs font-black text-[#2d808e] uppercase tracking-widest">Annual Valuation Trend</h3>
+              <div className="flex items-center gap-2">
+                <select value={valuationYear} onChange={(e) => setValuationYear(e.target.value)} className="text-[10px] border border-gray-200 rounded-lg px-2 py-1 focus:ring-1 focus:ring-[#2d808e] outline-none font-bold">
+                  {[2024, 2025, 2026].map(y => <option key={y} value={y.toString()}>{y}</option>)}
+                </select>
+                <select value={valuationMonth} onChange={(e) => setValuationMonth(e.target.value)} className="text-[10px] border border-gray-200 rounded-lg px-2 py-1 focus:ring-1 focus:ring-[#2d808e] outline-none font-bold">
+                  <option value="ALL">ALL MONTHS</option>
+                  {['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'].map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </div>
+            </div>
             <div className="h-52">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={monthlyData}>
@@ -533,7 +585,14 @@ const DashboardOverview: React.FC<{
         )}
         {canViewChartPo && (
           <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-            <h3 className="text-xs font-black text-[#2d808e] uppercase tracking-widest mb-6">Daily Movement by Cost Center</h3>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xs font-black text-[#2d808e] uppercase tracking-widest">Daily Movement by Cost Center</h3>
+              <div className="flex items-center gap-2">
+                <input type="date" value={dailyStartDate} onChange={(e) => setDailyStartDate(e.target.value)} className="text-[10px] border border-gray-200 rounded-lg px-2 py-1 focus:ring-1 focus:ring-[#2d808e] outline-none" />
+                <span className="text-[10px] text-gray-400 font-bold">TO</span>
+                <input type="date" value={dailyEndDate} onChange={(e) => setDailyEndDate(e.target.value)} className="text-[10px] border border-gray-200 rounded-lg px-2 py-1 focus:ring-1 focus:ring-[#2d808e] outline-none" />
+              </div>
+            </div>
             <div className="h-52">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={costCenterData}>
@@ -558,7 +617,14 @@ const DashboardOverview: React.FC<{
         )}
         {canViewChartGrn && (
           <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-            <h3 className="text-xs font-black text-[#2d808e] uppercase tracking-widest mb-6">Daily GRN Analytics</h3>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xs font-black text-[#2d808e] uppercase tracking-widest">Daily GRN Analytics</h3>
+              <div className="flex items-center gap-2">
+                <input type="date" value={dailyStartDate} onChange={(e) => setDailyStartDate(e.target.value)} className="text-[10px] border border-gray-200 rounded-lg px-2 py-1 focus:ring-1 focus:ring-[#2d808e] outline-none" />
+                <span className="text-[10px] text-gray-400 font-bold">TO</span>
+                <input type="date" value={dailyEndDate} onChange={(e) => setDailyEndDate(e.target.value)} className="text-[10px] border border-gray-200 rounded-lg px-2 py-1 focus:ring-1 focus:ring-[#2d808e] outline-none" />
+              </div>
+            </div>
             <div className="h-52">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={weeklyGrnData}>
