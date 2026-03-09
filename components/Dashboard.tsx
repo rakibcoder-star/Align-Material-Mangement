@@ -33,8 +33,8 @@ import IssueReport from './IssueReport';
 import ReceiveReport from './ReceiveReport';
 import { supabase } from '../lib/supabase';
 import { 
-  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell
+  Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, LabelList, ComposedChart
 } from 'recharts';
 import { 
   Gauge, 
@@ -288,7 +288,7 @@ const DashboardOverview: React.FC<{
       const todayObj = new Date();
       for (let i = 6; i >= 0; i--) {
         const d = new Date(todayObj); d.setDate(d.getDate() - i);
-        const dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+        const dateStr = d.toLocaleDateString('en-GB', { day: '2-digit' }) + '-' + d.toLocaleDateString('en-GB', { weekday: 'short' });
         const dayOrders = moveOrders.filter(mo => new Date(mo.created_at).toDateString() === d.toDateString());
         const qty = dayOrders.reduce((acc, mo) => acc + (mo.items?.reduce((iAcc: number, item: any) => iAcc + (Number(item.reqQty) || 0), 0) || 0), 0);
         const value = dayOrders.reduce((acc, mo) => acc + (Number(mo.total_value) || 0), 0);
@@ -301,7 +301,7 @@ const DashboardOverview: React.FC<{
         const weeklyPoAgg: any[] = [];
         for (let i = 6; i >= 0; i--) {
           const d = new Date(todayObj); d.setDate(d.getDate() - i);
-          const dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+          const dateStr = d.toLocaleDateString('en-GB', { day: '2-digit' }) + '-' + d.toLocaleDateString('en-GB', { weekday: 'short' });
           const dayOrders = allPurchaseOrders.filter(po => new Date(po.created_at).toDateString() === d.toDateString());
           const qty = dayOrders.reduce((acc, po) => acc + (po.items?.reduce((iAcc: number, item: any) => iAcc + (Number(item.poQty) || 0), 0) || 0), 0);
           const value = dayOrders.reduce((acc, po) => acc + (Number(po.total_value) || 0), 0);
@@ -471,9 +471,23 @@ const DashboardOverview: React.FC<{
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {canViewChartWeekly && (
           <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-            <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest mb-6">Weekly Movement Analytics</h3>
+            <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest mb-6">Daily Movement Analytics</h3>
             <div className="h-52">
-              <ResponsiveContainer width="100%" height="100%"><BarChart data={weeklyData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} /><YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} /><YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} /><Tooltip contentStyle={{ fontSize: '12px', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} /><Bar yAxisId="left" dataKey="qty" fill="#2d808e" radius={[4, 4, 0, 0]} barSize={24} /><Line yAxisId="right" type="monotone" dataKey="value" stroke="#f97316" strokeWidth={2} dot={{ fill: '#f97316', r: 4 }} /></BarChart></ResponsiveContainer>
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={weeklyData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                  <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} domain={[0, (max: number) => Math.ceil(max * 1.3)]} />
+                  <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} domain={[0, (max: number) => Math.ceil(max * 1.3)]} />
+                  <Tooltip contentStyle={{ fontSize: '12px', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
+                  <Bar yAxisId="left" dataKey="qty" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={24}>
+                    <LabelList dataKey="qty" position="top" offset={22} style={{ fontSize: '10px', fontWeight: 'bold', fill: '#1e293b' }} />
+                  </Bar>
+                  <Line yAxisId="right" type="monotone" dataKey="value" stroke="#f97316" strokeWidth={2} dot={{ fill: '#f97316', r: 4 }}>
+                    <LabelList dataKey="value" position="top" offset={8} style={{ fontSize: '10px', fontWeight: 'bold', fill: '#f97316' }} formatter={(val: number) => val > 1000 ? (val/1000).toFixed(1) + 'K' : val.toFixed(0)} />
+                  </Line>
+                </ComposedChart>
+              </ResponsiveContainer>
             </div>
           </div>
         )}
@@ -481,24 +495,38 @@ const DashboardOverview: React.FC<{
           <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
             <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest mb-6">Annual Valuation Trend</h3>
             <div className="h-52">
-              <ResponsiveContainer width="100%" height="100%"><LineChart data={monthlyData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} /><YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} /><Tooltip contentStyle={{ fontSize: '12px', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} /><Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} dot={{ fill: '#3b82f6', r: 6, strokeWidth: 2, stroke: '#fff' }} /></LineChart></ResponsiveContainer>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={monthlyData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} domain={[0, (max: number) => Math.ceil(max * 1.2)]} />
+                  <Tooltip contentStyle={{ fontSize: '12px', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
+                  <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} dot={{ fill: '#3b82f6', r: 6, strokeWidth: 2, stroke: '#fff' }}>
+                    <LabelList dataKey="value" position="top" offset={12} style={{ fontSize: '10px', fontWeight: 'bold', fill: '#3b82f6' }} formatter={(val: number) => val > 1000 ? (val/1000).toFixed(1) + 'K' : val.toFixed(0)} />
+                  </Line>
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </div>
         )}
         {canViewChartPo && (
           <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-            <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest mb-6">Weekly PO Analytics</h3>
+            <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest mb-6">Daily PO Analytics</h3>
             <div className="h-52">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={weeklyPoData}>
+                <ComposedChart data={weeklyPoData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
-                  <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
-                  <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                  <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} domain={[0, (max: number) => Math.ceil(max * 1.3)]} />
+                  <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} domain={[0, (max: number) => Math.ceil(max * 1.3)]} />
                   <Tooltip contentStyle={{ fontSize: '12px', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
-                  <Bar yAxisId="left" dataKey="qty" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={24} />
-                  <Line yAxisId="right" type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2} dot={{ fill: '#10b981', r: 4 }} />
-                </BarChart>
+                  <Bar yAxisId="left" dataKey="qty" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={24}>
+                    <LabelList dataKey="qty" position="top" offset={22} style={{ fontSize: '10px', fontWeight: 'bold', fill: '#1e293b' }} />
+                  </Bar>
+                  <Line yAxisId="right" type="monotone" dataKey="value" stroke="#f97316" strokeWidth={2} dot={{ fill: '#f97316', r: 4 }}>
+                    <LabelList dataKey="value" position="top" offset={8} style={{ fontSize: '10px', fontWeight: 'bold', fill: '#f97316' }} formatter={(val: number) => val > 1000 ? (val/1000).toFixed(1) + 'K' : val.toFixed(0)} />
+                  </Line>
+                </ComposedChart>
               </ResponsiveContainer>
             </div>
           </div>
