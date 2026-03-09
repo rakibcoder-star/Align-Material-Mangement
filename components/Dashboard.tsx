@@ -1354,16 +1354,9 @@ const Dashboard: React.FC = () => {
             </Routes>
           </div>
         </main>
-        <footer className="h-8 bg-white border-t border-gray-200 flex items-center justify-between px-6 z-30 shrink-0 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-          <div className="flex items-center gap-4">
-            <span>&copy; 2024 ALIGN SYSTEMS</span>
-            <span className="h-3 w-px bg-gray-100"></span>
-            <span>v1.0.4-STABLE</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1.5"><Activity size={10} className="text-emerald-500" /> SYSTEM ONLINE</span>
-            <span className="h-3 w-px bg-gray-100"></span>
-            <span>{new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+        <footer className="h-10 bg-gray-50 border-t border-gray-200 flex items-center justify-center px-8 z-30 shrink-0 text-[11px] font-medium text-gray-600">
+          <div>
+            All rights Reserved ©ALIGN 2026 | Developed by <span className="text-blue-600 font-bold">Rakib H Shuvo</span>
           </div>
         </footer>
       </div>
