@@ -212,7 +212,8 @@ const DashboardOverview: React.FC<{
   const [dieselStock, setDieselStock] = useState(41);
   const [octaneStock, setOctaneStock] = useState(57);
   const [weeklyData, setWeeklyData] = useState<any[]>([]);
-  const [weeklyPoData, setWeeklyPoData] = useState<any[]>([]);
+  const [costCenterData, setCostCenterData] = useState<any[]>([]);
+  const [weeklyGrnData, setWeeklyGrnData] = useState<any[]>([]);
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [stats, setStats] = useState({
     todayOrderQty: '0', todayOrderCount: '0',
@@ -239,6 +240,7 @@ const DashboardOverview: React.FC<{
   const canViewChartWeekly = hasGranularPermission('dash_chart_weekly_movement', 'view');
   const canViewChartAnnual = hasGranularPermission('dash_chart_annual_valuation', 'view');
   const canViewChartPo = hasGranularPermission('dash_chart_weekly_po', 'view');
+  const canViewChartGrn = hasGranularPermission('dash_chart_weekly_grn', 'view');
   const canViewChartSegmentation = hasGranularPermission('dash_chart_stock_segmentation', 'view');
   const canViewGaugeDiesel = hasGranularPermission('dash_gauge_diesel', 'view');
   const canViewGaugeOctane = hasGranularPermission('dash_gauge_octane', 'view');
@@ -284,6 +286,26 @@ const DashboardOverview: React.FC<{
 
     const { data: moveOrders } = await supabase.from('move_orders').select('*').order('created_at', { ascending: true });
     if (moveOrders) {
+      // Calculate Cost Center Movement (Last 7 Days)
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const recentMoveOrders = moveOrders.filter(mo => new Date(mo.created_at) >= sevenDaysAgo);
+      
+      const costCenterAgg: Record<string, { qty: number, value: number }> = {};
+      recentMoveOrders.forEach(mo => {
+        const dept = mo.department || 'Unknown';
+        const qty = mo.items?.reduce((acc: number, item: any) => acc + (Number(item.reqQty) || 0), 0) || 0;
+        const val = Number(mo.total_value) || 0;
+        if (!costCenterAgg[dept]) costCenterAgg[dept] = { qty: 0, value: 0 };
+        costCenterAgg[dept].qty += qty;
+        costCenterAgg[dept].value += val;
+      });
+      setCostCenterData(Object.entries(costCenterAgg)
+        .map(([name, data]) => ({ name, qty: data.qty, value: data.value }))
+        .sort((a, b) => b.qty - a.qty)
+        .slice(0, 8) // Limit to top 8 for better visualization
+      );
+
       const weeklyAgg: any[] = [];
       const todayObj = new Date();
       for (let i = 6; i >= 0; i--) {
@@ -296,18 +318,18 @@ const DashboardOverview: React.FC<{
       }
       setWeeklyData(weeklyAgg);
 
-      const { data: allPurchaseOrders } = await supabase.from('purchase_orders').select('*').order('created_at', { ascending: true });
-      if (allPurchaseOrders) {
-        const weeklyPoAgg: any[] = [];
+      const { data: allGrns } = await supabase.from('grns').select('*').order('created_at', { ascending: true });
+      if (allGrns) {
+        const weeklyGrnAgg: any[] = [];
         for (let i = 6; i >= 0; i--) {
           const d = new Date(todayObj); d.setDate(d.getDate() - i);
           const dateStr = d.toLocaleDateString('en-GB', { day: '2-digit' }) + '-' + d.toLocaleDateString('en-GB', { weekday: 'short' });
-          const dayOrders = allPurchaseOrders.filter(po => new Date(po.created_at).toDateString() === d.toDateString());
-          const qty = dayOrders.reduce((acc, po) => acc + (po.items?.reduce((iAcc: number, item: any) => iAcc + (Number(item.poQty) || 0), 0) || 0), 0);
-          const value = dayOrders.reduce((acc, po) => acc + (Number(po.total_value) || 0), 0);
-          weeklyPoAgg.push({ name: dateStr, qty, value });
+          const dayGrns = allGrns.filter(g => new Date(g.created_at).toDateString() === d.toDateString());
+          const qty = dayGrns.reduce((acc, g) => acc + (g.items?.reduce((iAcc: number, item: any) => iAcc + (Number(item.grnQty) || 0), 0) || 0), 0);
+          const value = dayGrns.reduce((acc, g) => acc + (g.items?.reduce((iAcc: number, item: any) => iAcc + ((Number(item.grnQty) || 0) * (Number(item.grnPrice) || 0)), 0) || 0), 0);
+          weeklyGrnAgg.push({ name: dateStr, qty, value });
         }
-        setWeeklyPoData(weeklyPoAgg);
+        setWeeklyGrnData(weeklyGrnAgg);
       }
 
       const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
@@ -511,16 +533,41 @@ const DashboardOverview: React.FC<{
         )}
         {canViewChartPo && (
           <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-            <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest mb-6">Daily PO Analytics</h3>
+            <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest mb-6">Daily Movement by Cost Center</h3>
             <div className="h-52">
               <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={weeklyPoData}>
+                <ComposedChart data={costCenterData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#94a3b8' }} />
+                  <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} domain={[0, (max: number) => Math.ceil(max * 1.3)]} />
+                  <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} domain={[0, (max: number) => Math.ceil(max * 1.3)]} />
+                  <Tooltip contentStyle={{ fontSize: '12px', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
+                  <Bar yAxisId="left" dataKey="qty" radius={[4, 4, 0, 0]} barSize={32}>
+                    {costCenterData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={['#0C8EA8', '#131D90', '#2563eb', '#f97316', '#10b981', '#ef4444', '#8b5cf6', '#f59e0b'][index % 8]} />
+                    ))}
+                    <LabelList dataKey="qty" position="top" offset={22} style={{ fontSize: '10px', fontWeight: 'bold', fill: '#1e293b' }} />
+                  </Bar>
+                  <Line yAxisId="right" type="monotone" dataKey="value" stroke="#f97316" strokeWidth={2} dot={{ fill: '#f97316', r: 4 }}>
+                    <LabelList dataKey="value" position="top" offset={8} style={{ fontSize: '10px', fontWeight: 'bold', fill: '#f97316' }} formatter={(val: number) => val > 1000 ? (val/1000).toFixed(1) + 'K' : val.toFixed(0)} />
+                  </Line>
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+        {canViewChartGrn && (
+          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+            <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest mb-6">Daily GRN Analytics</h3>
+            <div className="h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={weeklyGrnData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
                   <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} domain={[0, (max: number) => Math.ceil(max * 1.3)]} />
                   <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} domain={[0, (max: number) => Math.ceil(max * 1.3)]} />
                   <Tooltip contentStyle={{ fontSize: '12px', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
-                  <Bar yAxisId="left" dataKey="qty" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={24}>
+                  <Bar yAxisId="left" dataKey="qty" fill="#131D90" radius={[4, 4, 0, 0]} barSize={24}>
                     <LabelList dataKey="qty" position="top" offset={22} style={{ fontSize: '10px', fontWeight: 'bold', fill: '#1e293b' }} />
                   </Bar>
                   <Line yAxisId="right" type="monotone" dataKey="value" stroke="#f97316" strokeWidth={2} dot={{ fill: '#f97316', r: 4 }}>
