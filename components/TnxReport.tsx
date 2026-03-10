@@ -74,6 +74,7 @@ const TnxReport: React.FC = () => {
                   tnxQty: qty,
                   tnxValue: qty * price,
                   location: item.location || getMasterLocation(item.sku, item.name),
+                  costCenter: po.reqDpt || item.reqDept || 'N/A',
                   remarks: po.note || '',
                   usedOn: po.supplier_name,
                   status: po.status,
@@ -97,6 +98,7 @@ const TnxReport: React.FC = () => {
                   tnxQty: qty,
                   tnxValue: qty * price,
                   location: item.location || getMasterLocation(item.sku, item.name),
+                  costCenter: po.reqDpt || item.reqDept || 'N/A',
                   remarks: 'PO Received',
                   usedOn: po.supplier_name,
                   status: 'Completed',
@@ -141,6 +143,7 @@ const TnxReport: React.FC = () => {
                 tnxQty: qty,
                 tnxValue: qty * price,
                 location: item.location || getMasterLocation(item.sku, item.name),
+                costCenter: mo.department || 'N/A',
                 remarks: item.remarks || '',
                 usedOn: mo.department,
                 status: mo.status,
@@ -175,7 +178,7 @@ const TnxReport: React.FC = () => {
 
   const columnSuggestions = useMemo(() => {
     const suggestions: Record<string, string[]> = {};
-    const columns = ['tnxType', 'tnxRef', 'docRef', 'sku', 'name', 'uom', 'location', 'usedOn', 'status'];
+    const columns = ['tnxType', 'tnxRef', 'docRef', 'sku', 'name', 'uom', 'location', 'costCenter', 'usedOn', 'status'];
     
     columns.forEach(col => {
       const uniqueValues = Array.from(new Set(reportData.map(item => String(item[col] || ''))))
@@ -259,7 +262,7 @@ const TnxReport: React.FC = () => {
 
       <div className="bg-white rounded border border-gray-100 shadow-sm overflow-hidden min-h-[400px]">
         <div className="overflow-x-auto scrollbar-thin">
-          <table className="w-full text-left border-collapse min-w-[2000px]">
+          <table className="w-full text-left border-collapse min-w-[2200px]">
             <thead className="bg-[#fcfcfc] sticky top-0 z-10">
               <tr className="text-[10px] font-black text-gray-500 border-b border-gray-100 uppercase tracking-widest">
                 <th className="px-4 py-4 text-center w-12 border-r border-gray-50">SL</th>
@@ -315,6 +318,12 @@ const TnxReport: React.FC = () => {
                     <ColumnFilter columnName="Location" currentValue={columnFilters.location || ''} onFilter={(val) => handleColumnFilter('location', val)} suggestions={columnSuggestions.location} />
                   </div>
                 </th>
+                <th className="px-4 py-4 border-r border-gray-50 text-center">
+                  <div className="flex items-center justify-center">
+                    <span>Cost Center</span>
+                    <ColumnFilter columnName="Cost Center" currentValue={columnFilters.costCenter || ''} onFilter={(val) => handleColumnFilter('costCenter', val)} suggestions={columnSuggestions.costCenter} />
+                  </div>
+                </th>
                 <th className="px-4 py-4 border-r border-gray-50">Remarks</th>
                 <th className="px-4 py-4 border-r border-gray-50">
                   <div className="flex items-center">
@@ -339,7 +348,7 @@ const TnxReport: React.FC = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={17} className="py-32 text-center text-gray-400">
+                  <td colSpan={18} className="py-32 text-center text-gray-400">
                     <Loader2 className="animate-spin text-[#2d808e] mx-auto mb-4" size={32} />
                     <span className="font-black uppercase tracking-widest text-[10px]">Filtering Transaction Node...</span>
                   </td>
@@ -362,6 +371,7 @@ const TnxReport: React.FC = () => {
                     <td className="px-4 py-3 border-r border-gray-50 text-center font-black text-gray-800">{row.tnxQty}</td>
                     <td className="px-4 py-3 border-r border-gray-50 text-right font-black text-[#2d808e]">{Number(row.tnxValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                     <td className="px-4 py-3 border-r border-gray-50 text-center uppercase text-[#2d808e] font-black">{row.location}</td>
+                    <td className="px-4 py-3 border-r border-gray-50 text-center uppercase text-gray-600 font-bold">{row.costCenter}</td>
                     <td className="px-4 py-3 border-r border-gray-50 text-left truncate max-w-[200px] text-gray-400 italic">{row.remarks}</td>
                     <td className="px-4 py-3 border-r border-gray-50 uppercase font-bold text-gray-500">{row.usedOn}</td>
                     <td className="px-4 py-3 border-r border-gray-50 text-center">
@@ -374,9 +384,9 @@ const TnxReport: React.FC = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={17} className="py-40 text-center">
+                  <td colSpan={18} className="py-40 text-center">
                     <Inbox size={64} className="text-gray-200 mx-auto mb-4" />
-                    <p className="text-[12px] font-black uppercase tracking-[0.3em] text-gray-300">Click find to scan database</p>
+                    <p className="text-[12px] font-black uppercase tracking-[0.3em] text-gray-300">No data found</p>
                   </td>
                 </tr>
               )}

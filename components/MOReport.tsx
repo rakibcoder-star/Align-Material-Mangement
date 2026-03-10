@@ -61,6 +61,7 @@ const MOReport: React.FC = () => {
               moValue: (Number(item.reqQty) || 0) * (Number(item.unitPrice) || 0),
               issueQty: Number(item.issuedQty || 0),
               issueValue: (Number(item.issuedQty || 0)) * (Number(item.unitPrice) || 0),
+              costCenter: mo.department || 'N/A',
               status: mo.status,
               createdBy: mo.requested_by || 'System',
               updatedBy: mo.updated_by || 'System',
@@ -93,7 +94,7 @@ const MOReport: React.FC = () => {
 
   const columnSuggestions = useMemo(() => {
     const suggestions: Record<string, string[]> = {};
-    const columns = ['date', 'moRef', 'moNo', 'sku', 'name', 'uom', 'status', 'createdBy'];
+    const columns = ['date', 'moRef', 'moNo', 'sku', 'name', 'uom', 'costCenter', 'status', 'createdBy'];
     
     columns.forEach(col => {
       const uniqueValues = Array.from(new Set(reportData.map(item => String(item[col] || ''))))
@@ -197,7 +198,7 @@ const MOReport: React.FC = () => {
 
       <div className="bg-white rounded border border-gray-100 shadow-sm overflow-hidden min-h-[400px]">
         <div className="overflow-x-auto scrollbar-thin">
-          <table className="w-full text-left border-collapse min-w-[1800px]">
+          <table className="w-full text-left border-collapse min-w-[2000px]">
             <thead className="bg-[#fcfcfc] sticky top-0 z-10">
               <tr className="text-[10px] font-black text-gray-500 border-b border-gray-100 uppercase tracking-widest">
                 <th className="px-3 py-4 text-center w-12 border-r border-gray-50">SL</th>
@@ -239,6 +240,12 @@ const MOReport: React.FC = () => {
                 <th className="px-3 py-4 border-r border-gray-50 text-right">Issue Value</th>
                 <th className="px-3 py-4 border-r border-gray-50 text-center">
                   <div className="flex items-center justify-center">
+                    <span>Cost Center</span>
+                    <ColumnFilter columnName="Cost Center" currentValue={columnFilters.costCenter || ''} onFilter={(val) => handleColumnFilter('costCenter', val)} suggestions={columnSuggestions.costCenter} />
+                  </div>
+                </th>
+                <th className="px-3 py-4 border-r border-gray-50 text-center">
+                  <div className="flex items-center justify-center">
                     <span>Status</span>
                     <ColumnFilter columnName="Status" currentValue={columnFilters.status || ''} onFilter={(val) => handleColumnFilter('status', val)} suggestions={columnSuggestions.status} />
                   </div>
@@ -255,7 +262,7 @@ const MOReport: React.FC = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={15} className="py-32 text-center text-gray-400 uppercase font-black text-[11px] tracking-widest">
+                  <td colSpan={16} className="py-32 text-center text-gray-400 uppercase font-black text-[11px] tracking-widest">
                     <Loader2 size={32} className="animate-spin text-[#2d808e] mx-auto mb-4" />
                     Scanning Database Records...
                   </td>
@@ -282,6 +289,7 @@ const MOReport: React.FC = () => {
                     <td className="px-3 py-3 border-r border-gray-50 text-right font-black text-[#2d808e]">{row.moValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                     <td className="px-3 py-3 border-r border-gray-50 text-center font-black text-emerald-600">{row.issueQty}</td>
                     <td className="px-3 py-3 border-r border-gray-50 text-right font-black text-emerald-600">{row.issueValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                    <td className="px-3 py-3 border-r border-gray-50 text-center font-bold uppercase text-gray-500">{row.costCenter}</td>
                     <td className="px-3 py-3 border-r border-gray-50 text-center">
                       <span className={`px-3 py-0.5 rounded-full text-[8px] font-black uppercase border shadow-sm ${getStatusStyle(row.status)}`}>
                         {row.status === 'Pending' ? 'In-Process' : row.status === 'Completed' ? 'ISSUED' : row.status === 'On Hold' ? 'Hold' : row.status}
@@ -293,7 +301,7 @@ const MOReport: React.FC = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={15} className="py-40">
+                  <td colSpan={16} className="py-40">
                     <div className="flex flex-col items-center justify-center text-gray-400">
                       <div className="bg-gray-50 p-6 rounded-full mb-4 ring-1 ring-gray-100">
                         <Inbox size={64} strokeWidth={1} className="text-gray-200" />
