@@ -167,7 +167,17 @@ const MakeGRNForm: React.FC<MakeGRNFormProps> = ({ selectedItems, onClose, onSub
           unit_price: Number(item.grnPrice)
         });
         
-        // If RPC fails (e.g., doesn't exist), try direct update
+        // Update the "last" fields and cost center for inventory tracking
+        await supabase
+          .from('items')
+          .update({ 
+            last_received_qty: Number(item.grnQty),
+            last_received_date: new Date().toISOString(),
+            cost_center: item.reqDept || 'N/A'
+          })
+          .eq('sku', item.sku);
+        
+        // If RPC fails (e.g., doesn't exist), try direct update for stock
         if (rpcError) {
           console.warn('RPC update_item_stock failed, trying direct update:', rpcError);
           const { data: currentItem } = await supabase

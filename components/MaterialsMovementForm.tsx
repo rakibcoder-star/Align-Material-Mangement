@@ -156,6 +156,17 @@ const MaterialsMovementForm: React.FC<MaterialsMovementFormProps> = ({ selectedI
           ref_no: item.moNo || 'N/A',
           dept: item.usedDept || 'N/A'
         });
+        
+        // Update the "last" fields and cost center for inventory tracking
+        await supabase
+          .from('items')
+          .update({ 
+            last_issued_qty: qty,
+            last_issued_date: new Date().toISOString(),
+            cost_center: item.usedDept || 'N/A'
+          })
+          .eq('sku', item.sku);
+
         if (error) throw error;
       }
 

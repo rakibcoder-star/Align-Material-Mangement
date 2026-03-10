@@ -91,7 +91,17 @@ const ManualIssue: React.FC<ManualIssueProps> = ({ onBack, onSubmit }) => {
           dept: formData.costCenter
         });
         
-        // If RPC fails (e.g., doesn't exist), try direct update
+        // Update the "last" fields and cost center for inventory tracking
+        await supabase
+          .from('items')
+          .update({ 
+            last_issued_qty: qty,
+            last_issued_date: new Date().toISOString(),
+            cost_center: formData.costCenter || 'N/A'
+          })
+          .eq('sku', item.sku);
+        
+        // If RPC fails (e.g., doesn't exist), try direct update for stock
         if (rpcError) {
           console.warn('RPC update_item_stock failed, trying direct update:', rpcError);
           const { data: currentItem } = await supabase

@@ -15,7 +15,11 @@ interface InventoryItem {
   onHandQty: number;
   safetyStock: number;
   itemType: string;
-  itemDetails: string;
+  costCenter: string;
+  lastReceivedQty?: number;
+  lastReceivedDate?: string;
+  lastIssuedQty?: number;
+  lastIssuedDate?: string;
 }
 
 const Inventory: React.FC = () => {
@@ -84,7 +88,11 @@ const Inventory: React.FC = () => {
         onHandQty: item.on_hand_stock || 0,
         safetyStock: item.safety_stock || 0,
         itemType: item.type || 'N/A',
-        itemDetails: item.group_name || 'N/A'
+        costCenter: item.cost_center || 'N/A',
+        lastReceivedQty: item.last_received_qty,
+        lastReceivedDate: item.last_received_date,
+        lastIssuedQty: item.last_issued_qty,
+        lastIssuedDate: item.last_issued_date
       }));
       setInventory(mapped);
     } catch (err) {
@@ -112,7 +120,7 @@ const Inventory: React.FC = () => {
     const columns = ['code', 'sku', 'name', 'uom', 'type', 'group_name'];
     
     columns.forEach(col => {
-      const key = col === 'type' ? 'itemType' : col === 'group_name' ? 'itemDetails' : col;
+      const key = col === 'type' ? 'itemType' : col === 'cost_center' ? 'costCenter' : col;
       const uniqueValues = Array.from(new Set(inventory.map(item => String((item as any)[key] || ''))))
         .filter(val => val && val !== 'N/A')
         .sort();
@@ -235,8 +243,8 @@ const Inventory: React.FC = () => {
                 </th>
                 <th className="px-6 py-4 text-left w-40">
                   <div className="flex items-center">
-                    <span>Item Details</span>
-                    <ColumnFilter columnName="Group" currentValue={columnFilters.group_name || ''} onFilter={(val) => handleColumnFilter('group_name', val)} suggestions={columnSuggestions.group_name} />
+                    <span>Cost Center</span>
+                    <ColumnFilter columnName="Cost Center" currentValue={columnFilters.cost_center || ''} onFilter={(val) => handleColumnFilter('cost_center', val)} suggestions={columnSuggestions.cost_center} />
                   </div>
                 </th>
               </tr>
@@ -259,12 +267,28 @@ const Inventory: React.FC = () => {
                     <td className="px-6 py-4 text-left font-mono text-xs">{item.sku}</td>
                     <td className="px-6 py-4 font-bold uppercase">{item.name}</td>
                     <td className="px-6 py-4 text-center">{item.uom}</td>
-                    <td className="px-6 py-4 text-center">{item.receivedQty}</td>
-                    <td className="px-6 py-4 text-center">{item.issuedQty}</td>
+                    <td className="px-6 py-4 text-center">
+                      <div className="font-bold">{item.receivedQty}</div>
+                      {item.lastReceivedQty !== undefined && item.lastReceivedQty !== null && (
+                        <div className="text-[10px] text-gray-400 mt-0.5">
+                          Last: {item.lastReceivedQty}
+                          {item.lastReceivedDate && <span className="ml-1">({new Date(item.lastReceivedDate).toLocaleDateString()})</span>}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <div className="font-bold">{item.issuedQty}</div>
+                      {item.lastIssuedQty !== undefined && item.lastIssuedQty !== null && (
+                        <div className="text-[10px] text-gray-400 mt-0.5">
+                          Last: {item.lastIssuedQty}
+                          {item.lastIssuedDate && <span className="ml-1">({new Date(item.lastIssuedDate).toLocaleDateString()})</span>}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-center font-bold text-[#2d808e]">{item.onHandQty}</td>
                     <td className="px-6 py-4 text-center">{item.safetyStock}</td>
                     <td className="px-6 py-4 text-left whitespace-nowrap">{item.itemType}</td>
-                    <td className="px-6 py-4 text-left whitespace-nowrap">{item.itemDetails}</td>
+                    <td className="px-6 py-4 text-left whitespace-nowrap font-medium">{item.costCenter}</td>
                   </tr>
                 ))
               ) : (

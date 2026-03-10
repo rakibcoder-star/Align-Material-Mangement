@@ -162,7 +162,17 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
           unit_price: parseFloat(item.unitPrice) || 0
         });
         
-        // If RPC fails (e.g., doesn't exist), try direct update
+        // Update the "last" fields and cost center for inventory tracking
+        await supabase
+          .from('items')
+          .update({ 
+            last_received_qty: qty,
+            last_received_date: new Date().toISOString(),
+            cost_center: formData.department || 'N/A'
+          })
+          .eq('sku', item.sku);
+        
+        // If RPC fails (e.g., doesn't exist), try direct update for stock
         if (rpcError) {
           console.warn('RPC update_item_stock failed, trying direct update:', rpcError);
           const { data: currentItem } = await supabase
