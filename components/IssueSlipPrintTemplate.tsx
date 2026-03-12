@@ -124,7 +124,7 @@ const IssueSlipPrintTemplate: React.FC<IssueSlipPrintTemplateProps> = ({ mo }) =
           <div className="w-full border-t-2 border-black pt-2 text-center">Checked By</div>
         </div>
         <div className="border-r-2 border-black flex flex-col items-center justify-end h-28 pb-2">
-          <div className="w-full border-t-2 border-black pt-2 text-center px-1">Authorised By<br/>Head of Logistics</div>
+          <div className="w-full border-t-2 border-black pt-2 text-center px-1">Authorised By<br/>Head of MMT</div>
         </div>
         <div className="flex flex-col items-center justify-end h-28 pb-2">
           <div className="w-full border-t-2 border-black pt-2 text-center px-1">Approved By<br/>Depertment Head</div>
