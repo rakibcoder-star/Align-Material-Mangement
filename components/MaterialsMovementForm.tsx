@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Trash2, Search, ChevronDown, Inbox, ChevronLeft, ChevronRight, Loader2, CheckCircle2 } from 'lucide-react';
+import { X, Trash2, Search, ChevronDown, Inbox, ChevronLeft, ChevronRight, Loader2, CheckCircle2, Printer } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import IssueSlipPrintTemplate from './IssueSlipPrintTemplate';
 
 interface MovementItem {
   id: string;
@@ -36,7 +37,9 @@ const MaterialsMovementForm: React.FC<MaterialsMovementFormProps> = ({ selectedI
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [allLocations, setAllLocations] = useState<string[]>([]);
-  const [showNotification, setShowNotification] = useState<NotificationData | null>(null);
+  const [showNotification, setShowNotification] = useState<any>(null);
+  const [showPrintPreview, setShowPrintPreview] = useState(false);
+  const [printData, setPrintData] = useState<any>(null);
   const [departments, setDepartments] = useState<string[]>([]);
   const [items, setItems] = useState<MovementItem[]>(
     selectedItems.map(item => {
@@ -52,7 +55,7 @@ const MaterialsMovementForm: React.FC<MaterialsMovementFormProps> = ({ selectedI
         unitPrice: item.unitPrice || 0,
         reqQty: item.moQty,
         issuedQty: item.issueQty,
-        tnxQty: item.moQty,
+        tnxQty: Math.max(0, (item.moQty || 0) - (item.issueQty || 0)),
         location: '', 
         usedDept: item.reqDept,
         remarks: ''
@@ -206,12 +209,19 @@ const MaterialsMovementForm: React.FC<MaterialsMovementFormProps> = ({ selectedI
       // 3. Show Success Notification starting from 500000
       const giId = (500000 + Math.floor(Math.random() * 5000)).toString();
       const firstItem = items[0];
-      setShowNotification({
+      
+      const notificationData = {
         giId: giId,
         moNo: firstItem.moNo || 'N/A',
         itemsCount: items.length,
-        details: `Item: ${firstItem.name} | Qty: ${firstItem.tnxQty} | Loc: ${firstItem.location}`
-      });
+        details: `Item: ${firstItem.name} | Qty: ${firstItem.tnxQty} | Loc: ${firstItem.location}`,
+        items: items.map(i => ({ ...i, tnxQty: i.tnxQty })), // Capture current tnxQty
+        department: updatedDept,
+        requested_by: user?.fullName || 'System'
+      };
+
+      setShowNotification(notificationData);
+      setPrintData(notificationData);
 
       setIsSubmitting(false);
     } catch (err: any) {
@@ -252,12 +262,56 @@ const MaterialsMovementForm: React.FC<MaterialsMovementFormProps> = ({ selectedI
                 </div>
                 <p className="text-[10px] text-center text-gray-400 font-medium">Total Items Processed: {showNotification.itemsCount}</p>
               </div>
+              <div className="flex flex-col space-y-3">
+                <button 
+                  onClick={() => setShowPrintPreview(true)}
+                  className="w-full bg-[#2d808e] text-white py-3 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-cyan-900/20 hover:bg-[#256b78] transition-all flex items-center justify-center space-x-3"
+                >
+                  <Printer size={16} />
+                  <span>Print Issue Slip</span>
+                </button>
+                <button 
+                  onClick={() => { setShowNotification(null); onSubmit({ items }); }} 
+                  className="w-full py-3 text-gray-400 font-bold text-xs uppercase tracking-widest hover:text-gray-600 transition-all"
+                >
+                  Close & Proceed
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Print Preview Modal */}
+      {showPrintPreview && printData && (
+        <div className="fixed inset-0 z-[250] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 overflow-y-auto no-print">
+          <div className="bg-[#fcfcfc] w-full max-w-[1100px] rounded-xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[96vh]">
+            <div className="flex items-center justify-between px-8 py-4 border-b border-gray-100 bg-white sticky top-0 z-10">
+              <div className="flex items-center space-x-4">
+                <button onClick={() => setShowPrintPreview(false)} className="p-2 text-gray-400 hover:text-gray-600 bg-gray-50 rounded-xl transition-colors">
+                  <X size={20} />
+                </button>
+                <h2 className="text-sm font-black text-[#2d808e] uppercase tracking-tight">Issue Slip Preview</h2>
+              </div>
               <button 
-                onClick={() => { setShowNotification(null); onSubmit({ items }); }} 
-                className="w-full py-3 bg-[#2d808e] text-white font-black text-[13px] uppercase tracking-[0.2em] rounded-xl shadow-lg hover:bg-[#256b78] transition-all active:scale-[0.98]"
+                onClick={() => window.print()}
+                className="bg-[#2d808e] text-white px-8 py-2 rounded-lg text-xs font-black hover:bg-[#256b78] flex items-center space-x-3 uppercase tracking-widest transition-all"
               >
-                Close & Proceed
+                <Printer size={18} />
+                <span>Execute Print</span>
               </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-12 bg-gray-200/20">
+              <div className="bg-white shadow-2xl border border-gray-200 rounded-sm">
+                <IssueSlipPrintTemplate mo={{
+                  ...printData,
+                  reference: printData.giId,
+                  mo_no: printData.moNo,
+                  items: printData.items,
+                  department: printData.department,
+                  created_at: new Date().toISOString()
+                }} />
+              </div>
             </div>
           </div>
         </div>

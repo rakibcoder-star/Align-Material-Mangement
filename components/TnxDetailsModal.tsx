@@ -25,7 +25,7 @@ const TnxDetailsModal: React.FC<TnxDetailsModalProps> = ({ tnx, onClose }) => {
             </button>
             <div className="flex flex-col">
               <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Transaction Detail Node</h2>
-              <p className="text-sm font-black text-[#2d808e] tracking-tight uppercase mt-1">Ref: {tnx.mo_no || tnx.tnxRef}</p>
+              <p className="text-sm font-black text-[#2d808e] tracking-tight uppercase mt-1">Ref: {tnx.reference || tnx.mo_no || tnx.tnxRef}</p>
             </div>
           </div>
           <button 

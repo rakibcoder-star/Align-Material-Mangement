@@ -27,6 +27,7 @@ import LabelManagement from './LabelManagement';
 import TnxDetailsModal from './TnxDetailsModal';
 import LocationTransferModal from './LocationTransferModal';
 import GRNPreviewModal from './GRNPreviewModal';
+import MODetailsModal from './MODetailsModal';
 import LowStockInventory from './LowStockInventory';
 import ABCAnalysis from './ABCAnalysis';
 import IssueReport from './IssueReport';
@@ -194,10 +195,10 @@ const DashboardOverview: React.FC<{
   onPreviewPr: (pr: any) => void; 
   onPreviewPo: (po: any) => void; 
   onPreviewMo: (mo: any) => void; 
-  onPreviewTnx: (tnx: any) => void;
+  onPreviewMoDetail: (mo: any) => void;
   onPreviewGrn: (grnId: string) => void;
   refreshKey?: number;
-}> = ({ onCheckStock, onMoveOrder, onPreviewPr, onPreviewPo, onPreviewMo, onPreviewTnx, onLocTransfer, onPreviewGrn, refreshKey }) => {
+}> = ({ onCheckStock, onMoveOrder, onPreviewPr, onPreviewPo, onPreviewMo, onPreviewMoDetail, onLocTransfer, onPreviewGrn, refreshKey }) => {
   const navigate = useNavigate();
   const { user, hasGranularPermission } = useAuth();
   const [dateTime, setDateTime] = useState(new Date());
@@ -487,13 +488,13 @@ const DashboardOverview: React.FC<{
             <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between"><h3 className="text-xs font-bold text-[#2d808e] uppercase">MO Approvals</h3><span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded-full uppercase">{pendingMos.length} Pending</span></div>
             <div className="overflow-y-auto max-h-[220px] scrollbar-thin">
               <table className="w-full text-left border-collapse">
-                <thead className="bg-gray-50/50 sticky top-0"><tr className="text-[10px] font-medium text-gray-400 uppercase border-b border-gray-50"><th className="px-5 py-3">Date</th><th className="px-5 py-3">Ref ID</th><th className="px-5 py-3 text-right">Value</th></tr></thead>
+                <thead className="bg-gray-50/50 sticky top-0"><tr className="text-[10px] font-medium text-gray-400 uppercase border-b border-gray-50"><th className="px-5 py-3">Date</th><th className="px-5 py-3">TNX.NO</th><th className="px-5 py-3 text-right">Department</th></tr></thead>
                 <tbody className="text-xs font-medium text-gray-600">
                   {pendingMos.map((mo) => (
                     <tr key={mo.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
                       <td className="px-5 py-3 whitespace-nowrap">{new Date(mo.created_at).toLocaleDateString()}</td>
-                      <td className="px-5 py-3"><button onClick={() => onPreviewMo(mo)} className="text-blue-500 font-bold hover:underline">{mo.mo_no}</button></td>
-                      <td className="px-5 py-3 text-right font-medium text-gray-800">{(mo.total_value || 0).toLocaleString()}</td>
+                      <td className="px-5 py-3"><button onClick={() => onPreviewMo(mo)} className="text-blue-500 font-bold hover:underline">{mo.reference || mo.mo_no}</button></td>
+                      <td className="px-5 py-3 text-right font-medium text-gray-800 uppercase">{mo.department || 'N/A'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -684,14 +685,17 @@ const DashboardOverview: React.FC<{
                     const itemNameDisplay = mo.items?.length > 1 
                       ? `${firstItem.name || 'N/A'} (+${mo.items.length - 1})`
                       : (firstItem.name || 'N/A');
-                    const totalQty = mo.items?.reduce((acc: number, i: any) => acc + (Number(i.reqQty) || 0), 0);
+                    const totalQty = mo.items?.reduce((acc: number, i: any) => {
+                      const qty = mo.status === 'Completed' ? (Number(i.issuedQty) || 0) : (Number(i.reqQty) || 0);
+                      return acc + qty;
+                    }, 0);
 
                     return (
                       <tr key={mo.id} className="hover:bg-gray-50/40 transition-colors">
                         <td className="px-2 py-4 text-center text-gray-400 border-r border-gray-50">{idx + 1}</td>
                         <td className="px-4 py-4 text-center border-r border-gray-50 whitespace-nowrap text-gray-600">{formatDateShort(mo.created_at)}</td>
                         <td className="px-4 py-4 text-center border-r border-gray-50">
-                          <button onClick={() => onPreviewTnx(mo)} className="text-blue-500 font-bold hover:underline transition-all">{mo.mo_no}</button>
+                          <button onClick={() => onPreviewMoDetail(mo)} className="text-blue-500 font-bold hover:underline transition-all">{mo.reference || mo.mo_no}</button>
                         </td>
                         <td className="px-4 py-4 uppercase truncate max-w-[200px] font-medium text-gray-700 border-r border-gray-50" title={itemNameDisplay}>{itemNameDisplay}</td>
                         <td className="px-4 py-4 text-center font-bold text-gray-800 border-r border-gray-50">{totalQty}</td>
@@ -936,10 +940,10 @@ const ProfileModal: React.FC<{ user: any, isOpen: boolean, onClose: () => void, 
 };
 
 const SearchResults: React.FC<{ 
-  results: {pr: any[], po: any[], mo: any[], items: any[], grn: any[]}, 
+  results: {pr: any[], po: any[], mo: any[], items: any[], grn: any[], transactions: any[]}, 
   onNavigate: (type: string, obj: any) => void
 }> = ({ results, onNavigate }) => {
-  const hasResults = results.pr.length > 0 || results.po.length > 0 || results.mo.length > 0 || results.items.length > 0 || results.grn.length > 0;
+  const hasResults = results.pr.length > 0 || results.po.length > 0 || results.mo.length > 0 || results.items.length > 0 || results.grn.length > 0 || results.transactions.length > 0;
   return (
     <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-[80vh] overflow-y-auto z-[2000] scrollbar-thin">
       {!hasResults ? (
@@ -1015,6 +1019,20 @@ const SearchResults: React.FC<{
                     <span className="text-[10px] font-bold text-gray-400">Ref: {g.source_ref} | Invoice: {g.invoice_no}</span>
                   </div>
                   <ArrowUpRight size={14} className="text-gray-200 group-hover:text-[#2d808e] transition-colors" />
+                </button>
+              ))}
+            </div>
+          )}
+          {results.transactions.length > 0 && (
+            <div className="space-y-1">
+              <h4 className="px-3 py-1 text-[9px] font-black text-purple-500 uppercase tracking-widest border-b border-gray-50">Transactions</h4>
+              {results.transactions.map(t => (
+                <button key={t.id} onClick={() => onNavigate('transaction', t)} className="w-full text-left px-4 py-2 hover:bg-purple-50 rounded-lg flex items-center justify-between group transition-colors">
+                  <div className="flex flex-col">
+                    <span className="text-[13px] font-black text-gray-800 uppercase tracking-tight">{t.type}: {t.reference_no}</span>
+                    <span className="text-[10px] font-bold text-gray-400">SKU: {t.item_sku} | Qty: {t.quantity} | Date: {new Date(t.created_at).toLocaleDateString()}</span>
+                  </div>
+                  <ArrowUpRight size={14} className="text-gray-200 group-hover:text-purple-500 transition-colors" />
                 </button>
               ))}
             </div>
@@ -1116,10 +1134,11 @@ const Dashboard: React.FC = () => {
   const [previewPr, setPreviewPr] = useState<any>(null);
   const [previewPo, setPreviewPo] = useState<any>(null);
   const [previewMo, setPreviewMo] = useState<any>(null);
+  const [previewMoDetail, setPreviewMoDetail] = useState<any>(null);
   const [previewTnx, setPreviewTnx] = useState<any>(null);
   const [previewGrn, setPreviewGrn] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<{pr: any[], po: any[], mo: any[], items: any[], grn: any[]}>({ pr: [], po: [], mo: [], items: [], grn: [] });
+  const [searchResults, setSearchResults] = useState<{pr: any[], po: any[], mo: any[], items: any[], grn: any[], transactions: any[]}>({ pr: [], po: [], mo: [], items: [], grn: [], transactions: [] });
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
@@ -1127,24 +1146,26 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const handleSearch = async () => {
       if (!searchQuery || searchQuery.length < 2) {
-        setSearchResults({ pr: [], po: [], mo: [], items: [], grn: [] });
+        setSearchResults({ pr: [], po: [], mo: [], items: [], grn: [], transactions: [] });
         return;
       }
       setIsSearching(true);
       try {
-        const [prRes, poRes, moRes, itemRes, grnRes] = await Promise.all([
+        const [prRes, poRes, moRes, itemRes, grnRes, tnxRes] = await Promise.all([
           supabase.from('requisitions').select('*').or(`pr_no.ilike.%${searchQuery}%,reference.ilike.%${searchQuery}%`).limit(5),
           supabase.from('purchase_orders').select('*').or(`po_no.ilike.%${searchQuery}%,supplier_name.ilike.%${searchQuery}%`).limit(5),
           supabase.from('move_orders').select('*').or(`mo_no.ilike.%${searchQuery}%,reference.ilike.%${searchQuery}%`).limit(5),
           supabase.from('items').select('*').or(`sku.ilike.%${searchQuery}%,name.ilike.%${searchQuery}%`).limit(5),
-          supabase.from('grns').select('*').or(`grn_no.ilike.%${searchQuery}%,source_ref.ilike.%${searchQuery}%,invoice_no.ilike.%${searchQuery}%`).limit(5)
+          supabase.from('grns').select('*').or(`grn_no.ilike.%${searchQuery}%,source_ref.ilike.%${searchQuery}%,invoice_no.ilike.%${searchQuery}%`).limit(5),
+          supabase.from('transactions').select('*').or(`reference_no.ilike.%${searchQuery}%`).limit(5)
         ]);
         setSearchResults({
           pr: prRes.data || [],
           po: poRes.data || [],
           mo: moRes.data || [],
           items: itemRes.data || [],
-          grn: grnRes.data || []
+          grn: grnRes.data || [],
+          transactions: tnxRes.data || []
         });
         setShowSearchResults(true);
       } catch (err) {
@@ -1167,7 +1188,7 @@ const Dashboard: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSearchResultNavigation = (type: string, obj: any) => {
+  const handleSearchResultNavigation = async (type: string, obj: any) => {
     setShowSearchResults(false);
     setSearchQuery('');
     if (type === 'pr') setPreviewPr(obj);
@@ -1175,6 +1196,29 @@ const Dashboard: React.FC = () => {
     if (type === 'mo') setPreviewMo(obj);
     if (type === 'grn') setPreviewGrn(obj.grn_no);
     if (type === 'item') navigate('/item-list');
+    if (type === 'transaction') {
+      if (obj.type === 'Issue') {
+        // Try to find the corresponding move order for issue slip preview
+        try {
+          const { data: moData } = await supabase
+            .from('move_orders')
+            .select('*')
+            .or(`mo_no.eq."${obj.reference_no}",reference.eq."${obj.reference_no}"`)
+            .limit(1);
+          
+          if (moData && moData.length > 0) {
+            setPreviewMo(moData[0]);
+          } else {
+            setPreviewTnx(obj);
+          }
+        } catch (err) {
+          console.error("Error fetching MO for transaction:", err);
+          setPreviewTnx(obj);
+        }
+      } else {
+        setPreviewTnx(obj);
+      }
+    }
   };
 
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
@@ -1389,7 +1433,7 @@ const Dashboard: React.FC = () => {
         <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-[#f9fafb] scrollbar-thin">
           <div className="max-w-[1600px] mx-auto w-full">
             <Routes>
-              <Route path="/overview" element={<DashboardOverview refreshKey={refreshKey} onCheckStock={() => setIsStockStatusModalOpen(true)} onMoveOrder={() => setIsMoveOrderModalOpen(true)} onLocTransfer={() => setIsLocationTransferModalOpen(true)} onPreviewPr={setPreviewPr} onPreviewPo={setPreviewPo} onPreviewMo={setPreviewMo} onPreviewTnx={setPreviewTnx} onPreviewGrn={setPreviewGrn} />} />
+              <Route path="/overview" element={<DashboardOverview refreshKey={refreshKey} onCheckStock={() => setIsStockStatusModalOpen(true)} onMoveOrder={() => setIsMoveOrderModalOpen(true)} onLocTransfer={() => setIsLocationTransferModalOpen(true)} onPreviewPr={setPreviewPr} onPreviewPo={setPreviewPo} onPreviewMo={setPreviewMo} onPreviewMoDetail={setPreviewMoDetail} onPreviewGrn={setPreviewGrn} />} />
               <Route path="/users" element={<UserManagement />} /><Route path="/requisition" element={<PurchaseRequisition />} /><Route path="/purchase-order" element={<PurchaseOrder />} /><Route path="/supplier" element={<Supplier />} /><Route path="/purchase-report" element={<PurchaseReport />} /><Route path="/inventory" element={<Inventory />} /><Route path="/receive" element={<Receive />} /><Route path="/issue" element={<Issue />} /><Route path="/tnx-report" element={<TnxReport />} /><Route path="/mo-report" element={<MOReport />} /><Route path="/item-list" element={<ItemList />} /><Route path="/item-uom" element={<ItemUOM />} /><Route path="/item-group" element={<ItemGroup />} /><Route path="/item-type" element={<ItemType />} /><Route path="/cost-center" element={<CostCenter />} /><Route path="/label" element={<LabelManagement />} />              <Route path="/cycle-counting" element={<CycleCounting />} />
               <Route path="/low-stock" element={hasGranularPermission('low_stock_inventory', 'view') ? <LowStockInventory /> : <Navigate to="/overview" replace />} />
               <Route path="/abc-analysis" element={hasGranularPermission('abc_analysis', 'view') ? <ABCAnalysis /> : <Navigate to="/overview" replace />} />
@@ -1411,6 +1455,7 @@ const Dashboard: React.FC = () => {
       {previewPr && <PRPreviewModal pr={previewPr} onClose={() => { setPreviewPr(null); setRefreshKey(prev => prev + 1); }} />}
       {previewPo && <POPreviewModal po={previewPo} onClose={() => { setPreviewPo(null); setRefreshKey(prev => prev + 1); }} />}
       {previewMo && <MOApprovalModal mo={previewMo} isOpen={!!previewMo} onClose={() => { setPreviewMo(null); setRefreshKey(prev => prev + 1); }} />}
+      {previewMoDetail && <MODetailsModal mo={previewMoDetail} onClose={() => setPreviewMoDetail(null)} />}
       {previewTnx && <TnxDetailsModal tnx={previewTnx} onClose={() => setPreviewTnx(null)} />}
       {previewGrn && <GRNPreviewModal grnId={previewGrn} onClose={() => setPreviewGrn(null)} />}
       <ProfileModal user={user} isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} logout={logout} />

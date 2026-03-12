@@ -34,7 +34,7 @@ const MOPrintTemplate: React.FC<MOPrintTemplateProps> = ({ mo }) => {
         </div>
         <div className="absolute top-0 right-0">
           <img 
-            src={`https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=MO-${mo.mo_no}`} 
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=MO-${mo.reference || mo.mo_no}`} 
             alt="QR Code" 
             className="w-24 h-24 border border-gray-100"
           />
@@ -44,9 +44,9 @@ const MOPrintTemplate: React.FC<MOPrintTemplateProps> = ({ mo }) => {
       {/* Meta Data Section - 3 Columns */}
       <div className="grid grid-cols-3 gap-x-12 gap-y-1 mb-6 text-[11px] font-bold">
         <div className="space-y-1">
-          <p className="flex"><span className="w-16 shrink-0">MO.ID:</span> <span className="font-medium text-gray-700">{mo.mo_no}</span></p>
+          <p className="flex"><span className="w-16 shrink-0">MO.ID:</span> <span className="font-medium text-gray-700">{mo.reference || mo.mo_no}</span></p>
           <p className="flex"><span className="w-16 shrink-0">MO.Type:</span> <span className="font-medium text-gray-700">Move Order</span></p>
-          <p className="flex"><span className="w-16 shrink-0">Ref.:</span> <span className="font-medium text-gray-700">{mo.reference || 'N/A'}</span></p>
+          <p className="flex"><span className="w-16 shrink-0">Ref.:</span> <span className="font-medium text-gray-700">{mo.mo_no}</span></p>
         </div>
         <div className="space-y-1">
           <p className="flex"><span className="w-20 shrink-0">Req. Date:</span> <span className="font-medium text-gray-700">{formatDate(mo.created_at)}</span></p>
@@ -72,7 +72,7 @@ const MOPrintTemplate: React.FC<MOPrintTemplateProps> = ({ mo }) => {
             <th className="border border-black py-1 px-1 w-20">Unit Price</th>
             <th className="border border-black py-1 px-1 w-16">On-Hand</th>
             <th className="border border-black py-1 px-1 w-16">Req. Qty</th>
-            <th className="border border-black py-1 px-1 w-16">Tnx. Qty</th>
+            <th className="border border-black py-1 px-1 w-16">Issued Qty</th>
             <th className="border border-black py-1 px-1 w-24">Tnx. Value</th>
             <th className="border border-black py-1 px-1 w-16">1M Used</th>
             <th className="border border-black py-1 px-1 w-16">6M Used</th>

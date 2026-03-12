@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { Home, FileSpreadsheet, Filter, Inbox, ChevronDown, Search, Loader2 } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Home, FileSpreadsheet, Inbox, ChevronDown, Search, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { supabase } from '../lib/supabase';
 import MODetailsModal from './MODetailsModal';
@@ -34,8 +34,8 @@ const MOReport: React.FC = () => {
         query = query.eq('status', dbStatus);
       }
 
-      const { data: moveOrders, error } = await query;
-      if (error) throw error;
+      const { data: moveOrders, error: fetchError } = await query;
+      if (fetchError) throw fetchError;
 
       if (moveOrders) {
         const flattened: any[] = [];
@@ -51,8 +51,8 @@ const MOReport: React.FC = () => {
             flattened.push({
               sl: sl++,
               date: new Date(mo.created_at).toLocaleDateString(),
-              moRef: mo.reference || 'N/A',
-              moNo: mo.mo_no,
+              moRef: mo.mo_no,
+              moNo: mo.reference || mo.mo_no,
               sku: item.sku || 'N/A',
               name: item.name || 'N/A',
               uom: item.uom || 'N/A',
@@ -210,13 +210,13 @@ const MOReport: React.FC = () => {
                 </th>
                 <th className="px-3 py-4 border-r border-gray-50">
                   <div className="flex items-center">
-                    <span>MO Ref</span>
+                    <span>Ref No</span>
                     <ColumnFilter columnName="Ref" currentValue={columnFilters.moRef || ''} onFilter={(val) => handleColumnFilter('moRef', val)} suggestions={columnSuggestions.moRef} />
                   </div>
                 </th>
                 <th className="px-3 py-4 border-r border-gray-50">
                   <div className="flex items-center">
-                    <span>MO No</span>
+                    <span>TNX.NO</span>
                     <ColumnFilter columnName="MO No" currentValue={columnFilters.moNo || ''} onFilter={(val) => handleColumnFilter('moNo', val)} suggestions={columnSuggestions.moNo} />
                   </div>
                 </th>

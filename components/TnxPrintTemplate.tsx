@@ -33,7 +33,7 @@ const TnxPrintTemplate: React.FC<TnxPrintTemplateProps> = ({ tnx }) => {
         </div>
         <div className="absolute top-0 right-0">
           <img 
-            src={`https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=TNX-${tnx.mo_no || tnx.tnxRef}`} 
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=TNX-${tnx.reference || tnx.mo_no || tnx.tnxRef}`} 
             alt="QR Code" 
             className="w-24 h-24 border border-gray-100"
           />
@@ -43,9 +43,9 @@ const TnxPrintTemplate: React.FC<TnxPrintTemplateProps> = ({ tnx }) => {
       {/* Meta Data Section - Matching Image Columns */}
       <div className="grid grid-cols-3 gap-x-12 gap-y-1 mb-6 text-[11px] font-bold">
         <div className="space-y-1">
-          <p className="flex"><span className="w-16 shrink-0">Tnx.ID:</span> <span className="font-medium text-gray-700">{tnx.mo_no || tnx.tnxRef}</span></p>
+          <p className="flex"><span className="w-16 shrink-0">Tnx.ID:</span> <span className="font-medium text-gray-700">{tnx.reference || tnx.mo_no || tnx.tnxRef}</span></p>
           <p className="flex"><span className="w-16 shrink-0">Tnx.Type:</span> <span className="font-medium text-gray-700">{tnx.tnxType || 'Move Order'}</span></p>
-          <p className="flex"><span className="w-16 shrink-0">Ref.:</span> <span className="font-medium text-gray-700">{tnx.reference || tnx.docRef || 'N/A'}</span></p>
+          <p className="flex"><span className="w-16 shrink-0">Ref.:</span> <span className="font-medium text-gray-700">{tnx.mo_no || tnx.docRef || 'N/A'}</span></p>
         </div>
         <div className="space-y-1">
           <p className="flex"><span className="w-20 shrink-0">Doc. Date:</span> <span className="font-medium text-gray-700">{formatDate(tnx.created_at)}</span></p>
@@ -68,7 +68,7 @@ const TnxPrintTemplate: React.FC<TnxPrintTemplateProps> = ({ tnx }) => {
             <th className="border border-black py-1 px-3 text-left">Item Name</th>
             <th className="border border-black py-1 px-1 w-14">UOM</th>
             <th className="border border-black py-1 px-1 w-20">Unit Price</th>
-            <th className="border border-black py-1 px-1 w-20">Tnx. Qty</th>
+            <th className="border border-black py-1 px-1 w-20">{tnx.tnxType === 'Move Order' || !tnx.tnxType ? 'Issued Qty' : 'Tnx. Qty'}</th>
             <th className="border border-black py-1 px-1 w-24">Tnx. Value</th>
             <th className="border border-black py-1 px-2 w-24">6M Used (Dept)</th>
             <th className="border border-black py-1 px-2 w-24">6M Used (All)</th>
@@ -77,7 +77,7 @@ const TnxPrintTemplate: React.FC<TnxPrintTemplateProps> = ({ tnx }) => {
         </thead>
         <tbody>
           {items.map((item: any, idx: number) => {
-            const qty = Number(item.issuedQty || item.tnxQty || item.qty || 0);
+            const qty = Number(item.tnxQty || item.issuedQty || item.qty || 0);
             const price = Number(item.unitPrice || 0);
             // Since this is a "Transaction Details Report" typically shown for issues, 
             // if it's an issue type we show negative as per the provided image.
