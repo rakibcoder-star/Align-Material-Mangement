@@ -216,7 +216,7 @@ const MaterialsMovementForm: React.FC<MaterialsMovementFormProps> = ({ selectedI
         itemsCount: items.length,
         details: `Item: ${firstItem.name} | Qty: ${firstItem.tnxQty} | Loc: ${firstItem.location}`,
         items: items.map(i => ({ ...i, tnxQty: i.tnxQty })), // Capture current tnxQty
-        department: updatedDept,
+        department: firstItem.usedDept || '',
         requested_by: user?.fullName || 'System'
       };
 
