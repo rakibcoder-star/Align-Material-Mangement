@@ -15,6 +15,8 @@ interface GRNItem {
   masterLocation?: string;
   masterStock?: number;
   remarks: string;
+  batchNumber: string;
+  expiryDate: string;
 }
 
 interface ManualGRNProps {
@@ -87,7 +89,7 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
   });
 
   const [items, setItems] = useState<GRNItem[]>([
-    { id: '1', name: '', sku: '', uom: '', unitPrice: '', recQty: '', location: '', remarks: '' }
+    { id: '1', name: '', sku: '', uom: '', unitPrice: '', recQty: '', location: '', remarks: '', batchNumber: '', expiryDate: '' }
   ]);
 
   const handleSkuLookup = async (id: string, sku: string) => {
@@ -115,7 +117,7 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
   };
 
   const addItem = () => {
-    setItems([...items, { id: Date.now().toString(), name: '', sku: '', uom: '', unitPrice: '', recQty: '', location: '', remarks: '' }]);
+    setItems([...items, { id: Date.now().toString(), name: '', sku: '', uom: '', unitPrice: '', recQty: '', location: '', remarks: '', batchNumber: '', expiryDate: '' }]);
   };
 
   const removeItem = (id: string) => {
@@ -168,7 +170,9 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
           .update({ 
             last_received_qty: qty,
             last_received_date: new Date().toISOString(),
-            cost_center: formData.department || 'N/A'
+            cost_center: formData.department || 'N/A',
+            batch_number: item.batchNumber,
+            expiry_date: item.expiryDate
           })
           .eq('sku', item.sku);
         
@@ -371,6 +375,8 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
                   <th className="pb-2 px-1 w-[100px]">UOM</th>
                   <th className="pb-2 px-1 w-[120px]">Unit Price</th>
                   <th className="pb-2 px-1 w-[100px]">Rec. Qty</th>
+                  <th className="pb-2 px-1 w-[150px]">Batch No</th>
+                  <th className="pb-2 px-1 w-[150px]">Expiry Date</th>
                   <th className="pb-2 px-1 w-[180px]">Location</th>
                   <th className="pb-2 px-1">Remarks</th>
                   <th className="pb-2 w-8"></th>
@@ -426,6 +432,23 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
                         value={item.recQty}
                         onChange={(e) => updateItem(item.id, 'recQty', e.target.value)}
                         className="w-full px-3 py-1.5 border border-cyan-700/30 rounded text-[11px] outline-none placeholder-gray-200 text-center font-black"
+                      />
+                    </td>
+                    <td className="py-2 px-1">
+                      <input 
+                        type="text" 
+                        placeholder="Batch No"
+                        value={item.batchNumber}
+                        onChange={(e) => updateItem(item.id, 'batchNumber', e.target.value)}
+                        className="w-full px-3 py-1.5 border border-cyan-700/30 rounded text-[11px] outline-none placeholder-gray-200"
+                      />
+                    </td>
+                    <td className="py-2 px-1">
+                      <input 
+                        type="date" 
+                        value={item.expiryDate}
+                        onChange={(e) => updateItem(item.id, 'expiryDate', e.target.value)}
+                        className="w-full px-3 py-1.5 border border-cyan-700/30 rounded text-[11px] outline-none"
                       />
                     </td>
                     <td className="py-2 px-1">

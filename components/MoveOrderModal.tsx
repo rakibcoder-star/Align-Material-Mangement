@@ -12,6 +12,7 @@ interface MoveOrderItem {
   uom: string;
   onHand: string;
   reqQty: string;
+  issuedQty: string;
   unitPrice: number;
   remarks: string;
 }
@@ -24,11 +25,16 @@ interface MoveOrderModalProps {
 const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
   const { user } = useAuth();
   const [items, setItems] = useState<MoveOrderItem[]>([
-    { id: '1', name: '', sku: '', uom: '', onHand: '', reqQty: '', unitPrice: 0, remarks: '' }
+    { id: '1', name: '', sku: '', uom: '', onHand: '', reqQty: '', issuedQty: '', unitPrice: 0, remarks: '' }
   ]);
   const [refText, setRefText] = useState('');
-  const [headerText, setHeaderText] = useState('');
+  const [purpose, setPurpose] = useState('');
   const [department, setDepartment] = useState('');
+  const [employeeName, setEmployeeName] = useState('');
+  const [employeeId, setEmployeeId] = useState('');
+  const [section, setSection] = useState('');
+  const [subSection, setSubSection] = useState('');
+  const [shift, setShift] = useState('');
   const [costCenters, setCostCenters] = useState<string[]>([]);
   const [loadingCenters, setLoadingCenters] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -38,15 +44,57 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     if (!isOpen) {
-      setItems([{ id: '1', name: '', sku: '', uom: '', onHand: '', reqQty: '', unitPrice: 0, remarks: '' }]);
+      setItems([{ id: '1', name: '', sku: '', uom: '', onHand: '', reqQty: '', issuedQty: '', unitPrice: 0, remarks: '' }]);
       setRefText('');
-      setHeaderText('');
+      setPurpose('');
       setDepartment('');
+      setEmployeeName('');
+      setEmployeeId('');
+      setSection('');
+      setSubSection('');
+      setShift('');
       setShowSuccess(null);
     } else {
       fetchCostCenters();
+      if (user) {
+        setEmployeeName(user.fullName || '');
+        setEmployeeId(user.officeId || '');
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, user]);
+
+  const generateReference = async (deptName: string) => {
+    if (!deptName) return;
+    
+    const prefix = deptName.substring(0, 3).toUpperCase();
+    try {
+      const { data, error } = await supabase
+        .from('move_orders')
+        .select('reference')
+        .ilike('reference', `${prefix}-%`)
+        .order('reference', { ascending: false })
+        .limit(1);
+
+      let nextNum = 1001;
+      if (data && data.length > 0) {
+        const lastRef = data[0].reference;
+        const lastNum = parseInt(lastRef.split('-')[1]);
+        if (!isNaN(lastNum)) {
+          nextNum = lastNum + 1;
+        }
+      }
+      setRefText(`${prefix}-${nextNum}`);
+    } catch (err) {
+      console.error("Error generating reference:", err);
+      setRefText(`${prefix}-1001`);
+    }
+  };
+
+  useEffect(() => {
+    if (department) {
+      generateReference(department);
+    }
+  }, [department]);
 
   const fetchCostCenters = async () => {
     setLoadingCenters(true);
@@ -78,6 +126,7 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
         uom: itemData?.uom || '', 
         onHand: itemData?.onHand || '', 
         reqQty: itemData?.reqQty || '', 
+        issuedQty: itemData?.issuedQty || '',
         unitPrice: itemData?.unitPrice || 0,
         remarks: itemData?.remarks || '' 
       }
@@ -110,12 +159,18 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
         uom: data.uom,
         unitPrice: data.avg_price || data.last_price || 0,
         onHand: String(data.on_hand_stock || '0'),
+        issuedQty: '',
       } : item));
     }
     setIsSearching(false);
   };
 
   const handleSubmit = async () => {
+    if (!department || !employeeName || !employeeId || !shift) {
+      alert("Please fill in all mandatory fields: Department, Employee Name, Employee ID, and Shift.");
+      return;
+    }
+
     if (items.some(i => !i.sku || !i.reqQty)) {
       alert("Please fill in SKU and Required Quantity for all items.");
       return;
@@ -139,8 +194,13 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
       const { error } = await supabase.from('move_orders').insert([{
         mo_no: nextMoNo,
         reference: refText,
-        header_text: headerText,
+        header_text: purpose,
         department: department,
+        employee_name: employeeName,
+        employee_id: employeeId,
+        section: section,
+        sub_section: subSection,
+        shift: shift,
         total_value: totalValue,
         items: items,
         status: 'Pending',
@@ -179,6 +239,7 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
             onHand: String(data.on_hand_stock || '0'),
             unitPrice: data.avg_price || data.last_price || 0,
             reqQty: '',
+            issuedQty: '',
             remarks: ''
           }]);
         } else {
@@ -275,39 +336,24 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
         </div>
 
         <div className="p-8 space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-bold text-[#2d808e]">Referance</label>
               <div className="relative">
                 <input 
                   type="text" 
-                  maxLength={50}
+                  readOnly
                   value={refText}
-                  onChange={(e) => setRefText(e.target.value)}
-                  placeholder="Movement Ref."
-                  className="w-full px-3 py-2.5 bg-white border border-cyan-700/30 rounded focus:border-[#2d808e] outline-none text-sm placeholder:text-gray-300"
+                  placeholder="Auto-generated"
+                  className="w-full px-3 py-2.5 bg-gray-50 border border-cyan-700/30 rounded focus:border-[#2d808e] outline-none text-sm font-bold text-[#2d808e]"
                 />
-                <span className="absolute right-3 top-2.5 text-[10px] text-gray-400 font-bold">{refText.length} / 50</span>
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#2d808e]">Header Text</label>
-              <div className="relative">
-                <input 
-                  type="text" 
-                  maxLength={50}
-                  value={headerText}
-                  onChange={(e) => setHeaderText(e.target.value)}
-                  placeholder="Header Text"
-                  className="w-full px-3 py-2.5 bg-white border border-cyan-700/30 rounded focus:border-[#2d808e] outline-none text-sm placeholder:text-gray-300"
-                />
-                <span className="absolute right-3 top-2.5 text-[10px] text-gray-400 font-bold">{headerText.length} / 50</span>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-[#2d808e]">Department</label>
+              <label className="text-sm font-bold text-[#2d808e]">
+                <span className="text-red-500 mr-1">*</span>Department
+              </label>
               <div className="relative">
                 <select 
                   value={department}
@@ -325,6 +371,73 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
                 </div>
               </div>
             </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-[#2d808e]">
+                <span className="text-red-500 mr-1">*</span>Employee Name
+              </label>
+              <input 
+                type="text" 
+                value={employeeName}
+                onChange={(e) => setEmployeeName(e.target.value)}
+                className="w-full px-3 py-2.5 bg-white border border-cyan-700/30 rounded focus:border-[#2d808e] outline-none text-sm"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-[#2d808e]">
+                <span className="text-red-500 mr-1">*</span>Employee ID
+              </label>
+              <input 
+                type="text" 
+                value={employeeId}
+                onChange={(e) => setEmployeeId(e.target.value)}
+                className="w-full px-3 py-2.5 bg-white border border-cyan-700/30 rounded focus:border-[#2d808e] outline-none text-sm"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-[#2d808e]">Purpose</label>
+              <input 
+                type="text" 
+                value={purpose}
+                onChange={(e) => setPurpose(e.target.value)}
+                placeholder="Purpose of movement"
+                className="w-full px-3 py-2.5 bg-white border border-cyan-700/30 rounded focus:border-[#2d808e] outline-none text-sm"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-[#2d808e]">Section</label>
+              <input 
+                type="text" 
+                value={section}
+                onChange={(e) => setSection(e.target.value)}
+                className="w-full px-3 py-2.5 bg-white border border-cyan-700/30 rounded focus:border-[#2d808e] outline-none text-sm"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-[#2d808e]">Sub-Section</label>
+              <input 
+                type="text" 
+                value={subSection}
+                onChange={(e) => setSubSection(e.target.value)}
+                className="w-full px-3 py-2.5 bg-white border border-cyan-700/30 rounded focus:border-[#2d808e] outline-none text-sm"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-[#2d808e]">
+                <span className="text-red-500 mr-1">*</span>Shift
+              </label>
+              <input 
+                type="text" 
+                value={shift}
+                onChange={(e) => setShift(e.target.value)}
+                className="w-full px-3 py-2.5 bg-white border border-cyan-700/30 rounded focus:border-[#2d808e] outline-none text-sm"
+              />
+            </div>
           </div>
 
           <div className="space-y-4">
@@ -336,8 +449,9 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
                     <th className="pb-2 pr-2">Name</th>
                     <th className="pb-2 px-2 w-[180px]">Part/SKU</th>
                     <th className="pb-2 px-2 w-[100px]">UOM</th>
-                    <th className="pb-2 px-2 w-[120px]">On-Hand</th>
-                    <th className="pb-2 px-2 w-[120px]">Req. Qty</th>
+                    <th className="pb-2 px-2 w-[100px]">On-Hand</th>
+                    <th className="pb-2 px-2 w-[100px]">Req. Qty</th>
+                    <th className="pb-2 px-2 w-[100px]">Issued Qty</th>
                     <th className="pb-2 px-2">Remarks</th>
                     <th className="pb-2 w-[40px]"></th>
                   </tr>
@@ -386,6 +500,15 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
                           placeholder="0"
                           value={item.reqQty}
                           onChange={(e) => updateItem(item.id, 'reqQty', e.target.value)}
+                          className="w-full px-3 py-2 bg-white border border-cyan-700/30 rounded focus:border-[#2d808e] outline-none text-xs font-black text-center"
+                        />
+                      </td>
+                      <td className="px-2 py-1">
+                        <input 
+                          type="number" 
+                          placeholder="0"
+                          value={item.issuedQty}
+                          onChange={(e) => updateItem(item.id, 'issuedQty', e.target.value)}
                           className="w-full px-3 py-2 bg-white border border-cyan-700/30 rounded focus:border-[#2d808e] outline-none text-xs font-black text-center"
                         />
                       </td>

@@ -95,6 +95,12 @@ CREATE TABLE IF NOT EXISTS move_orders (
     reference TEXT,
     header_text TEXT,
     department TEXT,
+    employee_name TEXT,
+    dept TEXT,
+    employee_id TEXT,
+    section TEXT,
+    sub_section TEXT,
+    shift TEXT,
     status TEXT DEFAULT 'Pending',
     total_value DECIMAL DEFAULT 0,
     items JSONB DEFAULT '[]'::jsonb,
@@ -106,6 +112,12 @@ CREATE TABLE IF NOT EXISTS move_orders (
 
 ALTER TABLE move_orders ADD COLUMN IF NOT EXISTS requested_by TEXT;
 ALTER TABLE move_orders ADD COLUMN IF NOT EXISTS updated_by TEXT;
+ALTER TABLE move_orders ADD COLUMN IF NOT EXISTS employee_name TEXT;
+ALTER TABLE move_orders ADD COLUMN IF NOT EXISTS dept TEXT;
+ALTER TABLE move_orders ADD COLUMN IF NOT EXISTS employee_id TEXT;
+ALTER TABLE move_orders ADD COLUMN IF NOT EXISTS section TEXT;
+ALTER TABLE move_orders ADD COLUMN IF NOT EXISTS sub_section TEXT;
+ALTER TABLE move_orders ADD COLUMN IF NOT EXISTS shift TEXT;
 
 -- 5. Cost Centers Table
 CREATE TABLE IF NOT EXISTS cost_centers (

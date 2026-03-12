@@ -20,6 +20,8 @@ interface GRNItem {
   masterLocation?: string;
   masterStock?: number;
   remarks: string;
+  batchNumber: string;
+  expiryDate: string;
 }
 
 interface MakeGRNFormProps {
@@ -111,7 +113,9 @@ const MakeGRNForm: React.FC<MakeGRNFormProps> = ({ selectedItems, onClose, onSub
           reqDept: item.reqDept || 'N/A',
           masterLocation: master.location,
           masterStock: master.stock,
-          remarks: ''
+          remarks: '',
+          batchNumber: '',
+          expiryDate: ''
         };
       });
       setItems(initialItems);
@@ -173,7 +177,9 @@ const MakeGRNForm: React.FC<MakeGRNFormProps> = ({ selectedItems, onClose, onSub
           .update({ 
             last_received_qty: Number(item.grnQty),
             last_received_date: new Date().toISOString(),
-            cost_center: item.reqDept || 'N/A'
+            cost_center: item.reqDept || 'N/A',
+            batch_number: item.batchNumber,
+            expiry_date: item.expiryDate
           })
           .eq('sku', item.sku);
         
@@ -356,6 +362,8 @@ const MakeGRNForm: React.FC<MakeGRNFormProps> = ({ selectedItems, onClose, onSub
                   <th className="px-4 py-4 text-center">Already Recevied</th>
                   <th className="px-4 py-4 text-center">GRN Price</th>
                   <th className="px-4 py-4 text-center">GRN Qty</th>
+                  <th className="px-4 py-4">Batch No</th>
+                  <th className="px-4 py-4">Expiry Date</th>
                   <th className="px-4 py-4">Receive Location</th>
                   <th className="px-4 py-4">GRN Remarks</th>
                   <th className="px-4 py-4 text-center">Action</th>
@@ -383,6 +391,23 @@ const MakeGRNForm: React.FC<MakeGRNFormProps> = ({ selectedItems, onClose, onSub
                         value={item.grnQty}
                         onChange={(e) => updateItem(item.id, 'grnQty', Number(e.target.value))}
                         className="w-20 px-2 py-1 border border-gray-100 rounded text-center outline-none focus:border-[#2d808e] bg-gray-50/30"
+                      />
+                    </td>
+                    <td className="px-4 py-5">
+                      <input 
+                        type="text" 
+                        placeholder="Batch No"
+                        value={item.batchNumber}
+                        onChange={(e) => updateItem(item.id, 'batchNumber', e.target.value)}
+                        className="w-full px-3 py-1.5 border border-gray-100 rounded text-[12px] outline-none focus:border-[#2d808e] bg-gray-50/30"
+                      />
+                    </td>
+                    <td className="px-4 py-5">
+                      <input 
+                        type="date" 
+                        value={item.expiryDate}
+                        onChange={(e) => updateItem(item.id, 'expiryDate', e.target.value)}
+                        className="w-full px-3 py-1.5 border border-gray-100 rounded text-[12px] outline-none focus:border-[#2d808e] bg-gray-50/30"
                       />
                     </td>
                     <td className="px-4 py-5">

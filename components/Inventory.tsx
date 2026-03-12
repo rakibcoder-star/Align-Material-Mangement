@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Home, FileSpreadsheet, Search, List, Loader2 } from 'lucide-react';
+import { Home, FileSpreadsheet, Search, List, Loader2, AlertCircle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { supabase } from '../lib/supabase';
 import ColumnFilter from './ColumnFilter';
@@ -20,6 +20,8 @@ interface InventoryItem {
   lastReceivedDate?: string;
   lastIssuedQty?: number;
   lastIssuedDate?: string;
+  expiryDate?: string;
+  batchNumber?: string;
 }
 
 const Inventory: React.FC = () => {
@@ -48,7 +50,7 @@ const Inventory: React.FC = () => {
         // Apply column filters
         Object.entries(columnFilters).forEach(([column, value]) => {
           if (value) {
-            if (column === 'code' || column === 'sku' || column === 'name' || column === 'uom' || column === 'type' || column === 'group_name') {
+            if (column === 'code' || column === 'sku' || column === 'name' || column === 'uom' || column === 'type' || column === 'group_name' || column === 'department') {
               query = query.ilike(column, `%${value}%`);
             } else if (column === 'received_qty' || column === 'issued_qty' || column === 'on_hand_stock' || column === 'safety_stock') {
               query = query.eq(column, parseInt(value) || 0);
@@ -88,11 +90,13 @@ const Inventory: React.FC = () => {
         onHandQty: item.on_hand_stock || 0,
         safetyStock: item.safety_stock || 0,
         itemType: item.type || 'N/A',
-        costCenter: item.cost_center || 'N/A',
+        costCenter: item.department || 'N/A',
         lastReceivedQty: item.last_received_qty,
         lastReceivedDate: item.last_received_date,
         lastIssuedQty: item.last_issued_qty,
-        lastIssuedDate: item.last_issued_date
+        lastIssuedDate: item.last_issued_date,
+        expiryDate: item.expiry_date,
+        batchNumber: item.batch_number
       }));
       setInventory(mapped);
     } catch (err) {
@@ -117,10 +121,10 @@ const Inventory: React.FC = () => {
 
   const columnSuggestions = React.useMemo(() => {
     const suggestions: Record<string, string[]> = {};
-    const columns = ['code', 'sku', 'name', 'uom', 'type', 'group_name'];
+    const columns = ['code', 'sku', 'name', 'uom', 'type', 'group_name', 'department'];
     
     columns.forEach(col => {
-      const key = col === 'type' ? 'itemType' : col === 'cost_center' ? 'costCenter' : col;
+      const key = col === 'type' ? 'itemType' : col === 'department' ? 'costCenter' : col === 'batch_number' ? 'batchNumber' : col === 'expiry_date' ? 'expiryDate' : col;
       const uniqueValues = Array.from(new Set(inventory.map(item => String((item as any)[key] || ''))))
         .filter(val => val && val !== 'N/A')
         .sort();
@@ -139,6 +143,42 @@ const Inventory: React.FC = () => {
 
   return (
     <div className="flex flex-col h-[calc(100vh-120px)] space-y-4">
+      {/* Expiry Notifications */}
+      {inventory.some(item => {
+        if (!item.expiryDate) return false;
+        const expiry = new Date(item.expiryDate);
+        const today = new Date();
+        const diffTime = expiry.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays >= 0 && diffDays <= 7;
+      }) && (
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 shrink-0 rounded shadow-sm">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <AlertCircle className="h-5 w-5 text-red-500" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-700 font-bold uppercase tracking-tight">
+                Attention: Some items are expiring within 7 days!
+              </p>
+              <div className="mt-1 text-xs text-red-600 max-h-20 overflow-y-auto">
+                {inventory
+                  .filter(item => {
+                    if (!item.expiryDate) return false;
+                    const expiry = new Date(item.expiryDate);
+                    const today = new Date();
+                    const diffTime = expiry.getTime() - today.getTime();
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    return diffDays >= 0 && diffDays <= 7;
+                  })
+                  .map(item => `${item.name} (${item.sku}) - Exp: ${item.expiryDate}`)
+                  .join(', ')}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Breadcrumb Section */}
       <div className="flex items-center space-x-2 text-[11px] font-bold text-[#2d808e] uppercase tracking-wider shrink-0">
         <Home size={14} className="text-gray-400" />
@@ -225,6 +265,18 @@ const Inventory: React.FC = () => {
                 </th>
                 <th className="px-6 py-4 text-center w-32">
                   <div className="flex items-center justify-center">
+                    <span>Batch No</span>
+                    <ColumnFilter columnName="Batch No" currentValue={columnFilters.batch_number || ''} onFilter={(val) => handleColumnFilter('batch_number', val)} suggestions={columnSuggestions.batch_number} />
+                  </div>
+                </th>
+                <th className="px-6 py-4 text-center w-32">
+                  <div className="flex items-center justify-center">
+                    <span>Expiry Date</span>
+                    <ColumnFilter columnName="Expiry Date" currentValue={columnFilters.expiry_date || ''} onFilter={(val) => handleColumnFilter('expiry_date', val)} suggestions={columnSuggestions.expiry_date} />
+                  </div>
+                </th>
+                <th className="px-6 py-4 text-center w-32">
+                  <div className="flex items-center justify-center">
                     <span>On-Hand Qty</span>
                     <ColumnFilter columnName="On-Hand" currentValue={columnFilters.on_hand_stock || ''} onFilter={(val) => handleColumnFilter('on_hand_stock', val)} />
                   </div>
@@ -244,7 +296,7 @@ const Inventory: React.FC = () => {
                 <th className="px-6 py-4 text-left w-40">
                   <div className="flex items-center">
                     <span>Cost Center</span>
-                    <ColumnFilter columnName="Cost Center" currentValue={columnFilters.cost_center || ''} onFilter={(val) => handleColumnFilter('cost_center', val)} suggestions={columnSuggestions.cost_center} />
+                    <ColumnFilter columnName="Cost Center" currentValue={columnFilters.department || ''} onFilter={(val) => handleColumnFilter('department', val)} suggestions={columnSuggestions.department} />
                   </div>
                 </th>
               </tr>
@@ -252,7 +304,7 @@ const Inventory: React.FC = () => {
             <tbody className="text-[12px] text-gray-700 font-medium">
               {loading ? (
                 <tr>
-                  <td colSpan={11} className="px-6 py-12 text-center text-gray-400 uppercase tracking-widest">
+                  <td colSpan={13} className="px-6 py-12 text-center text-gray-400 uppercase tracking-widest">
                     <div className="flex flex-col items-center space-y-2">
                       <Loader2 size={24} className="animate-spin text-[#2d808e]" />
                       <span>Loading Inventory...</span>
@@ -285,6 +337,14 @@ const Inventory: React.FC = () => {
                         </div>
                       )}
                     </td>
+                    <td className="px-6 py-4 text-center">{item.batchNumber || '-'}</td>
+                    <td className={`px-6 py-4 text-center ${
+                      item.expiryDate && new Date(item.expiryDate).getTime() < new Date().getTime() + (7 * 24 * 60 * 60 * 1000)
+                        ? 'text-red-600 font-bold'
+                        : ''
+                    }`}>
+                      {item.expiryDate || '-'}
+                    </td>
                     <td className="px-6 py-4 text-center font-bold text-[#2d808e]">{item.onHandQty}</td>
                     <td className="px-6 py-4 text-center">{item.safetyStock}</td>
                     <td className="px-6 py-4 text-left whitespace-nowrap">{item.itemType}</td>
@@ -293,7 +353,7 @@ const Inventory: React.FC = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={11} className="px-6 py-12 text-center text-gray-400 uppercase tracking-widest">
+                  <td colSpan={13} className="px-6 py-12 text-center text-gray-400 uppercase tracking-widest">
                     No items found in inventory
                   </td>
                 </tr>

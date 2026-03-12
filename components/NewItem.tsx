@@ -32,7 +32,9 @@ const NewItem: React.FC<NewItemProps> = ({ onBack, onSuccess, initialData }) => 
     last_price: '0.00',
     avg_price: '0.00',
     safety_stock: '0',
-    on_hand_stock: '0'
+    on_hand_stock: '0',
+    batch_number: '',
+    expiry_date: ''
   });
 
   useEffect(() => {
@@ -120,7 +122,9 @@ const NewItem: React.FC<NewItemProps> = ({ onBack, onSuccess, initialData }) => 
           last_price: String(initialData.last_price || '0.00'),
           avg_price: String(initialData.avg_price || '0.00'),
           safety_stock: String(initialData.safety_stock || '0'),
-          on_hand_stock: String(initialData.on_hand_stock || '0')
+          on_hand_stock: String(initialData.on_hand_stock || '0'),
+          batch_number: initialData.batch_number || '',
+          expiry_date: initialData.expiry_date || ''
         });
       }, 0);
       return () => clearTimeout(timer);
@@ -376,6 +380,25 @@ const NewItem: React.FC<NewItemProps> = ({ onBack, onSuccess, initialData }) => 
                   value={formData.avg_price}
                   onChange={(e) => handleInputChange('avg_price', e.target.value)}
                   className="w-full px-3 py-2 bg-white border border-gray-200 rounded focus:border-[#2d808e] outline-none text-[12px] font-bold text-right"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">Batch Number</label>
+                <input
+                  type="text"
+                  placeholder="e.g. BATCH-001"
+                  value={formData.batch_number}
+                  onChange={(e) => handleInputChange('batch_number', e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded focus:border-[#2d808e] outline-none text-[12px] font-medium transition-all"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">Expiry Date</label>
+                <input
+                  type="date"
+                  value={formData.expiry_date}
+                  onChange={(e) => handleInputChange('expiry_date', e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded focus:border-[#2d808e] outline-none text-[12px] font-medium transition-all"
                 />
               </div>
             </div>
