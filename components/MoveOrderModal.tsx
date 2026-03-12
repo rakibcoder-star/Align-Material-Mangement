@@ -196,7 +196,7 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
 
       const totalValue = items.reduce((acc, i) => acc + (Number(i.reqQty) * i.unitPrice), 0);
 
-      const { error } = await supabase.from('move_orders').insert([{
+      const insertData: any = {
         mo_no: nextMoNo,
         reference: refText,
         header_text: purpose,
@@ -209,8 +209,19 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
         total_value: totalValue,
         items: items,
         status: 'Pending',
-        requested_by: user?.fullName || 'System'
-      }]);
+        requested_by: user?.fullName || 'System',
+        note: note // Try to save to note column
+      };
+
+      let { error } = await supabase.from('move_orders').insert([insertData]);
+
+      // Fallback: If 'note' column doesn't exist, append note to header_text
+      if (error && error.message.includes("column \"note\" of relation \"move_orders\" does not exist")) {
+        delete insertData.note;
+        insertData.header_text = `${purpose}${note ? ` (Note: ${note})` : ''}`;
+        const retry = await supabase.from('move_orders').insert([insertData]);
+        error = retry.error;
+      }
 
       if (error) throw error;
 
@@ -281,7 +292,7 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
               <div className="p-10 space-y-6">
                 <div className="space-y-1 text-center">
                   <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest block">TNX.NO</span>
-                  <p className="text-3xl font-black text-[#2d808e] tracking-tighter">#{showSuccess}</p>
+                  <p className="text-3xl font-black text-[#2d808e] tracking-tighter">{refText || `#${showSuccess}`}</p>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-2">
                    <div className="flex justify-between text-[11px] font-bold">

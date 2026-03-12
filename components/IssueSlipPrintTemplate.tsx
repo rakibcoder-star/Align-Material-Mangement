@@ -10,13 +10,12 @@ const IssueSlipPrintTemplate: React.FC<IssueSlipPrintTemplateProps> = ({ mo }) =
   const formatDate = (dateStr: string) => {
     if (!dateStr) return 'N/A';
     const d = new Date(dateStr);
-    return d.toLocaleString('en-GB', { 
-      day: '2-digit', 
-      month: 'short', 
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    const day = d.getDate().toString().padStart(2, '0');
+    const month = d.toLocaleString('en-GB', { month: 'short' });
+    const year = d.getFullYear();
+    const hours = d.getHours().toString().padStart(2, '0');
+    const minutes = d.getMinutes().toString().padStart(2, '0');
+    return `${day} ${month} ${year}, ${hours}:${minutes}`;
   };
 
   return (
@@ -34,45 +33,45 @@ const IssueSlipPrintTemplate: React.FC<IssueSlipPrintTemplateProps> = ({ mo }) =
       </div>
 
       {/* Meta Data Section */}
-      <div className="grid grid-cols-3 gap-x-12 gap-y-1 mb-8 text-[13px] border-t-2 border-b-2 border-black py-4">
+      <div className="grid grid-cols-3 gap-x-8 gap-y-1 mb-8 text-[13px] py-4">
         <div className="space-y-1">
-          <p className="flex items-center">
-            <span className="w-32 shrink-0 font-bold text-gray-900">Employee Name:</span> 
-            <span className="font-medium text-gray-800 truncate">{mo.employee_name || '-'}</span>
+          <p className="flex items-start">
+            <span className="w-36 shrink-0 font-bold text-gray-900">Employee Name:</span> 
+            <span className="font-medium text-gray-800 whitespace-nowrap">{mo.employee_name || '-'}</span>
           </p>
-          <p className="flex items-center">
-            <span className="w-32 shrink-0 font-bold text-gray-900">Date & Time:</span> 
-            <span className="font-medium text-gray-800">{formatDate(mo.created_at) || '-'}</span>
+          <p className="flex items-start">
+            <span className="w-36 shrink-0 font-bold text-gray-900">Date & Time:</span> 
+            <span className="font-medium text-gray-800 whitespace-nowrap">{formatDate(mo.created_at) || '-'}</span>
           </p>
-          <p className="flex items-center">
-            <span className="w-32 shrink-0 font-bold text-gray-900">Section:</span> 
+          <p className="flex items-start">
+            <span className="w-36 shrink-0 font-bold text-gray-900">Section:</span> 
             <span className="font-medium text-gray-800">{mo.section || '-'}</span>
           </p>
         </div>
         <div className="space-y-1">
-          <p className="flex items-center">
-            <span className="w-24 shrink-0 font-bold text-gray-900">Dept.:</span> 
+          <p className="flex items-start">
+            <span className="w-28 shrink-0 font-bold text-gray-900">Dept.:</span> 
             <span className="font-medium text-gray-800 uppercase">{mo.department || '-'}</span>
           </p>
-          <p className="flex items-center">
-            <span className="w-24 shrink-0 font-bold text-gray-900">Purpose:</span> 
+          <p className="flex items-start">
+            <span className="w-28 shrink-0 font-bold text-gray-900">Purpose:</span> 
             <span className="font-medium text-gray-800">{mo.header_text || '-'}</span>
           </p>
-          <p className="flex items-center">
-            <span className="w-24 shrink-0 font-bold text-gray-900">Sub-Section:</span> 
+          <p className="flex items-start">
+            <span className="w-28 shrink-0 font-bold text-gray-900">Sub-Section:</span> 
             <span className="font-medium text-gray-800">{mo.sub_section || '-'}</span>
           </p>
         </div>
         <div className="space-y-1">
-          <p className="flex items-center">
+          <p className="flex items-start">
             <span className="w-28 shrink-0 font-bold text-gray-900">Employee ID:</span> 
             <span className="font-medium text-gray-800">{mo.employee_id || '-'}</span>
           </p>
-          <p className="flex items-center">
+          <p className="flex items-start">
             <span className="w-28 shrink-0 font-bold text-[#2d808e]">TNX.NO:</span> 
             <span className="font-black text-[#2d808e]">{mo.reference || mo.mo_no || '-'}</span>
           </p>
-          <p className="flex items-center">
+          <p className="flex items-start">
             <span className="w-28 shrink-0 font-bold text-gray-900">Shift:</span> 
             <span className="font-medium text-gray-800 uppercase">{mo.shift || '-'}</span>
           </p>
@@ -110,7 +109,7 @@ const IssueSlipPrintTemplate: React.FC<IssueSlipPrintTemplateProps> = ({ mo }) =
       </table>
 
       <div className="text-[11px] font-bold mb-12">
-        <p className="border-b border-dotted border-gray-400 pb-1 w-full">NOTE: <span className="font-medium text-gray-600">The materials issued are strictly for production/maintenance use as per the request.</span></p>
+        <p className="border-b border-dotted border-gray-400 pb-1 w-full">NOTE: <span className="font-medium text-gray-600">{mo.note || '-'}</span></p>
       </div>
 
       {/* Signature Section */}
