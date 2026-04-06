@@ -375,6 +375,7 @@ const DashboardOverview: React.FC<{
     const today = new Date(); today.setHours(0,0,0,0);
     const { data: allPo } = await supabase.from('purchase_orders').select('items, created_at');
     const { data: allPr } = await supabase.from('requisitions').select('items, created_at');
+    
     const sumQty = (list: any[], dateLimit: Date) => {
       let qty = 0; let count = 0;
       list?.filter(entry => new Date(entry.created_at) >= dateLimit).forEach(entry => {
@@ -382,11 +383,14 @@ const DashboardOverview: React.FC<{
       });
       return { qty: qty > 1000 ? (qty/1000).toFixed(1) + 'K' : qty.toString(), count: count.toString() };
     };
+
+    const combinedOrders = [...(allPo || []), ...(moveOrders || [])];
+
     setStats({
-      todayOrderQty: sumQty(allPo || [], today).qty, todayOrderCount: sumQty(allPo || [], today).count,
-      lastDayOrderQty: sumQty(allPo || [], new Date(today.getTime() - 86400000)).qty, lastDayOrderCount: sumQty(allPo || [], new Date(today.getTime() - 86400000)).count,
-      weeklyOrderQty: sumQty(allPo || [], new Date(today.getTime() - 7*86400000)).qty, weeklyOrderCount: sumQty(allPo || [], new Date(today.getTime() - 7*86400000)).count,
-      monthlyOrderQty: sumQty(allPo || [], new Date(today.getTime() - 30*86400000)).qty, monthlyOrderCount: sumQty(allPo || [], new Date(today.getTime() - 30*86400000)).count,
+      todayOrderQty: sumQty(combinedOrders, today).qty, todayOrderCount: sumQty(combinedOrders, today).count,
+      lastDayOrderQty: sumQty(combinedOrders, new Date(today.getTime() - 86400000)).qty, lastDayOrderCount: sumQty(combinedOrders, new Date(today.getTime() - 86400000)).count,
+      weeklyOrderQty: sumQty(combinedOrders, new Date(today.getTime() - 7*86400000)).qty, weeklyOrderCount: sumQty(combinedOrders, new Date(today.getTime() - 7*86400000)).count,
+      monthlyOrderQty: sumQty(combinedOrders, new Date(today.getTime() - 30*86400000)).qty, monthlyOrderCount: sumQty(combinedOrders, new Date(today.getTime() - 30*86400000)).count,
       weeklyPrQty: sumQty(allPr || [], new Date(today.getTime() - 7*86400000)).qty, weeklyPrCount: sumQty(allPr || [], new Date(today.getTime() - 7*86400000)).count,
       monthlyPrQty: sumQty(allPr || [], new Date(today.getTime() - 30*86400000)).qty, monthlyPrCount: sumQty(allPr || [], new Date(today.getTime() - 30*86400000)).count
     });
