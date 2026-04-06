@@ -1,6 +1,5 @@
-
 -- =========================================================
--- FULL SYSTEM SCHEMA
+-- FULL SYSTEM SCHEMA (DRAFT)
 -- =========================================================
 
 -- Ensure the extension exists
