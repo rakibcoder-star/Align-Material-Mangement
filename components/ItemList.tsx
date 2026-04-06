@@ -25,7 +25,6 @@ export interface ItemEntry {
   safety_stock: number;
   last_issued: string;
   last_received: string;
-  group_name?: string;
   last_price?: string | number;
   avg_price?: string | number;
 }
@@ -63,7 +62,7 @@ const ItemList: React.FC = () => {
         // Apply column filters
         Object.entries(columnFilters).forEach(([column, value]) => {
           if (value) {
-            if (['code', 'sku', 'name', 'uom', 'location', 'type', 'group_name', 'source', 'department'].includes(column)) {
+            if (['code', 'sku', 'name', 'uom', 'location', 'type', 'source', 'department'].includes(column)) {
               dataQuery = dataQuery.ilike(column, `%${value}%`);
             } else if (['last_price', 'avg_price', 'safety_stock', 'on_hand_stock', 'opening_stock', 'received_qty', 'issued_qty'].includes(column)) {
               dataQuery = dataQuery.eq(column, parseFloat(value) || 0);
@@ -117,7 +116,7 @@ const ItemList: React.FC = () => {
 
   const columnSuggestions = React.useMemo(() => {
     const suggestions: Record<string, string[]> = {};
-    const columns = ['code', 'sku', 'name', 'uom', 'location', 'type', 'group_name', 'source', 'department'];
+    const columns = ['code', 'sku', 'name', 'uom', 'location', 'type', 'source', 'department'];
     
     columns.forEach(col => {
       const uniqueValues = Array.from(new Set(items.map(item => String((item as any)[col] || ''))))
@@ -278,7 +277,6 @@ const ItemList: React.FC = () => {
           source: String(findValue(['Source', 'SOURCE', 'source']) || 'N/A').trim(),
           department: String(findValue(['Department', 'DEPARTMENT', 'department']) || 'N/A').trim(),
           type: String(findValue(['Types', 'TYPE', 'type', 'Item Type']) || '').trim(),
-          group_name: String(findValue(['Group', 'GROUP', 'group', 'Item Group']) || '').trim(),
           opening_stock: parseInt(String(findValue(['Opening stock', 'OPENING STOCK', 'opening_stock']) || '0')) || 0,
           received_qty: parseInt(String(findValue(['Rcv_Qty.', 'RECEIVED QTY', 'received_qty', 'Received']) || '0')) || 0,
           issued_qty: parseInt(String(findValue(['Issue_Qty.', 'ISSUED QTY', 'issued_qty', 'Issued']) || '0')) || 0,

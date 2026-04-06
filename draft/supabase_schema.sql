@@ -14,7 +14,6 @@ CREATE TABLE IF NOT EXISTS items (
     uom TEXT,
     location TEXT,
     type TEXT,
-    group_name TEXT,
     source TEXT,
     department TEXT,
     opening_stock INTEGER DEFAULT 0,
