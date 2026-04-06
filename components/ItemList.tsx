@@ -25,6 +25,7 @@ export interface ItemEntry {
   safety_stock: number;
   last_issued: string;
   last_received: string;
+  expiry_date?: string;
   last_price?: string | number;
   avg_price?: string | number;
 }
@@ -151,7 +152,8 @@ const ItemList: React.FC = () => {
       'Closing_Stock': item.on_hand_stock || 0,
       'Safety Stock Qty.': item.safety_stock || 0,
       'Last Issued': item.last_issued ? new Date(item.last_issued).toLocaleString() : 'N/A',
-      'Last Received': item.last_received ? new Date(item.last_received).toLocaleString() : 'N/A'
+      'Last Received': item.last_received ? new Date(item.last_received).toLocaleString() : 'N/A',
+      'Expiry Date': item.expiry_date || 'N/A'
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
@@ -285,7 +287,8 @@ const ItemList: React.FC = () => {
           last_price: parseFloat(String(findValue(['Last Price', 'LAST PRICE', 'last_price']) || '0')) || 0,
           avg_price: parseFloat(String(findValue(['Avg. Price', 'AVG. PRICE', 'avg_price']) || '0')) || 0,
           last_issued: safeParseDate(findValue(['Last Issued'])),
-          last_received: safeParseDate(findValue(['Last Received']))
+          last_received: safeParseDate(findValue(['Last Received'])),
+          expiry_date: safeParseDate(findValue(['Expiry Date', 'expiry_date', 'Expiry']))
         };
       }).filter(item => item.name && item.code);
 
@@ -553,6 +556,12 @@ const ItemList: React.FC = () => {
               </th>
               <th className="px-4 py-5 border-r border-gray-50 text-center">
                 <div className="flex items-center justify-center">
+                  <span>Expiry Date</span>
+                  <ColumnFilter columnName="Expiry" currentValue={columnFilters.expiry_date || ''} onFilter={(val) => handleColumnFilter('expiry_date', val)} />
+                </div>
+              </th>
+              <th className="px-4 py-5 border-r border-gray-50 text-center">
+                <div className="flex items-center justify-center">
                   <span>Last Issued</span>
                 </div>
               </th>
@@ -606,6 +615,7 @@ const ItemList: React.FC = () => {
                 <td className="px-4 py-4 text-center border-r border-gray-50 font-bold text-gray-700">{item.issued_qty || 0}</td>
                 <td className="px-4 py-4 text-center border-r border-gray-50 font-black text-[#2d808e] text-[13px]">{item.on_hand_stock}</td>
                 <td className="px-4 py-4 text-center border-r border-gray-50 font-black text-orange-600">{item.safety_stock}</td>
+                <td className="px-4 py-4 text-center border-r border-gray-50 text-gray-400">{item.expiry_date || 'N/A'}</td>
                 <td className="px-4 py-4 text-center border-r border-gray-50 text-gray-400">{item.last_issued ? new Date(item.last_issued).toLocaleString() : 'N/A'}</td>
                 <td className="px-4 py-4 text-center border-r border-gray-50 text-gray-400">{item.last_received ? new Date(item.last_received).toLocaleString() : 'N/A'}</td>
                 <td className="px-4 py-4 text-center" onClick={(e) => e.stopPropagation()}>

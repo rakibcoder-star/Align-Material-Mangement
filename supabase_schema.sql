@@ -26,6 +26,12 @@ CREATE TABLE IF NOT EXISTS items (
     received_qty INTEGER DEFAULT 0,
     last_issued TIMESTAMP WITH TIME ZONE,
     last_received TIMESTAMP WITH TIME ZONE,
+    last_issued_qty INTEGER DEFAULT 0,
+    last_issued_date TIMESTAMP WITH TIME ZONE,
+    last_received_qty INTEGER DEFAULT 0,
+    last_received_date TIMESTAMP WITH TIME ZONE,
+    expiry_date DATE,
+    cost_center TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

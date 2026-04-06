@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Home, Plus, MinusCircle, Loader2, Save, Search } from 'lucide-react';
+import { Home, Plus, MinusCircle, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import GRNPreviewModal from './GRNPreviewModal';
 import ItemSearchInput from './ItemSearchInput';
@@ -46,7 +46,7 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
         } else {
           setGrnId('4000000001');
         }
-      } catch (err) {
+      } catch (_) {
         setGrnId('4000000001');
       }
     };
@@ -127,6 +127,8 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
         items: items
       }]);
 
+      if (grnError) throw grnError;
+
       // 2. Logic to update master inventory stock
       for (const item of items) {
         const qty = parseInt(item.recQty) || 0;
@@ -146,7 +148,7 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
             last_received_qty: qty,
             last_received_date: new Date().toISOString(),
             cost_center: formData.department || 'N/A',
-            expiry_date: item.expiryDate
+            expiry_date: item.expiryDate || null
           })
           .eq('sku', item.sku);
         

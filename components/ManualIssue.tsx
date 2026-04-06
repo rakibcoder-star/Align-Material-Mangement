@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Home, Trash2, Loader2, Save, Plus, CheckCircle2, X, Search } from 'lucide-react';
+import { Home, Trash2, Loader2, Save, Plus, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import ItemSearchInput from './ItemSearchInput';
 

@@ -146,6 +146,7 @@ const NewItem: React.FC<NewItemProps> = ({ onBack, onSuccess, initialData }) => 
       avg_price: parseFloat(formData.avg_price) || 0,
       safety_stock: parseInt(formData.safety_stock) || 0,
       on_hand_stock: parseInt(formData.on_hand_stock) || 0,
+      expiry_date: formData.expiry_date || null,
       last_issued: formData.last_issued || null,
       last_received: formData.last_received || null
     };
@@ -277,16 +278,21 @@ const NewItem: React.FC<NewItemProps> = ({ onBack, onSuccess, initialData }) => 
               </div>
               <div className="space-y-1.5">
                 <label className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">Stock Location</label>
-                <select
-                  value={formData.location}
-                  onChange={(e) => handleInputChange('location', e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-[12px] font-bold outline-none focus:border-[#2d808e] transition-all appearance-none cursor-pointer"
-                >
-                  <option value="">SELECT LOCATION</option>
-                  {masterData.locations.map(loc => (
-                    <option key={loc} value={loc}>{loc}</option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <input
+                    type="text"
+                    list="location-list"
+                    placeholder="SELECT OR TYPE LOCATION"
+                    value={formData.location}
+                    onChange={(e) => handleInputChange('location', e.target.value.toUpperCase())}
+                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-[12px] font-bold outline-none focus:border-[#2d808e] transition-all"
+                  />
+                  <datalist id="location-list">
+                    {masterData.locations.map(loc => (
+                      <option key={loc} value={loc} />
+                    ))}
+                  </datalist>
+                </div>
               </div>
               <div className="space-y-1.5">
                 <label className="text-[11px] font-black text-[#2d808e] uppercase tracking-tighter">Source</label>

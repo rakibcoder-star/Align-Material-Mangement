@@ -47,7 +47,7 @@ const MakeGRNForm: React.FC<MakeGRNFormProps> = ({ selectedItems, onClose, onSub
   useEffect(() => {
     const fetchNextGrnId = async () => {
       try {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('grns')
           .select('grn_no')
           .order('grn_no', { ascending: false })
@@ -59,7 +59,7 @@ const MakeGRNForm: React.FC<MakeGRNFormProps> = ({ selectedItems, onClose, onSub
         } else {
           setGrnId('4000000001');
         }
-      } catch (err) {
+      } catch (_) {
         setGrnId('4000000001');
       }
     };
@@ -176,7 +176,7 @@ const MakeGRNForm: React.FC<MakeGRNFormProps> = ({ selectedItems, onClose, onSub
             last_received_qty: Number(item.grnQty),
             last_received_date: new Date().toISOString(),
             cost_center: item.reqDept || 'N/A',
-            expiry_date: item.expiryDate
+            expiry_date: item.expiryDate || null
           })
           .eq('sku', item.sku);
         
