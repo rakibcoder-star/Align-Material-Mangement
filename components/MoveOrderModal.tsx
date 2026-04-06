@@ -194,8 +194,12 @@ const MoveOrderModal: React.FC<MoveOrderModalProps> = ({ isOpen, onClose }) => {
 
       let { error } = await supabase.from('move_orders').insert([insertData]);
 
-      // Fallback: If 'note' column doesn't exist, append note to header_text
-      if (error && error.message.includes("column \"note\" of relation \"move_orders\" does not exist")) {
+      // Fallback: If 'note' column doesn't exist or isn't in schema cache, append note to header_text
+      if (error && (
+        error.message.includes("column \"note\" of relation \"move_orders\" does not exist") || 
+        error.message.includes("Could not find the 'note' column") ||
+        error.code === 'PGRST204' // PostgREST error for missing column in schema cache
+      )) {
         delete insertData.note;
         insertData.header_text = `${purpose}${note ? ` (Note: ${note})` : ''}`;
         const retry = await supabase.from('move_orders').insert([insertData]);

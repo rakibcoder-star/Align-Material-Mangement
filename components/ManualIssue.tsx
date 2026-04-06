@@ -250,7 +250,7 @@ const ManualIssue: React.FC<ManualIssueProps> = ({ onBack, onSubmit }) => {
                         }}
                         placeholder="Item Name..."
                         searchField="name"
-                        className="w-full px-2 py-1.5 border border-gray-50 bg-gray-50 rounded text-[11px] font-bold"
+                        className="w-full px-2 py-1.5 border border-[#2d808e]/30 rounded text-[11px] font-bold"
                       />
                     </td>
                     <td className="py-2 px-1 text-center">

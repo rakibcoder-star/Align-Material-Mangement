@@ -97,6 +97,7 @@ CREATE TABLE IF NOT EXISTS move_orders (
     status TEXT DEFAULT 'Pending',
     total_value DECIMAL DEFAULT 0,
     items JSONB DEFAULT '[]'::jsonb,
+    note TEXT,
     requested_by TEXT,
     updated_by TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

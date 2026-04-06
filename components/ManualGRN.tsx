@@ -401,7 +401,7 @@ const ManualGRN: React.FC<ManualGRNProps> = ({ onBack, onSubmit }) => {
                         }}
                         placeholder="SKU/Code"
                         searchField="sku"
-                        className="w-full px-3 py-1.5 border border-cyan-700/30 rounded text-[11px] outline-none placeholder-gray-200 bg-gray-50/30 font-bold"
+                        className="w-full px-3 py-1.5 border border-cyan-700/30 rounded text-[11px] outline-none placeholder-gray-200 bg-white font-bold"
                       />
                     </td>
                     <td className="py-2 px-1">

@@ -43,7 +43,7 @@ const ItemSearchInput: React.FC<ItemSearchInputProps> = ({
           const { data, error } = await supabase
             .from('items')
             .select('*')
-            .ilike(searchField, `%${value}%`)
+            .or(`name.ilike.%${value}%,sku.ilike.%${value}%`)
             .limit(5);
           
           if (data && !error) {
